@@ -1,3 +1,7 @@
 #!/usr/bin/env node
 
-console.log('bluera-knowledge CLI');
+import { createProgram } from './cli/program.js';
+
+const program = createProgram();
+
+program.parse();
