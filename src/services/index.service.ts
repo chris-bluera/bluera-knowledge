@@ -9,6 +9,7 @@ import { createDocumentId } from '../types/brands.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { ChunkingService } from './chunking.service.js';
+import type { ProgressCallback } from '../types/progress.js';
 
 interface IndexResult {
   documentsIndexed: number;
@@ -45,12 +46,12 @@ export class IndexService {
     });
   }
 
-  async indexStore(store: Store): Promise<Result<IndexResult>> {
+  async indexStore(store: Store, onProgress?: ProgressCallback): Promise<Result<IndexResult>> {
     const startTime = Date.now();
 
     try {
       if (store.type === 'file' || store.type === 'repo') {
-        return await this.indexFileStore(store);
+        return await this.indexFileStore(store, onProgress);
       }
 
       return err(new Error(`Indexing not supported for store type: ${store.type}`));
@@ -59,11 +60,19 @@ export class IndexService {
     }
   }
 
-  private async indexFileStore(store: FileStore | RepoStore): Promise<Result<IndexResult>> {
+  private async indexFileStore(store: FileStore | RepoStore, onProgress?: ProgressCallback): Promise<Result<IndexResult>> {
     const startTime = Date.now();
     const files = await this.scanDirectory(store.path);
     const documents: Document[] = [];
     let filesProcessed = 0;
+
+    // Emit start event
+    onProgress?.({
+      type: 'start',
+      current: 0,
+      total: files.length,
+      message: 'Starting index'
+    });
 
     for (const filePath of files) {
       const content = await readFile(filePath, 'utf-8');
@@ -93,11 +102,27 @@ export class IndexService {
         documents.push(doc);
       }
       filesProcessed++;
+
+      // Emit progress event
+      onProgress?.({
+        type: 'progress',
+        current: filesProcessed,
+        total: files.length,
+        message: `Indexing ${filePath}`
+      });
     }
 
     if (documents.length > 0) {
       await this.lanceStore.addDocuments(store.id, documents);
     }
+
+    // Emit complete event
+    onProgress?.({
+      type: 'complete',
+      current: files.length,
+      total: files.length,
+      message: 'Indexing complete'
+    });
 
     return ok({
       documentsIndexed: filesProcessed,
