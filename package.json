@@ -18,6 +18,9 @@
     "test:search-quality": "npx tsx tests/scripts/search-quality.ts",
     "test:search-quality:explore": "npx tsx tests/scripts/search-quality.ts --explore",
     "test:search-quality:baseline": "npx tsx tests/scripts/search-quality.ts --update-baseline",
+    "test:quality:queries": "npx tsx tests/scripts/quality-queries.ts",
+    "test:quality:generate": "npx tsx tests/scripts/quality-queries.ts --generate",
+    "test:quality:review": "npx tsx tests/scripts/quality-review.ts",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
