@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import { execSync, type ExecSyncOptionsWithStringEncoding } from 'node:child_process';
-import { readFileSync, appendFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, appendFileSync, mkdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type {
@@ -11,6 +11,9 @@ import type {
   QueryEvaluation,
   RunSummary,
   Scores,
+  QuerySet,
+  CoreQuery,
+  Baseline,
 } from './search-quality.types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -90,6 +93,8 @@ function shellEscape(str: string): string {
 const ROOT_DIR = join(__dirname, '..', '..');
 const RESULTS_DIR = join(__dirname, '..', 'quality-results');
 const SCHEMAS_DIR = join(__dirname, 'schemas');
+const QUERIES_DIR = join(__dirname, '..', 'fixtures', 'queries');
+const BASELINE_PATH = join(__dirname, '..', 'quality-results', 'baseline.json');
 
 // Claude CLI path - can be overridden via CLAUDE_CLI env var
 const CLAUDE_CLI = process.env.CLAUDE_CLI || `${process.env.HOME}/.claude/local/claude`;
@@ -103,6 +108,8 @@ function loadConfig(): QualityConfig {
     stores: null,
     maxRetries: 3,
     timeoutMs: 60000,
+    querySet: 'core',
+    corpusVersion: '1.0.0',
   };
 
   if (existsSync(configPath)) {
@@ -114,6 +121,41 @@ function loadConfig(): QualityConfig {
 
 function loadSchema(name: string): string {
   return readFileSync(join(SCHEMAS_DIR, `${name}.json`), 'utf-8');
+}
+
+function loadQuerySet(name: string): QuerySet {
+  if (name === 'explore') {
+    throw new Error('Use generateQueries() for explore mode');
+  }
+
+  const queryPath = join(QUERIES_DIR, `${name}.json`);
+  if (!existsSync(queryPath)) {
+    throw new Error(`Query set not found: ${queryPath}`);
+  }
+
+  return JSON.parse(readFileSync(queryPath, 'utf-8')) as QuerySet;
+}
+
+function loadBaseline(): Baseline | null {
+  if (!existsSync(BASELINE_PATH)) {
+    return null;
+  }
+  return JSON.parse(readFileSync(BASELINE_PATH, 'utf-8')) as Baseline;
+}
+
+function saveBaseline(scores: Scores, config: QualityConfig): void {
+  const baseline: Baseline = {
+    updatedAt: new Date().toISOString().split('T')[0],
+    corpus: config.corpusVersion,
+    querySet: `${config.querySet}@${loadQuerySet(config.querySet).version}`,
+    scores,
+    thresholds: {
+      regression: 0.05,
+      improvement: 0.03,
+    },
+  };
+  writeFileSync(BASELINE_PATH, JSON.stringify(baseline, null, 2));
+  console.log(`\n✅ Baseline saved to ${BASELINE_PATH}`);
 }
 
 function generateQueries(config: QualityConfig): QueryGenerationResult {
@@ -348,10 +390,25 @@ async function main() {
   const config = loadConfig();
   const runId = generateRunId();
 
+  // Parse CLI arguments
+  const args = process.argv.slice(2);
+  const isExplore = args.includes('--explore');
+  const updateBaseline = args.includes('--update-baseline');
+  const setArg = args.find(a => a.startsWith('--set='));
+  const querySetName = setArg ? setArg.split('=')[1] : (isExplore ? 'explore' : config.querySet);
+
   console.log('🚀 AI Search Quality Testing');
   console.log(`   Run ID: ${runId}`);
-  console.log(`   Query count: ${config.queryCount}`);
-  console.log(`   Search mode: ${config.searchMode}\n`);
+  console.log(`   Query set: ${querySetName}`);
+  console.log(`   Search mode: ${config.searchMode}`);
+  console.log(`   Stores: ${config.stores?.join(', ') || 'all'}\n`);
+
+  // Load baseline for comparison
+  const baseline = loadBaseline();
+  if (baseline) {
+    console.log(`📊 Baseline: ${baseline.querySet} (${baseline.updatedAt})`);
+    console.log(`   Overall: ${baseline.scores.overall}\n`);
+  }
 
   // Ensure results directory exists
   if (!existsSync(RESULTS_DIR)) {
@@ -370,8 +427,39 @@ async function main() {
     config,
   }) + '\n');
 
-  // Phase 1: Generate queries
-  const { queries } = generateQueries(config);
+  // Get queries - either from file or generate
+  let queries: Array<{ query: string; intent: string }>;
+
+  if (isExplore) {
+    console.log('🔍 Generating exploratory queries...');
+    const generated = generateQueries(config);
+    queries = generated.queries;
+
+    // Save generated queries
+    const generatedDir = join(QUERIES_DIR, 'generated');
+    if (!existsSync(generatedDir)) {
+      mkdirSync(generatedDir, { recursive: true });
+    }
+    const generatedPath = join(generatedDir, `${timestamp}.json`);
+    const generatedSet: QuerySet = {
+      version: '1.0.0',
+      description: `AI-generated queries from ${timestamp}`,
+      queries: queries.map((q, i) => ({
+        id: `gen-${i + 1}`,
+        query: q.query,
+        intent: q.intent,
+        category: 'code-pattern' as const,
+      })),
+      source: 'ai-generated',
+      generatedAt: new Date().toISOString(),
+    };
+    writeFileSync(generatedPath, JSON.stringify(generatedSet, null, 2));
+    console.log(`   Saved to: ${generatedPath}\n`);
+  } else {
+    const querySet = loadQuerySet(querySetName);
+    console.log(`📋 Loaded ${querySet.queries.length} queries from ${querySetName}.json\n`);
+    queries = querySet.queries.map(q => ({ query: q.query, intent: q.intent }));
+  }
 
   // Phase 2: Evaluate each query
   console.log('📊 Evaluating search quality...');
@@ -437,6 +525,37 @@ async function main() {
   if (summary.topSuggestions.length > 0) {
     console.log('\n🎯 Top suggestions for improvement:');
     summary.topSuggestions.forEach((suggestion, i) => console.log(`   ${i + 1}. ${suggestion}`));
+  }
+
+  // Compare to baseline
+  if (baseline && !isExplore) {
+    console.log('\n📊 Comparison to Baseline:');
+    const dims = ['relevance', 'ranking', 'coverage', 'snippetQuality', 'overall'] as const;
+
+    for (const dim of dims) {
+      const current = summary.averageScores[dim];
+      const base = baseline.scores[dim];
+      const diff = current - base;
+      const diffStr = diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
+      const indicator = diff < -baseline.thresholds.regression ? '❌' :
+                       diff > baseline.thresholds.improvement ? '✅' : '  ';
+      console.log(`   ${dim.padEnd(15)} ${current.toFixed(2)}  (${diffStr}) ${indicator}`);
+    }
+
+    const hasRegression = dims.some(d =>
+      summary.averageScores[d] - baseline.scores[d] < -baseline.thresholds.regression
+    );
+
+    if (hasRegression) {
+      console.log('\n⚠️  REGRESSION DETECTED - scores dropped below threshold');
+    } else {
+      console.log('\n✅ No regressions detected');
+    }
+  }
+
+  // Update baseline if requested
+  if (updateBaseline) {
+    saveBaseline(summary.averageScores, config);
   }
 
   // Find lowest scoring dimension for focus recommendation
