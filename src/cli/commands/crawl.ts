@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { createHash } from 'node:crypto';
 import ora from 'ora';
 import { createServices } from '../../services/index.js';
 import { PythonBridge } from '../../crawl/bridge.js';
@@ -34,7 +35,7 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
         for (const page of result.pages) {
           const vector = await services.embeddings.embed(page.content);
           docs.push({
-            id: createDocumentId(`${store.id}-${Buffer.from(page.url).toString('base64').slice(0, 20)}`),
+            id: createDocumentId(`${store.id}-${createHash('md5').update(page.url).digest('hex')}`),
             content: page.content,
             vector,
             metadata: {
@@ -49,7 +50,7 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
         await services.lance.addDocuments(store.id, docs);
         spinner.succeed(`Crawled and indexed ${result.pages.length} pages`);
       } catch (error) {
-        spinner.fail(`Crawl failed: ${error}`);
+        spinner.fail(`Crawl failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(6);
       } finally {
         await bridge.stop();
