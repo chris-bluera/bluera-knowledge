@@ -83,9 +83,11 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
       });
 
       // Keep process alive
-      process.on('SIGINT', async () => {
-        await watchService.unwatchAll();
-        process.exit(0);
+      process.on('SIGINT', () => {
+        void (async () => {
+          await watchService.unwatchAll();
+          process.exit(0);
+        })();
       });
     });
 
