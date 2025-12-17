@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "description": "Stable regression benchmark queries for search quality testing",
+  "queries": [
+    {
+      "id": "code-001",
+      "query": "zod schema validation",
+      "intent": "Find documentation or examples of Zod schema validation",
+      "category": "api-reference"
+    },
+    {
+      "id": "code-002",
+      "query": "zod object refine custom validation",
+      "intent": "Find how to use refine() method for custom validation logic in Zod schemas",
+      "category": "code-pattern"
+    },
+    {
+      "id": "code-003",
+      "query": "express middleware error handling",
+      "intent": "Find patterns for error handling middleware in Express applications",
+      "category": "code-pattern"
+    },
+    {
+      "id": "code-004",
+      "query": "express route parameters",
+      "intent": "Find documentation on how to define and use route parameters in Express",
+      "category": "api-reference"
+    },
+    {
+      "id": "code-005",
+      "query": "jwt token verification",
+      "intent": "Find how to verify JWT tokens for authentication",
+      "category": "code-pattern"
+    },
+    {
+      "id": "code-006",
+      "query": "jwt decode vs verify difference",
+      "intent": "Understand the difference between decoding and verifying JWT tokens",
+      "category": "comparison"
+    },
+    {
+      "id": "code-007",
+      "query": "typescript generic constraints",
+      "intent": "Find how to use constraints with TypeScript generics",
+      "category": "concept"
+    },
+    {
+      "id": "code-008",
+      "query": "typescript mapped types",
+      "intent": "Find documentation and examples of mapped types in TypeScript",
+      "category": "api-reference"
+    },
+    {
+      "id": "code-009",
+      "query": "react useEffect cleanup function",
+      "intent": "Find how to properly use cleanup functions in useEffect hook",
+      "category": "code-pattern"
+    },
+    {
+      "id": "code-010",
+      "query": "react hooks dependency array",
+      "intent": "Understand how dependency arrays work in React hooks",
+      "category": "concept"
+    },
+    {
+      "id": "code-011",
+      "query": "hono routing wildcard",
+      "intent": "Find how to use wildcard routes in Hono web framework",
+      "category": "api-reference"
+    },
+    {
+      "id": "code-012",
+      "query": "hono vs express performance",
+      "intent": "Compare performance characteristics between Hono and Express frameworks",
+      "category": "comparison"
+    },
+    {
+      "id": "code-013",
+      "query": "node streams pipeline error handling",
+      "intent": "Find how to handle errors in Node.js stream pipelines",
+      "category": "troubleshooting"
+    },
+    {
+      "id": "code-014",
+      "query": "node readable stream backpressure",
+      "intent": "Understand how backpressure works in Node.js readable streams",
+      "category": "concept"
+    },
+    {
+      "id": "code-015",
+      "query": "zod parse vs safeParse",
+      "intent": "Compare parse and safeParse methods in Zod for error handling approaches",
+      "category": "comparison"
+    }
+  ]
+}
