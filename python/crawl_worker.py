@@ -14,6 +14,9 @@ def main():
                 params = request.get('params', {})
                 url = params.get('url')
 
+                if not url:
+                    raise ValueError('URL parameter is required')
+
                 result = crawler.run(url=url)
 
                 response = {
@@ -34,7 +37,7 @@ def main():
         except Exception as e:
             error_response = {
                 'jsonrpc': '2.0',
-                'id': request.get('id') if 'request' in dir() else None,
+                'id': request.get('id') if isinstance(request, dict) else None,
                 'error': {'code': -1, 'message': str(e)}
             }
             print(json.dumps(error_response), flush=True)
