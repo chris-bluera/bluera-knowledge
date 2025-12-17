@@ -54,14 +54,68 @@ Return as JSON array.`;
     '--allowedTools', 'Glob,Read',
   ];
 
-  const result = execSync(args.join(' '), {
-    cwd: ROOT_DIR,
-    encoding: 'utf-8',
-    timeout: 120000,
-  });
+  let result: string;
+  try {
+    result = execSync(args.join(' '), {
+      cwd: ROOT_DIR,
+      encoding: 'utf-8',
+      timeout: 120000,
+    });
+  } catch (error: any) {
+    if (error.killed && error.signal === 'SIGTERM') {
+      console.error('Error: Claude CLI call timed out after 120 seconds');
+    } else {
+      console.error(`Error calling Claude CLI: ${error.message}`);
+      if (error.stderr) {
+        console.error(`stderr: ${error.stderr}`);
+      }
+    }
+    throw error;
+  }
 
-  const parsed = JSON.parse(result);
-  let queries: CoreQuery[] = parsed.structured_output ?? JSON.parse(parsed.result);
+  let parsed: any;
+  try {
+    parsed = JSON.parse(result);
+  } catch (error: any) {
+    console.error('Error: Failed to parse Claude CLI response as JSON');
+    console.error(`Response was: ${result.substring(0, 200)}...`);
+    throw new Error(`Invalid JSON response from Claude CLI: ${error.message}`);
+  }
+
+  // Validate response structure
+  let queries: CoreQuery[];
+  if (parsed.structured_output) {
+    if (!Array.isArray(parsed.structured_output)) {
+      throw new Error('Expected structured_output to be an array');
+    }
+    queries = parsed.structured_output;
+  } else if (parsed.result) {
+    let parsedResult: any;
+    try {
+      parsedResult = JSON.parse(parsed.result);
+    } catch (error: any) {
+      throw new Error(`Failed to parse result field as JSON: ${error.message}`);
+    }
+    if (!Array.isArray(parsedResult)) {
+      throw new Error('Expected parsed result to be an array');
+    }
+    queries = parsedResult;
+  } else {
+    throw new Error('Response missing both structured_output and result fields');
+  }
+
+  // Validate each query has required fields
+  queries.forEach((q, i) => {
+    if (!q.query || typeof q.query !== 'string') {
+      throw new Error(`Query ${i} missing or invalid 'query' field`);
+    }
+    if (!q.intent || typeof q.intent !== 'string') {
+      throw new Error(`Query ${i} missing or invalid 'intent' field`);
+    }
+    if (!q.category || typeof q.category !== 'string') {
+      throw new Error(`Query ${i} missing or invalid 'category' field`);
+    }
+  });
 
   // Assign IDs
   queries = queries.map((q, i) => ({
@@ -78,7 +132,7 @@ Return as JSON array.`;
       console.log(`    Intent: ${q.intent}\n`);
     });
 
-    const action = await prompt.question('Actions: [a]ccept, [d]rop <nums>, [e]dit <num>, [r]egenerate, [q]uit: ');
+    const action = await prompt.question('Actions: [a]ccept, [d]rop <nums>, [e]dit <num>, [q]uit: ');
 
     if (action === 'a' || action === 'accept') {
       done = true;
@@ -94,9 +148,6 @@ Return as JSON array.`;
         if (newQuery.trim()) queries[num].query = newQuery.trim();
         if (newIntent.trim()) queries[num].intent = newIntent.trim();
       }
-    } else if (action === 'r' || action === 'regenerate') {
-      console.log('Regenerating...');
-      // Would call Claude again here - simplified for now
     } else if (action === 'q' || action === 'quit') {
       prompt.close();
       console.log('Cancelled.');
