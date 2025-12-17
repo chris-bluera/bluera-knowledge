@@ -4,6 +4,16 @@ import type { SearchQuery, SearchResponse, SearchResult } from '../types/search.
 import type { StoreId } from '../types/brands.js';
 import { extractSnippet } from './snippet.service.js';
 
+// Known frameworks/technologies for context-aware boosting
+const FRAMEWORK_PATTERNS: Array<{ pattern: RegExp; terms: string[] }> = [
+  { pattern: /\bexpress\b/i, terms: ['express', 'expressjs', 'express.js'] },
+  { pattern: /\bhono\b/i, terms: ['hono'] },
+  { pattern: /\bzod\b/i, terms: ['zod'] },
+  { pattern: /\breact\b/i, terms: ['react', 'reactjs', 'react.js'] },
+  { pattern: /\bnode\b/i, terms: ['node', 'nodejs', 'node.js'] },
+  { pattern: /\btypescript\b/i, terms: ['typescript', 'ts'] },
+];
+
 interface RRFConfig {
   k: number;
   vectorWeight: number;
@@ -157,7 +167,7 @@ export class SearchService {
       }
     });
 
-    // Calculate RRF scores
+    // Calculate RRF scores with file-type boosting
     const rrfScores: Array<{ id: string; score: number; result: SearchResult }> = [];
     const { k, vectorWeight, ftsWeight } = this.rrfConfig;
 
@@ -168,9 +178,15 @@ export class SearchService {
       const vectorRRF = vectorRank !== Infinity ? vectorWeight / (k + vectorRank) : 0;
       const ftsRRF = ftsRank !== Infinity ? ftsWeight / (k + ftsRank) : 0;
 
+      // Apply file-type boost
+      const fileTypeBoost = this.getFileTypeBoost(result.metadata.fileType as string | undefined);
+
+      // Apply framework context boost
+      const frameworkBoost = this.getFrameworkContextBoost(query, result);
+
       rrfScores.push({
         id,
-        score: vectorRRF + ftsRRF,
+        score: (vectorRRF + ftsRRF) * fileTypeBoost * frameworkBoost,
         result,
       });
     }
@@ -203,5 +219,56 @@ export class SearchService {
       ...query,
       stores: storeIds,
     });
+  }
+
+  /**
+   * Get a score multiplier based on file type.
+   * Documentation files get a boost to surface them higher.
+   */
+  private getFileTypeBoost(fileType: string | undefined): number {
+    switch (fileType) {
+      case 'documentation-primary':
+        return 1.3;  // README, CHANGELOG get strong boost
+      case 'documentation':
+        return 1.2;  // Other docs get moderate boost
+      case 'example':
+        return 1.15; // Examples are valuable
+      case 'test':
+        return 0.95; // Tests slightly lower
+      case 'source':
+        return 1.0;  // Source code baseline
+      case 'config':
+        return 0.9;  // Config files usually less relevant
+      default:
+        return 1.0;
+    }
+  }
+
+  /**
+   * Get a score multiplier based on framework context.
+   * If query mentions a framework, boost results from that framework's files.
+   */
+  private getFrameworkContextBoost(query: string, result: SearchResult): number {
+    const path = result.metadata.path ?? result.metadata.url ?? '';
+    const content = result.content.toLowerCase();
+    const pathLower = path.toLowerCase();
+
+    // Check if query mentions any known frameworks
+    for (const { pattern, terms } of FRAMEWORK_PATTERNS) {
+      if (pattern.test(query)) {
+        // Query mentions this framework - check if result is from that framework
+        const resultMatchesFramework = terms.some(term =>
+          pathLower.includes(term) || content.includes(term)
+        );
+
+        if (resultMatchesFramework) {
+          return 1.4; // Strong boost for matching framework
+        } else {
+          return 0.7; // Penalty for non-matching when framework is specified
+        }
+      }
+    }
+
+    return 1.0; // No framework context in query
   }
 }

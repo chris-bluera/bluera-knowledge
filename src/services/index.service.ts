@@ -1,5 +1,5 @@
-import { readFile, readdir, stat } from 'node:fs/promises';
-import { join, extname } from 'node:path';
+import { readFile, readdir } from 'node:fs/promises';
+import { join, extname, basename } from 'node:path';
 import { createHash } from 'node:crypto';
 import type { LanceStore } from '../db/lance.js';
 import type { EmbeddingEngine } from '../db/embeddings.js';
@@ -77,7 +77,13 @@ export class IndexService {
     for (const filePath of files) {
       const content = await readFile(filePath, 'utf-8');
       const fileHash = createHash('md5').update(content).digest('hex');
-      const chunks = this.chunker.chunk(content);
+      // Pass file path for semantic Markdown chunking
+      const chunks = this.chunker.chunk(content, filePath);
+
+      // Determine file type for ranking
+      const ext = extname(filePath).toLowerCase();
+      const fileName = basename(filePath).toLowerCase();
+      const fileType = this.classifyFileType(ext, fileName, filePath);
 
       for (const chunk of chunks) {
         const vector = await this.embeddingEngine.embed(chunk.content);
@@ -97,6 +103,9 @@ export class IndexService {
             fileHash,
             chunkIndex: chunk.chunkIndex,
             totalChunks: chunk.totalChunks,
+            // New metadata for ranking
+            fileType,
+            sectionHeader: chunk.sectionHeader,
           },
         };
         documents.push(doc);
@@ -152,5 +161,46 @@ export class IndexService {
     }
 
     return files;
+  }
+
+  /**
+   * Classify file type for ranking purposes.
+   * Documentation files rank higher than source code for documentation queries.
+   */
+  private classifyFileType(ext: string, fileName: string, filePath: string): string {
+    // Documentation files
+    if (ext === '.md') {
+      // Special doc files get highest priority
+      if (['readme.md', 'changelog.md', 'migration.md', 'contributing.md'].includes(fileName)) {
+        return 'documentation-primary';
+      }
+      // Check path for documentation indicators
+      if (/\/(docs?|documentation|guides?|tutorials?|articles?)\//i.test(filePath)) {
+        return 'documentation';
+      }
+      return 'documentation';
+    }
+
+    // Test files
+    if (/\.(test|spec)\.[jt]sx?$/.test(fileName) || /\/__tests__\//.test(filePath)) {
+      return 'test';
+    }
+
+    // Example files
+    if (/\/examples?\//.test(filePath) || fileName.includes('example')) {
+      return 'example';
+    }
+
+    // Config files
+    if (/^(tsconfig|package|\.eslint|\.prettier|vite\.config|next\.config)/i.test(fileName)) {
+      return 'config';
+    }
+
+    // Source code
+    if (['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.java'].includes(ext)) {
+      return 'source';
+    }
+
+    return 'other';
   }
 }
