@@ -21,6 +21,7 @@
     "test:quality:queries": "npx tsx tests/scripts/quality-queries.ts",
     "test:quality:generate": "npx tsx tests/scripts/quality-queries.ts --generate",
     "test:quality:review": "npx tsx tests/scripts/quality-review.ts",
+    "test:quality:show": "npx tsx tests/scripts/quality-show.ts",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },

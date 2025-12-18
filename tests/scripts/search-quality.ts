@@ -471,7 +471,7 @@ async function main() {
       querySet = loadQuerySet(querySetName);
       console.log(`📋 Loaded ${querySet.queries.length} queries from ${querySetName}.json\n`);
     }
-    queries = querySet.queries.map(q => ({ query: q.query, intent: q.intent }));
+    queries = querySet.queries.map(q => ({ id: q.id, query: q.query, intent: q.intent }));
   }
 
   // Phase 2: Evaluate each query

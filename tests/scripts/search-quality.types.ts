@@ -53,6 +53,7 @@ export interface Baseline {
 
 // Query generation types
 export interface GeneratedQuery {
+  id?: string;
   query: string;
   intent: string;
   taskContext?: string;
