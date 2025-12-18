@@ -43,7 +43,7 @@ ${seedQueries.length > 0 ? `Existing queries to build on:\n${seedQueries.map(q =
 For each query provide:
 - query: the search string
 - intent: what the user is trying to find
-- category: one of code-pattern, concept, api-reference, troubleshooting, comparison
+- category: one of implementation, debugging, understanding, decision, pattern
 
 Return as JSON array.`;
 
@@ -215,12 +215,12 @@ async function reviewQueries(setName: string): Promise<void> {
     } else if (action === 'a' || action === 'add') {
       const newQuery = await prompt.question('Query: ');
       const newIntent = await prompt.question('Intent: ');
-      const newCategory = await prompt.question('Category (code-pattern/concept/api-reference/troubleshooting/comparison): ');
+      const newCategory = await prompt.question('Category (implementation/debugging/understanding/decision/pattern): ');
       queries.push({
         id: `manual-${queries.length + 1}`,
         query: newQuery.trim(),
         intent: newIntent.trim(),
-        category: (newCategory.trim() || 'code-pattern') as CoreQuery['category'],
+        category: (newCategory.trim() || 'implementation') as CoreQuery['category'],
       });
     } else if (action === 'q' || action === 'quit') {
       prompt.close();

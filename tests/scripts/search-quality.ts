@@ -455,7 +455,7 @@ async function main() {
         id: `gen-${i + 1}`,
         query: q.query,
         intent: q.intent,
-        category: 'code-pattern' as const,
+        category: 'implementation' as const,
       })),
       source: 'ai-generated',
       generatedAt: new Date().toISOString(),
