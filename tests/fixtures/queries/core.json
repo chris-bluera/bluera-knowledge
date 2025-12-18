@@ -1,96 +1,108 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Stable regression benchmark queries for search quality testing",
   "queries": [
     {
-      "id": "code-001",
-      "query": "zod schema validation",
-      "intent": "Find documentation or examples of Zod schema validation",
+      "id": "vue-001",
+      "query": "vue reactive ref",
+      "intent": "Find documentation on Vue's ref() function for reactive state",
       "category": "api-reference"
     },
     {
-      "id": "code-002",
-      "query": "zod object refine custom validation",
-      "intent": "Find how to use refine() method for custom validation logic in Zod schemas",
+      "id": "vue-002",
+      "query": "vue computed properties",
+      "intent": "Find how to use computed() for derived reactive state in Vue",
       "category": "code-pattern"
     },
     {
-      "id": "code-003",
+      "id": "vue-003",
+      "query": "vue component props validation",
+      "intent": "Find how to define and validate props in Vue components",
+      "category": "api-reference"
+    },
+    {
+      "id": "express-001",
       "query": "express middleware error handling",
       "intent": "Find patterns for error handling middleware in Express applications",
       "category": "code-pattern"
     },
     {
-      "id": "code-004",
+      "id": "express-002",
       "query": "express route parameters",
       "intent": "Find documentation on how to define and use route parameters in Express",
       "category": "api-reference"
     },
     {
-      "id": "code-005",
+      "id": "express-003",
+      "query": "express router modular routes",
+      "intent": "Find how to use express.Router() for modular route handling",
+      "category": "code-pattern"
+    },
+    {
+      "id": "express-004",
+      "query": "express async error handling",
+      "intent": "Find how to properly handle async/await errors in Express routes",
+      "category": "troubleshooting"
+    },
+    {
+      "id": "jwt-001",
       "query": "jwt token verification",
       "intent": "Find how to verify JWT tokens for authentication",
       "category": "code-pattern"
     },
     {
-      "id": "code-006",
+      "id": "jwt-002",
       "query": "jwt decode vs verify difference",
       "intent": "Understand the difference between decoding and verifying JWT tokens",
       "category": "comparison"
     },
     {
-      "id": "code-007",
+      "id": "ts-001",
       "query": "typescript generic constraints",
       "intent": "Find how to use constraints with TypeScript generics",
       "category": "concept"
     },
     {
-      "id": "code-008",
+      "id": "ts-002",
       "query": "typescript mapped types",
       "intent": "Find documentation and examples of mapped types in TypeScript",
       "category": "api-reference"
     },
     {
-      "id": "code-009",
+      "id": "react-001",
       "query": "react useEffect cleanup function",
       "intent": "Find how to properly use cleanup functions in useEffect hook",
       "category": "code-pattern"
     },
     {
-      "id": "code-010",
+      "id": "react-002",
       "query": "react hooks dependency array",
       "intent": "Understand how dependency arrays work in React hooks",
       "category": "concept"
     },
     {
-      "id": "code-011",
+      "id": "hono-001",
       "query": "hono routing wildcard",
       "intent": "Find how to use wildcard routes in Hono web framework",
       "category": "api-reference"
     },
     {
-      "id": "code-012",
+      "id": "hono-002",
       "query": "hono vs express performance",
       "intent": "Compare performance characteristics between Hono and Express frameworks",
       "category": "comparison"
     },
     {
-      "id": "code-013",
+      "id": "node-001",
       "query": "node streams pipeline error handling",
       "intent": "Find how to handle errors in Node.js stream pipelines",
       "category": "troubleshooting"
     },
     {
-      "id": "code-014",
+      "id": "node-002",
       "query": "node readable stream backpressure",
       "intent": "Understand how backpressure works in Node.js readable streams",
       "category": "concept"
-    },
-    {
-      "id": "code-015",
-      "query": "zod parse vs safeParse",
-      "intent": "Compare parse and safeParse methods in Zod for error handling approaches",
-      "category": "comparison"
     }
   ]
 }
