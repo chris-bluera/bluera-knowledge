@@ -1,6 +1,8 @@
 import { Command } from 'commander';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import { execSync, type ExecSyncOptionsWithStringEncoding } from 'node:child_process';
+import { createInterface } from 'node:readline';
 import type { GlobalOptions } from '../program.js';
 
 // ============================================================================
@@ -18,9 +20,10 @@ interface Scores {
 interface QueryEvaluation {
   timestamp: string;
   query: { id?: string; query: string; intent: string };
-  searchResults: Array<{ source: string; snippet: string }>;
-  evaluation: { scores: Scores };
+  searchResults: Array<{ source: string; snippet: string; score?: number }>;
+  evaluation: EvaluationResult;
   searchTimeMs: number;
+  evaluationTimeMs?: number;
 }
 
 interface RunSummary {
@@ -42,7 +45,7 @@ interface RunSummary {
 interface QuerySet {
   version: string;
   description: string;
-  queries: Array<{ id: string; query: string; category: string }>;
+  queries: Array<{ id: string; query: string; category: string; intent: string }>;
   source?: 'curated' | 'ai-generated';
 }
 
@@ -68,6 +71,81 @@ interface RunInfo {
   overallScore: number;
   hasHilReview: boolean;
   timestamp: string;
+}
+
+interface QualityConfig {
+  queryCount: number;
+  searchLimit: number;
+  searchMode: 'hybrid' | 'semantic' | 'keyword';
+  stores: string[] | null;
+  timeoutMs: number;
+  querySet: string;
+  corpusVersion: string;
+}
+
+interface Baseline {
+  updatedAt: string;
+  corpus: string;
+  querySet: string;
+  scores: Scores;
+  thresholds: {
+    regression: number;
+    improvement: number;
+  };
+}
+
+interface EvaluationResult {
+  scores: Scores;
+  analysis: {
+    relevance: string;
+    ranking: string;
+    coverage: string;
+    snippetQuality: string;
+  };
+  suggestions: string[];
+  resultAssessments: Array<{
+    rank: number;
+    source: string;
+    relevant: boolean;
+    note?: string;
+  }>;
+}
+
+interface CoreQuery {
+  id: string;
+  query: string;
+  intent: string;
+  taskContext?: string;
+  category: 'implementation' | 'debugging' | 'understanding' | 'decision' | 'pattern';
+}
+
+type HilJudgment = 'good' | 'okay' | 'poor' | 'terrible';
+
+const HIL_JUDGMENT_SCORES: Record<HilJudgment, number> = {
+  good: 1.0,
+  okay: 0.7,
+  poor: 0.4,
+  terrible: 0.1,
+};
+
+interface HilQueryData {
+  reviewed: boolean;
+  judgment?: HilJudgment;
+  humanScore?: number;
+  note?: string;
+  flagged?: boolean;
+  reviewedAt?: string;
+}
+
+interface HilReviewSummary {
+  reviewedAt: string;
+  queriesReviewed: number;
+  queriesSkipped: number;
+  queriesFlagged: number;
+  humanAverageScore: number;
+  aiVsHumanDelta: number;
+  synthesis: string;
+  actionItems: string[];
 }
 
 // ============================================================================
@@ -117,9 +195,10 @@ function pad(str: string, width: number, align: 'left' | 'right' | 'center' = 'l
   switch (align) {
     case 'right':
       return ' '.repeat(padding) + truncated;
-    case 'center':
+    case 'center': {
       const left = Math.floor(padding / 2);
       return ' '.repeat(left) + truncated + ' '.repeat(padding - left);
+    }
     default:
       return truncated + ' '.repeat(padding);
   }
@@ -142,7 +221,7 @@ function drawTable(config: TableConfig, rows: string[][]): string {
 
   const lines: string[] = [];
 
-  if (config.title) {
+  if (config.title !== undefined && config.title !== '') {
     const totalWidth = widths.reduce((a, b) => a + b, 0) + (widths.length - 1) * 3 + 4;
     lines.push(drawLine(widths, BOX.topLeft, BOX.topT, BOX.topRight));
     lines.push(BOX.vertical + ' ' + pad(config.title, totalWidth - 4, 'left') + ' ' + BOX.vertical);
@@ -190,12 +269,12 @@ function formatScore(score: number, decimals: number = 2): string {
 }
 
 function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
+  if (ms < 1000) return `${String(ms)}ms`;
   const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 60) return `${String(seconds)}s`;
   const minutes = Math.floor(seconds / 60);
   const remaining = seconds % 60;
-  return `${minutes}m${remaining}s`;
+  return `${String(minutes)}m${String(remaining)}s`;
 }
 
 function getTrend(current: number, previous: number): string {
@@ -207,7 +286,7 @@ function getTrend(current: number, previous: number): string {
 
 function shortPath(fullPath: string, maxLen: number = 20): string {
   const match = fullPath.match(/corpus\/(.+)/);
-  if (match && match[1]) {
+  if (match !== null && match[1] !== undefined && match[1] !== '') {
     return truncate(match[1], maxLen);
   }
   const parts = fullPath.split('/');
@@ -242,13 +321,203 @@ function getCorpusDir(): string {
   return join(getProjectRoot(), 'tests', 'fixtures', 'corpus');
 }
 
+function getSchemasDir(): string {
+  return join(getProjectRoot(), 'tests', 'scripts', 'schemas');
+}
+
+// ============================================================================
+// Shell and Claude CLI Helpers
+// ============================================================================
+
+const STORE_NAME = 'bluera-test-corpus';
+const CLAUDE_CLI = process.env['CLAUDE_CLI'] ?? `${process.env['HOME'] ?? ''}/.claude/local/claude`;
+
+function runCommand(command: string, options: { cwd: string; timeout: number; maxBuffer?: number }): string {
+  const execOptions: ExecSyncOptionsWithStringEncoding = {
+    encoding: 'utf-8',
+    cwd: options.cwd,
+    timeout: options.timeout,
+    maxBuffer: options.maxBuffer ?? 10 * 1024 * 1024,
+    shell: '/bin/sh',
+  };
+  return execSync(command, execOptions);
+}
+
+function shellEscape(str: string): string {
+  return `'${str.replace(/'/g, "'\"'\"'")}'`;
+}
+
+function parseClaudeOutput(output: string): unknown {
+  if (output === '' || output.trim() === '') {
+    throw new Error('Claude CLI returned empty output');
+  }
+
+  let wrapper;
+  try {
+    wrapper = JSON.parse(output) as {
+      result: string;
+      is_error: boolean;
+      structured_output?: unknown;
+    };
+  } catch (e) {
+    console.error('Failed to parse Claude CLI wrapper. Raw output (first 500 chars):', output.slice(0, 500));
+    throw e;
+  }
+
+  if (wrapper.is_error) {
+    throw new Error(`Claude CLI error: ${wrapper.result}`);
+  }
+
+  if (wrapper.structured_output !== undefined) {
+    return wrapper.structured_output;
+  }
+
+  let result = wrapper.result;
+  const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch !== null && codeBlockMatch[1] !== undefined && codeBlockMatch[1] !== '') {
+    result = codeBlockMatch[1].trim();
+  } else {
+    const jsonObjectMatch = result.match(/(\{[\s\S]*\})/);
+    const jsonArrayMatch = result.match(/(\[[\s\S]*\])/);
+    if (jsonObjectMatch !== null && jsonObjectMatch[1] !== undefined) {
+      result = jsonObjectMatch[1];
+    } else if (jsonArrayMatch !== null && jsonArrayMatch[1] !== undefined) {
+      result = jsonArrayMatch[1];
+    }
+  }
+
+  try {
+    return JSON.parse(result) as unknown;
+  } catch (e) {
+    console.error('Failed to parse result as JSON. Result (first 1000 chars):', result.slice(0, 1000));
+    throw e;
+  }
+}
+
+function validateClaudeEnvironment(): void {
+  if (!existsSync(CLAUDE_CLI)) {
+    throw new Error(`Claude CLI not found at ${CLAUDE_CLI}. Set CLAUDE_CLI env var to the correct path.`);
+  }
+  try {
+    runCommand(`${CLAUDE_CLI} --version`, { cwd: getProjectRoot(), timeout: 10000 });
+  } catch (error) {
+    throw new Error(`Claude CLI at ${CLAUDE_CLI} is not working: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function createPrompt(): { question: (q: string) => Promise<string>; close: () => void } {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return {
+    question: (q: string): Promise<string> => new Promise<string>(resolve => { rl.question(q, resolve); }),
+    close: (): void => { rl.close(); },
+  };
+}
+
+function formatJudgmentPrompt(): string {
+  return '[g]ood  [o]kay  [p]oor  [t]errible  [n]ote only  [enter] skip';
+}
+
+function parseJudgment(input: string): HilJudgment | 'note' | 'skip' {
+  const lower = input.toLowerCase().trim();
+  if (lower === '' || lower === 's') return 'skip';
+  if (lower === 'g' || lower === 'good') return 'good';
+  if (lower === 'o' || lower === 'okay') return 'okay';
+  if (lower === 'p' || lower === 'poor') return 'poor';
+  if (lower === 't' || lower === 'terrible') return 'terrible';
+  if (lower === 'n' || lower === 'note') return 'note';
+  return 'skip';
+}
+
+// ============================================================================
+// Config and Schema Loading
+// ============================================================================
+
+function loadConfig(): QualityConfig {
+  const configPath = join(getProjectRoot(), 'tests', 'quality-config.json');
+  const defaultConfig: QualityConfig = {
+    queryCount: 15,
+    searchLimit: 10,
+    searchMode: 'hybrid',
+    stores: null,
+    timeoutMs: 120000,
+    querySet: 'core',
+    corpusVersion: '1.0.0',
+  };
+
+  if (existsSync(configPath)) {
+    const userConfig = JSON.parse(readFileSync(configPath, 'utf-8')) as Partial<QualityConfig>;
+    return { ...defaultConfig, ...userConfig };
+  }
+  return defaultConfig;
+}
+
+function loadSchema(name: string): string {
+  return readFileSync(join(getSchemasDir(), `${name}.json`), 'utf-8');
+}
+
+function loadBaseline(): Baseline | null {
+  const baselinePath = join(getResultsDir(), 'baseline.json');
+  if (!existsSync(baselinePath)) {
+    return null;
+  }
+  return JSON.parse(readFileSync(baselinePath, 'utf-8')) as Baseline;
+}
+
+function saveBaseline(scores: Scores, config: QualityConfig): void {
+  const baselinePath = join(getResultsDir(), 'baseline.json');
+  const querySetData = loadQuerySet(config.querySet);
+  const baseline: Baseline = {
+    updatedAt: new Date().toISOString().split('T')[0] ?? '',
+    corpus: config.corpusVersion,
+    querySet: `${config.querySet}@${querySetData.version}`,
+    scores,
+    thresholds: {
+      regression: 0.05,
+      improvement: 0.03,
+    },
+  };
+  writeFileSync(baselinePath, JSON.stringify(baseline, null, 2));
+  console.log(`\n✅ Baseline saved to ${baselinePath}`);
+}
+
+function loadAllQuerySets(): QuerySet {
+  const sets = listQuerySets().filter(s => s.source === 'curated');
+  const combined: QuerySet = {
+    version: '1.0.0',
+    description: 'Combined curated query sets',
+    queries: [],
+    source: 'curated',
+  };
+
+  for (const set of sets) {
+    const data = JSON.parse(readFileSync(set.path, 'utf-8')) as QuerySet;
+    combined.queries.push(...data.queries.map(q => ({
+      ...q,
+      id: `${set.name}:${q.id}`,
+    })));
+  }
+
+  return combined;
+}
+
 // ============================================================================
 // Data Loading Helpers
 // ============================================================================
 
+interface RunFileLine {
+  type: string;
+  timestamp?: string;
+  runId?: string;
+  config?: Record<string, unknown>;
+  data?: unknown;
+}
+
 function parseRunFile(path: string): ParsedRun {
   const content = readFileSync(path, 'utf-8');
-  const lines = content.trim().split('\n').map(l => JSON.parse(l));
+  const lines = content.trim().split('\n').map(l => JSON.parse(l) as RunFileLine);
 
   const evaluations: QueryEvaluation[] = [];
   let summary: RunSummary | null = null;
@@ -256,7 +525,7 @@ function parseRunFile(path: string): ParsedRun {
 
   for (const line of lines) {
     if (line.type === 'run_start') {
-      runStart = { timestamp: line.timestamp, runId: line.runId, config: line.config };
+      runStart = { timestamp: line.timestamp ?? '', runId: line.runId ?? '', config: line.config ?? {} };
     } else if (line.type === 'query_evaluation') {
       evaluations.push(line.data as QueryEvaluation);
     } else if (line.type === 'run_summary') {
@@ -350,16 +619,17 @@ function listRuns(): RunInfo[] {
     const lines = readFileSync(path, 'utf-8').trim().split('\n');
 
     for (const line of lines) {
-      const parsed = JSON.parse(line);
-      if (parsed.type === 'run_summary') {
+      const parsed = JSON.parse(line) as RunFileLine;
+      if (parsed.type === 'run_summary' && parsed.data !== undefined) {
+        const data = parsed.data as RunSummary;
         runs.push({
           id: basename(file, '.jsonl'),
           path,
-          querySet: parsed.data.config?.querySet ?? 'unknown',
-          queryCount: parsed.data.totalQueries,
-          overallScore: parsed.data.averageScores?.overall ?? 0,
-          hasHilReview: !!parsed.data.hilReview,
-          timestamp: parsed.data.timestamp,
+          querySet: data.config.querySet,
+          queryCount: data.totalQueries,
+          overallScore: data.averageScores.overall,
+          hasHilReview: data.hilReview !== undefined,
+          timestamp: data.timestamp,
         });
         break;
       }
@@ -383,8 +653,8 @@ function showCorpus(): void {
     const content = readFileSync(versionPath, 'utf-8');
     const versionMatch = content.match(/Current Version:\s*(\S+)/);
     const updatedMatch = content.match(/Last Updated\s*\n(\d{4}-\d{2}-\d{2})/);
-    if (versionMatch && versionMatch[1]) version = versionMatch[1];
-    if (updatedMatch && updatedMatch[1]) updated = updatedMatch[1];
+    if (versionMatch !== null && versionMatch[1] !== undefined && versionMatch[1] !== '') version = versionMatch[1];
+    if (updatedMatch !== null && updatedMatch[1] !== undefined && updatedMatch[1] !== '') updated = updatedMatch[1];
   }
 
   const directories = [
@@ -402,7 +672,7 @@ function showCorpus(): void {
     const path = join(corpusDir, dir.name);
     const count = countFilesRecursive(path);
     totalFiles += count;
-    rows.push([dir.name, `${count} files`, dir.desc]);
+    rows.push([dir.name, `${String(count)} files`, dir.desc]);
   }
 
   console.log();
@@ -415,7 +685,7 @@ function showCorpus(): void {
     ],
   }, rows));
 
-  console.log(`\n  Total: ${totalFiles} files indexed\n`);
+  console.log(`\n  Total: ${String(totalFiles)} files indexed\n`);
 }
 
 function showQueries(verbose: boolean = false): void {
@@ -766,6 +1036,751 @@ function showTrends(limit: number = 10): void {
 }
 
 // ============================================================================
+// Action Commands
+// ============================================================================
+
+async function doIndex(): Promise<void> {
+  console.log('\n🔧 Corpus Index Setup');
+  console.log(`   Store: ${STORE_NAME}`);
+  console.log(`   Corpus: ${getCorpusDir()}`);
+
+  const corpusDir = getCorpusDir();
+  if (!existsSync(corpusDir)) {
+    console.error(`❌ Corpus directory not found: ${corpusDir}`);
+    process.exit(1);
+  }
+
+  const projectRoot = getProjectRoot();
+
+  // Check if store exists, delete if so
+  try {
+    execSync(`node dist/index.js store info ${STORE_NAME}`, {
+      cwd: projectRoot,
+      stdio: 'pipe',
+    });
+    console.log(`\n⚠️  Store "${STORE_NAME}" exists, deleting...`);
+    console.log('\n📌 Deleting existing store...');
+    execSync(`node dist/index.js store delete ${STORE_NAME} --force`, {
+      cwd: projectRoot,
+      stdio: 'inherit',
+    });
+  } catch {
+    // Store doesn't exist, that's fine
+  }
+
+  // Create store
+  console.log('\n📌 Creating test store...');
+  execSync(
+    `node dist/index.js store create ${STORE_NAME} --type file --source "${corpusDir}" --description "Test corpus for search quality benchmarks"`,
+    { cwd: projectRoot, stdio: 'inherit' }
+  );
+
+  // Index the store
+  console.log('\n📌 Indexing corpus...');
+  execSync(`node dist/index.js index ${STORE_NAME}`, {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+
+  // Show store info
+  console.log('\n📌 Verifying store...');
+  execSync(`node dist/index.js store info ${STORE_NAME}`, {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+
+  console.log('\n✅ Corpus indexed successfully!');
+  console.log(`   Run quality tests with: ./dist/index.js quality test`);
+}
+
+interface SearchResult {
+  rank: number;
+  score: number;
+  source: string;
+  content: string;
+}
+
+function runSearch(query: string, config: QualityConfig): { results: SearchResult[]; timeMs: number } {
+  const startTime = Date.now();
+  const args = [
+    'node', 'dist/index.js', 'search',
+    JSON.stringify(query),
+    '--mode', config.searchMode,
+    '--limit', String(config.searchLimit),
+    '--include-content',
+  ];
+
+  if (config.stores && config.stores.length > 0) {
+    args.push('--stores', config.stores.join(','));
+  }
+
+  const rawOutput = runCommand(args.join(' '), {
+    cwd: getProjectRoot(),
+    timeout: config.timeoutMs,
+  });
+
+  const results: SearchResult[] = [];
+  const lines = rawOutput.split('\n');
+  let currentResult: Partial<SearchResult> | null = null;
+
+  for (const line of lines) {
+    const headerMatch = line.match(/^(\d+)\.\s+\[(-?[0-9.]+)\]\s+(.+)$/);
+    if (headerMatch && headerMatch[1] && headerMatch[2] && headerMatch[3]) {
+      if (currentResult && currentResult.content !== undefined) {
+        results.push(currentResult as SearchResult);
+      }
+      currentResult = {
+        rank: parseInt(headerMatch[1], 10),
+        score: parseFloat(headerMatch[2]),
+        source: headerMatch[3].trim(),
+        content: '',
+      };
+    } else if (currentResult && line.startsWith('   ')) {
+      currentResult.content += (currentResult.content ? '\n' : '') + line.trim();
+    }
+  }
+  if (currentResult && currentResult.content !== undefined) {
+    results.push(currentResult as SearchResult);
+  }
+
+  return { results, timeMs: Date.now() - startTime };
+}
+
+function evaluateResults(
+  query: string,
+  intent: string,
+  results: SearchResult[],
+  config: QualityConfig
+): { evaluation: EvaluationResult; timeMs: number } {
+  const startTime = Date.now();
+  const schema = loadSchema('evaluation');
+
+  const resultsForPrompt = results.map(r => ({
+    rank: r.rank,
+    score: r.score,
+    source: r.source,
+    contentPreview: r.content.slice(0, 500) + (r.content.length > 500 ? '...' : ''),
+  }));
+
+  const prompt = `You are evaluating search results for an AI coding assistant. The assistant queried a knowledge base to help complete a coding task.
+
+**Coding Task Query:** "${query}"
+**What the agent is trying to do:** ${intent}
+
+**Search Results Returned (${results.length}):**
+${JSON.stringify(resultsForPrompt, null, 2)}
+
+Evaluate whether these results would help an agent COMPLETE THE CODING TASK (0.0 to 1.0 scale):
+
+1. **Relevance**: Would these results help solve the problem? (Not just "related to the topic" but actually actionable)
+2. **Ranking**: Is the MOST ACTIONABLE result ranked first? Does the top result show HOW to solve the problem?
+3. **Coverage**: Does the agent have all the information needed to complete the task? Any critical pieces missing?
+4. **Snippet Quality**: Do the previews show code examples or clear instructions? (Not just topic mentions)
+5. **Overall**: If you were the agent, could you complete the task with these results?
+
+Key distinction:
+- HIGH score = "These results show me exactly how to solve this"
+- LOW score = "These results mention the topic but don't help me actually do it"
+
+Provide:
+- Numeric scores for each dimension
+- Analysis focused on task completion potential
+- Suggestions for improving search to return more actionable results
+- Assessment of each result: would it help complete the task? (with notes)
+
+Be critical. A result that just mentions "Vue reactivity" is not helpful if it doesn't show HOW to use ref().`;
+
+  const normalizedSchema = JSON.stringify(JSON.parse(schema));
+  const args = [
+    CLAUDE_CLI,
+    '-p', shellEscape(prompt),
+    '--output-format', 'json',
+    '--json-schema', shellEscape(normalizedSchema),
+  ];
+
+  const result = runCommand(args.join(' '), {
+    cwd: getProjectRoot(),
+    timeout: config.timeoutMs,
+  });
+
+  return {
+    evaluation: parseClaudeOutput(result) as EvaluationResult,
+    timeMs: Date.now() - startTime,
+  };
+}
+
+function calculateAverageScores(evaluations: QueryEvaluation[]): Scores {
+  const avgScores: Scores = {
+    relevance: 0,
+    ranking: 0,
+    coverage: 0,
+    snippetQuality: 0,
+    overall: 0,
+  };
+
+  for (const eval_ of evaluations) {
+    avgScores.relevance += eval_.evaluation.scores.relevance;
+    avgScores.ranking += eval_.evaluation.scores.ranking;
+    avgScores.coverage += eval_.evaluation.scores.coverage;
+    avgScores.snippetQuality += eval_.evaluation.scores.snippetQuality;
+    avgScores.overall += eval_.evaluation.scores.overall;
+  }
+
+  const count = evaluations.length || 1;
+  avgScores.relevance = Math.round((avgScores.relevance / count) * 100) / 100;
+  avgScores.ranking = Math.round((avgScores.ranking / count) * 100) / 100;
+  avgScores.coverage = Math.round((avgScores.coverage / count) * 100) / 100;
+  avgScores.snippetQuality = Math.round((avgScores.snippetQuality / count) * 100) / 100;
+  avgScores.overall = Math.round((avgScores.overall / count) * 100) / 100;
+
+  return avgScores;
+}
+
+function extractTopSuggestions(evaluations: QueryEvaluation[]): string[] {
+  const suggestionCounts = new Map<string, number>();
+  for (const eval_ of evaluations) {
+    for (const suggestion of eval_.evaluation.suggestions) {
+      const key = suggestion.toLowerCase().slice(0, 100);
+      suggestionCounts.set(key, (suggestionCounts.get(key) || 0) + 1);
+    }
+  }
+
+  return [...suggestionCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([issue]) => issue);
+}
+
+interface QueryGenerationResult {
+  queries: Array<{ query: string; intent: string }>;
+}
+
+function generateQueriesFromCorpus(config: QualityConfig): QueryGenerationResult {
+  console.log('🔍 Generating test queries from tests/fixtures/...');
+
+  const schema = loadSchema('query-generation');
+  const prompt = `You have access to explore the tests/fixtures/ directory which contains content that has been indexed in a knowledge store search system.
+
+Your task:
+1. Use the Glob and Read tools to explore tests/fixtures/ and understand what content is available
+2. Generate exactly ${config.queryCount} diverse search queries that would thoroughly test the search system
+
+Generate queries that:
+- Cover different content types (code, documentation, READMEs)
+- Range from specific (function names) to conceptual (design patterns)
+- Include some ambiguous queries that could match multiple files
+- Test edge cases (very short queries, natural language questions)
+
+Return your queries in the specified JSON format.`;
+
+  const normalizedSchema = JSON.stringify(JSON.parse(schema));
+  const args = [
+    CLAUDE_CLI,
+    '-p', shellEscape(prompt),
+    '--output-format', 'json',
+    '--json-schema', shellEscape(normalizedSchema),
+    '--allowedTools', 'Glob,Read',
+  ];
+
+  const result = runCommand(args.join(' '), {
+    cwd: getProjectRoot(),
+    timeout: config.timeoutMs * 2,
+  });
+
+  const parsed = parseClaudeOutput(result) as QueryGenerationResult;
+  console.log(`✓ Generated ${String(parsed.queries.length)} queries\n`);
+  return parsed;
+}
+
+async function doTest(options: {
+  explore?: boolean;
+  set?: string;
+  quiet?: boolean;
+  updateBaseline?: boolean;
+}): Promise<void> {
+  validateClaudeEnvironment();
+
+  const startTime = Date.now();
+  const config = loadConfig();
+  const runId = Math.random().toString(36).substring(2, 10);
+  const querySetName = options.set || (options.explore ? 'explore' : config.querySet);
+
+  console.log('🚀 AI Search Quality Testing');
+  console.log(`   Run ID: ${runId}`);
+  console.log(`   Query set: ${querySetName}`);
+  console.log(`   Search mode: ${config.searchMode}`);
+  console.log(`   Stores: ${config.stores?.join(', ') || 'all'}\n`);
+
+  const baseline = loadBaseline();
+  if (baseline) {
+    console.log(`📊 Baseline: ${baseline.querySet} (${baseline.updatedAt})`);
+    console.log(`   Overall: ${baseline.scores.overall}\n`);
+  }
+
+  const resultsDir = getResultsDir();
+  if (!existsSync(resultsDir)) {
+    mkdirSync(resultsDir, { recursive: true });
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const outputPath = join(resultsDir, `${timestamp}.jsonl`);
+
+  appendFileSync(outputPath, JSON.stringify({
+    type: 'run_start',
+    timestamp: new Date().toISOString(),
+    runId,
+    config: { ...config, querySet: querySetName },
+  }) + '\n');
+
+  let queries: Array<{ id?: string; query: string; intent: string }>;
+
+  if (options.explore) {
+    console.log('🔍 Generating exploratory queries...');
+    const generated = generateQueriesFromCorpus(config);
+    queries = generated.queries;
+
+    const generatedDir = join(getQueriesDir(), 'generated');
+    if (!existsSync(generatedDir)) {
+      mkdirSync(generatedDir, { recursive: true });
+    }
+    const generatedPath = join(generatedDir, `${timestamp}.json`);
+    const generatedSet: QuerySet = {
+      version: '1.0.0',
+      description: `AI-generated queries from ${timestamp}`,
+      queries: queries.map((q, i) => ({
+        id: `gen-${i + 1}`,
+        query: q.query,
+        intent: q.intent,
+        category: 'implementation' as const,
+      })),
+      source: 'ai-generated',
+    };
+    writeFileSync(generatedPath, JSON.stringify(generatedSet, null, 2));
+    console.log(`   Saved to: ${generatedPath}\n`);
+  } else {
+    let querySet: QuerySet;
+    if (querySetName === 'all') {
+      querySet = loadAllQuerySets();
+      console.log(`📋 Loaded ${querySet.queries.length} queries from all curated sets\n`);
+    } else {
+      querySet = loadQuerySet(querySetName);
+      console.log(`📋 Loaded ${querySet.queries.length} queries from ${querySetName}.json\n`);
+    }
+    queries = querySet.queries.map(q => ({ id: q.id, query: q.query, intent: q.intent }));
+  }
+
+  console.log('📊 Evaluating search quality...');
+  const evaluations: QueryEvaluation[] = [];
+
+  for (const q of queries) {
+    const progress = `[${evaluations.length + 1}/${queries.length}]`;
+
+    const { results, timeMs: searchTimeMs } = runSearch(q.query, config);
+    const { evaluation, timeMs: evaluationTimeMs } = evaluateResults(
+      q.query,
+      q.intent,
+      results,
+      config
+    );
+
+    const record: QueryEvaluation = {
+      timestamp: new Date().toISOString(),
+      query: q,
+      searchResults: results.map(r => ({
+        source: r.source,
+        snippet: r.content.slice(0, 200),
+        score: r.score,
+      })),
+      evaluation,
+      searchTimeMs,
+      evaluationTimeMs,
+    };
+
+    evaluations.push(record);
+    appendFileSync(outputPath, JSON.stringify({ type: 'query_evaluation', data: record }) + '\n');
+
+    if (options.quiet) {
+      console.log(`  ${progress} "${q.query.slice(0, 40)}${q.query.length > 40 ? '...' : ''}" - overall: ${evaluation.scores.overall.toFixed(2)}`);
+    } else {
+      console.log(`\n${progress} "${q.query}"`);
+      for (const r of results.slice(0, 5)) {
+        console.log(`  → ${r.rank}. [${r.score.toFixed(2)}] ${r.source}`);
+        const snippet = r.content.slice(0, 100).replace(/\n/g, ' ');
+        console.log(`       "${snippet}${r.content.length > 100 ? '...' : ''}"`);
+      }
+      if (results.length > 5) {
+        console.log(`  ... and ${results.length - 5} more results`);
+      }
+      const s = evaluation.scores;
+      console.log(`  ✓ AI: relevance=${s.relevance.toFixed(2)} ranking=${s.ranking.toFixed(2)} coverage=${s.coverage.toFixed(2)} snippet=${s.snippetQuality.toFixed(2)} overall=${s.overall.toFixed(2)}`);
+    }
+  }
+
+  const summary: RunSummary = {
+    timestamp: new Date().toISOString(),
+    runId,
+    config: { querySet: querySetName, searchMode: config.searchMode },
+    totalQueries: queries.length,
+    averageScores: calculateAverageScores(evaluations),
+    topSuggestions: extractTopSuggestions(evaluations),
+    totalTimeMs: Date.now() - startTime,
+  };
+
+  appendFileSync(outputPath, JSON.stringify({ type: 'run_summary', data: summary }) + '\n');
+
+  console.log(`\n✓ Results written to ${outputPath}`);
+  console.log(`📈 Average overall score: ${summary.averageScores.overall}`);
+  console.log(`⏱️  Total time: ${(summary.totalTimeMs / 1000).toFixed(1)}s`);
+
+  if (summary.topSuggestions.length > 0) {
+    console.log('\n🎯 Top suggestions for improvement:');
+    summary.topSuggestions.forEach((suggestion, i) => console.log(`   ${i + 1}. ${suggestion}`));
+  }
+
+  if (baseline && !options.explore) {
+    console.log('\n📊 Comparison to Baseline:');
+    const dims = ['relevance', 'ranking', 'coverage', 'snippetQuality', 'overall'] as const;
+
+    for (const dim of dims) {
+      const current = summary.averageScores[dim];
+      const base = baseline.scores[dim];
+      const diff = current - base;
+      const diffStr = diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
+      const indicator = diff < -baseline.thresholds.regression ? '❌' :
+                       diff > baseline.thresholds.improvement ? '✅' : '  ';
+      console.log(`   ${dim.padEnd(15)} ${current.toFixed(2)}  (${diffStr}) ${indicator}`);
+    }
+
+    const hasRegression = dims.some(d =>
+      summary.averageScores[d] - baseline.scores[d] < -baseline.thresholds.regression
+    );
+
+    if (hasRegression) {
+      console.log('\n⚠️  REGRESSION DETECTED - scores dropped below threshold');
+    } else {
+      console.log('\n✅ No regressions detected');
+    }
+  }
+
+  if (options.updateBaseline) {
+    saveBaseline(summary.averageScores, config);
+  }
+
+  const dimensions = ['relevance', 'ranking', 'coverage', 'snippetQuality'] as const;
+  const lowestDim = dimensions.reduce((min, dim) =>
+    summary.averageScores[dim] < summary.averageScores[min] ? dim : min
+  );
+  console.log(`\n💡 Recommended focus: ${lowestDim} (avg: ${summary.averageScores[lowestDim]})`);
+}
+
+async function doBaseline(): Promise<void> {
+  const runs = listRuns();
+  const latest = runs[0];
+  if (!latest) {
+    console.log('\n  No test runs found. Run `quality test` first.\n');
+    return;
+  }
+
+  const parsed = parseRunFile(latest.path);
+
+  if (!parsed.summary) {
+    console.log(`\n  Run ${latest.id} has no summary data.\n`);
+    return;
+  }
+
+  const config = loadConfig();
+  saveBaseline(parsed.summary.averageScores, config);
+}
+
+async function doGenerate(options: { seed?: string }): Promise<void> {
+  validateClaudeEnvironment();
+
+  const prompt = createPrompt();
+  console.log('🔍 Query Generation Mode\n');
+
+  let seedQueries: CoreQuery[] = [];
+  if (options.seed) {
+    const seed = options.seed === 'all' ? loadAllQuerySets() : loadQuerySet(options.seed);
+    seedQueries = seed.queries as CoreQuery[];
+    console.log(`Seeding from ${options.seed} (${seedQueries.length} queries)\n`);
+  }
+
+  console.log('Generating queries from corpus analysis...\n');
+
+  const generatePrompt = `You have access to explore the tests/fixtures/ directory which contains content indexed in a knowledge store.
+
+${seedQueries.length > 0 ? `Existing queries to build on:\n${seedQueries.map(q => `- "${q.query}" (${q.category})`).join('\n')}\n\nPropose 10-15 NEW queries that complement the existing ones.` : 'Propose 10-15 diverse search queries.'}
+
+For each query provide:
+- query: the search string
+- intent: what the user is trying to find
+- category: one of implementation, debugging, understanding, decision, pattern
+
+Return as JSON array.`;
+
+  const args = [
+    CLAUDE_CLI,
+    '-p', shellEscape(generatePrompt),
+    '--output-format', 'json',
+    '--allowedTools', 'Glob,Read',
+  ];
+
+  let result: string;
+  try {
+    result = runCommand(args.join(' '), {
+      cwd: getProjectRoot(),
+      timeout: 120000,
+    });
+  } catch (error: unknown) {
+    const execError = error as { killed?: boolean; signal?: string; message?: string };
+    if (execError.killed && execError.signal === 'SIGTERM') {
+      console.error('Error: Claude CLI call timed out after 120 seconds');
+    } else {
+      console.error(`Error calling Claude CLI: ${execError.message || String(error)}`);
+    }
+    throw error;
+  }
+
+  let parsed: { structured_output?: CoreQuery[]; result?: string };
+  try {
+    parsed = JSON.parse(result);
+  } catch (error: unknown) {
+    const parseError = error as { message?: string };
+    console.error('Error: Failed to parse Claude CLI response as JSON');
+    console.error(`Response was: ${result.substring(0, 200)}...`);
+    throw new Error(`Invalid JSON response from Claude CLI: ${parseError.message || String(error)}`);
+  }
+
+  let queries: CoreQuery[];
+  if (parsed.structured_output) {
+    queries = parsed.structured_output;
+  } else if (parsed.result) {
+    queries = JSON.parse(parsed.result);
+  } else {
+    throw new Error('Response missing both structured_output and result fields');
+  }
+
+  queries = queries.map((q, i) => ({
+    ...q,
+    id: `gen-${String(i + 1).padStart(3, '0')}`,
+  }));
+
+  let done = false;
+  while (!done) {
+    console.log(`\nProposed queries (${queries.length}):\n`);
+    queries.forEach((q, i) => {
+      console.log(`${String(i + 1).padStart(2)}. [${q.category}] "${q.query}"`);
+      console.log(`    Intent: ${q.intent}\n`);
+    });
+
+    const action = await prompt.question('Actions: [a]ccept, [d]rop <nums>, [e]dit <num>, [q]uit: ');
+
+    if (action === 'a' || action === 'accept') {
+      done = true;
+    } else if (action.startsWith('d ') || action.startsWith('drop ')) {
+      const nums = action.replace(/^d(rop)?\s+/, '').split(',').map(n => parseInt(n.trim(), 10) - 1);
+      queries = queries.filter((_, i) => !nums.includes(i));
+      console.log(`Dropped ${nums.length} queries.`);
+    } else if (action.startsWith('e ') || action.startsWith('edit ')) {
+      const num = parseInt(action.replace(/^e(dit)?\s+/, ''), 10) - 1;
+      if (queries[num]) {
+        const newQuery = await prompt.question(`Query [${queries[num].query}]: `);
+        const newIntent = await prompt.question(`Intent [${queries[num].intent}]: `);
+        if (newQuery.trim()) queries[num].query = newQuery.trim();
+        if (newIntent.trim()) queries[num].intent = newIntent.trim();
+      }
+    } else if (action === 'q' || action === 'quit') {
+      prompt.close();
+      console.log('Cancelled.');
+      return;
+    }
+  }
+
+  const name = await prompt.question('Save as (name): ');
+  const filename = name.trim() || `generated-${new Date().toISOString().split('T')[0]}`;
+
+  const outputDir = join(getQueriesDir(), 'generated');
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir, { recursive: true });
+  }
+
+  const outputPath = join(outputDir, `${filename}.json`);
+  const querySet: QuerySet = {
+    version: '1.0.0',
+    description: `AI-generated queries from ${new Date().toISOString()}`,
+    queries,
+    source: 'ai-generated',
+  };
+
+  writeFileSync(outputPath, JSON.stringify(querySet, null, 2));
+  console.log(`\n✓ Saved ${queries.length} queries to ${outputPath}`);
+
+  prompt.close();
+}
+
+async function doReview(options: { runId?: string | undefined; list?: boolean | undefined }): Promise<void> {
+  const runs = listRuns();
+
+  if (options.list || !options.runId) {
+    showRuns();
+    if (!options.runId) {
+      console.log('Usage: quality review <run-id>');
+    }
+    return;
+  }
+
+  const run = runs.find(r => r.id === options.runId || r.id.includes(options.runId!));
+  if (!run) {
+    console.error(`Run not found: ${options.runId}`);
+    console.log('\nAvailable runs:');
+    runs.slice(0, 5).forEach(r => console.log(`    ${r.id}`));
+    return;
+  }
+
+  validateClaudeEnvironment();
+
+  const prompt = createPrompt();
+  const parsed = parseRunFile(run.path);
+
+  console.log(`\n📊 Reviewing run: ${run.id}`);
+  console.log(`   ${parsed.evaluations.length} queries, overall=${run.overallScore.toFixed(2)}\n`);
+
+  const hilData: Map<number, HilQueryData> = new Map();
+
+  for (let i = 0; i < parsed.evaluations.length; i++) {
+    const eval_ = parsed.evaluations[i];
+    if (!eval_) continue;
+
+    const progress = `[${i + 1}/${parsed.evaluations.length}]`;
+
+    console.log(`\n${progress} "${eval_.query.query}"`);
+    console.log(`  AI overall: ${eval_.evaluation.scores.overall.toFixed(2)}`);
+    console.log(`\n  Results returned:`);
+
+    for (const r of eval_.searchResults.slice(0, 5)) {
+      const shortSourcePath = r.source.replace(/.*\/tests\/fixtures\/corpus\//, '');
+      console.log(`  → ${shortSourcePath}`);
+      const snippet = r.snippet.slice(0, 200).replace(/\n/g, ' ');
+      console.log(`       "${snippet}${r.snippet.length > 200 ? '...' : ''}"`);
+    }
+
+    console.log(`\n  How did the search do?`);
+    console.log(`  ${formatJudgmentPrompt()}`);
+
+    const input = await prompt.question('> ');
+    const judgment = parseJudgment(input);
+
+    if (judgment === 'skip') {
+      hilData.set(i, { reviewed: false });
+      continue;
+    }
+
+    const hil: HilQueryData = {
+      reviewed: true,
+      reviewedAt: new Date().toISOString(),
+    };
+
+    if (judgment !== 'note') {
+      hil.judgment = judgment;
+      hil.humanScore = HIL_JUDGMENT_SCORES[judgment];
+    }
+
+    const note = await prompt.question('  Note (optional): ');
+    if (note.trim()) {
+      hil.note = note.trim();
+    }
+
+    hilData.set(i, hil);
+  }
+
+  prompt.close();
+
+  const reviewed = [...hilData.values()].filter(h => h.reviewed);
+  const scores = reviewed.filter(h => h.humanScore !== undefined).map(h => h.humanScore!);
+  const humanAvg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const flagged = reviewed.filter(h => h.flagged).length;
+
+  console.log('\n📝 Generating synthesis...');
+
+  const synthesisPrompt = `Summarize this human review of search quality results:
+
+AI average score: ${run.overallScore.toFixed(2)}
+Human average score: ${humanAvg.toFixed(2)}
+Queries reviewed: ${reviewed.length}/${parsed.evaluations.length}
+
+Human judgments:
+${[...hilData.entries()].filter(([_, h]) => h.reviewed).map(([i, h]) => {
+  const evalItem = parsed.evaluations[i];
+  const q = evalItem?.query.query ?? 'unknown';
+  return `- "${q}": ${h.judgment ?? 'note only'}${h.note ? ` - "${h.note}"` : ''}`;
+}).join('\n')}
+
+Provide:
+1. A 2-3 sentence synthesis of the human feedback
+2. 2-4 specific action items for improving search quality
+
+Return as JSON: { "synthesis": "...", "actionItems": ["...", "..."] }`;
+
+  const result = runCommand([
+    CLAUDE_CLI,
+    '-p', shellEscape(synthesisPrompt),
+    '--output-format', 'json',
+  ].join(' '), {
+    cwd: getProjectRoot(),
+    timeout: 60000,
+  });
+
+  const synthResult = JSON.parse(result) as { result?: string; structured_output?: { synthesis: string; actionItems: string[] } };
+  const content = synthResult.result || '';
+
+  const jsonMatch = content.match(/\{[\s\S]*"synthesis"[\s\S]*"actionItems"[\s\S]*\}/);
+  if (!jsonMatch && !synthResult.structured_output) {
+    throw new Error(`Claude CLI did not return valid JSON. Response: ${content.slice(0, 200)}`);
+  }
+
+  const synthesis = synthResult.structured_output ?? JSON.parse(jsonMatch![0]) as { synthesis: string; actionItems: string[] };
+
+  const hilReview: HilReviewSummary = {
+    reviewedAt: new Date().toISOString(),
+    queriesReviewed: reviewed.length,
+    queriesSkipped: parsed.evaluations.length - reviewed.length,
+    queriesFlagged: flagged,
+    humanAverageScore: Math.round(humanAvg * 100) / 100,
+    aiVsHumanDelta: Math.round((humanAvg - run.overallScore) * 100) / 100,
+    synthesis: synthesis.synthesis,
+    actionItems: synthesis.actionItems,
+  };
+
+  // Read original file and update with HIL data
+  const originalContent = readFileSync(run.path, 'utf-8');
+  const originalLines = originalContent.trim().split('\n').map(l => JSON.parse(l));
+
+  let evalIdx = 0;
+  const updatedLines = originalLines.map(line => {
+    if (line.type === 'query_evaluation') {
+      const hil = hilData.get(evalIdx);
+      evalIdx++;
+      if (hil) {
+        return { ...line, data: { ...line.data, hil } };
+      }
+    }
+    if (line.type === 'run_summary') {
+      return { ...line, data: { ...line.data, hilReview } };
+    }
+    return line;
+  });
+
+  writeFileSync(run.path, updatedLines.map(l => JSON.stringify(l)).join('\n') + '\n');
+
+  console.log(`\n✓ Review saved to ${run.path}`);
+  console.log(`\n📊 Summary:`);
+  console.log(`   Human avg: ${humanAvg.toFixed(2)} (AI: ${run.overallScore.toFixed(2)}, delta: ${hilReview.aiVsHumanDelta >= 0 ? '+' : ''}${hilReview.aiVsHumanDelta.toFixed(2)})`);
+  console.log(`   ${hilReview.synthesis}`);
+  console.log(`\n🎯 Action items:`);
+  hilReview.actionItems.forEach((item, i) => console.log(`   ${i + 1}. ${item}`));
+}
+
+// ============================================================================
 // Command Factory
 // ============================================================================
 
@@ -815,6 +1830,48 @@ export function createQualityCommand(_getOptions: () => GlobalOptions): Command 
     .option('-l, --limit <n>', 'Number of runs to show', '10')
     .action((options: { limit?: string }) => {
       showTrends(parseInt(options.limit || '10', 10));
+    });
+
+  // Action commands
+  quality
+    .command('index')
+    .description('Index the test corpus (creates/rebuilds bluera-test-corpus store)')
+    .action(async () => {
+      await doIndex();
+    });
+
+  quality
+    .command('test')
+    .description('Run quality tests against the corpus')
+    .option('--explore', 'Generate queries from corpus instead of using query set')
+    .option('--set <name>', 'Query set to use (default: core)')
+    .option('-q, --quiet', 'Summary output only')
+    .option('--update-baseline', 'Update baseline after test run')
+    .action(async (options: { explore?: boolean; set?: string; quiet?: boolean; updateBaseline?: boolean }) => {
+      await doTest(options);
+    });
+
+  quality
+    .command('baseline')
+    .description('Update baseline from the latest test run')
+    .action(async () => {
+      await doBaseline();
+    });
+
+  quality
+    .command('generate')
+    .description('Generate new queries interactively using Claude')
+    .option('--seed <name>', 'Seed from existing query set')
+    .action(async (options: { seed?: string }) => {
+      await doGenerate(options);
+    });
+
+  quality
+    .command('review [run-id]')
+    .description('Human-in-the-loop review of test results')
+    .option('--list', 'List available runs for review')
+    .action(async (runId: string | undefined, options: { list?: boolean }) => {
+      await doReview({ runId, list: options.list });
     });
 
   return quality;
