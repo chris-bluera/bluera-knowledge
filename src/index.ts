@@ -9,6 +9,7 @@ import { createCrawlCommand } from './cli/commands/crawl.js';
 import { createExportCommand } from './cli/commands/export.js';
 import { createImportCommand } from './cli/commands/import.js';
 import { createQualityCommand } from './cli/commands/quality.js';
+import { createSetupCommand } from './cli/commands/setup.js';
 
 const program = createProgram();
 
@@ -20,5 +21,6 @@ program.addCommand(createCrawlCommand(() => getGlobalOptions(program)));
 program.addCommand(createExportCommand(() => getGlobalOptions(program)));
 program.addCommand(createImportCommand(() => getGlobalOptions(program)));
 program.addCommand(createQualityCommand(() => getGlobalOptions(program)));
+program.addCommand(createSetupCommand(() => getGlobalOptions(program)));
 
 program.parse();

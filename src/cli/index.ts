@@ -7,3 +7,4 @@ export { createCrawlCommand } from './commands/crawl.js';
 export { createExportCommand } from './commands/export.js';
 export { createImportCommand } from './commands/import.js';
 export { createQualityCommand } from './commands/quality.js';
+export { createSetupCommand } from './commands/setup.js';
