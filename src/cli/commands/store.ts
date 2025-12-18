@@ -4,12 +4,12 @@ import type { GlobalOptions } from '../program.js';
 import type { StoreType } from '../../types/store.js';
 
 export function createStoreCommand(getOptions: () => GlobalOptions): Command {
-  const store = new Command('store').description('Manage knowledge stores');
+  const store = new Command('store').description('Manage knowledge stores (collections of indexed documents)');
 
   store
     .command('list')
-    .description('List all stores')
-    .option('-t, --type <type>', 'Filter by store type (file, repo, web)')
+    .description('Show all stores with their type (file/repo/web) and ID')
+    .option('-t, --type <type>', 'Filter by type: file, repo, or web')
     .action(async (options: { type?: StoreType }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
@@ -32,11 +32,11 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
 
   store
     .command('create <name>')
-    .description('Create a new store')
-    .requiredOption('-t, --type <type>', 'Store type (file, repo, web)')
-    .requiredOption('-s, --source <path>', 'Source path or URL')
-    .option('-d, --description <desc>', 'Store description')
-    .option('--tags <tags>', 'Comma-separated tags')
+    .description('Create a new store pointing to a local path or URL')
+    .requiredOption('-t, --type <type>', 'Store type: file (local dir), repo (git), web (crawled site)')
+    .requiredOption('-s, --source <path>', 'Local path for file/repo stores, URL for web stores')
+    .option('-d, --description <desc>', 'Optional description for the store')
+    .option('--tags <tags>', 'Comma-separated tags for filtering')
     .action(async (name: string, options: {
       type: StoreType;
       source: string;
@@ -69,7 +69,7 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
 
   store
     .command('info <store>')
-    .description('Show store details')
+    .description('Show store details: ID, type, path/URL, timestamps')
     .action(async (storeIdOrName: string) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
@@ -97,8 +97,8 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
 
   store
     .command('delete <store>')
-    .description('Delete a store')
-    .option('-f, --force', 'Skip confirmation')
+    .description('Remove store and its indexed documents from LanceDB')
+    .option('-f, --force', 'Delete without confirmation prompt')
     .action(async (storeIdOrName: string, options: { force?: boolean }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);

@@ -5,9 +5,9 @@ import type { GlobalOptions } from '../program.js';
 
 export function createIndexCommand(getOptions: () => GlobalOptions): Command {
   const index = new Command('index')
-    .description('Index a knowledge store')
+    .description('Scan store files, chunk text, generate embeddings, save to LanceDB')
     .argument('<store>', 'Store ID or name')
-    .option('--force', 'Force reindex all files')
+    .option('--force', 'Re-index all files even if unchanged')
     .action(async (storeIdOrName: string, options: { force?: boolean }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
@@ -62,8 +62,8 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
 
   index
     .command('watch <store>')
-    .description('Watch for changes and auto-reindex')
-    .option('--debounce <ms>', 'Debounce interval in ms', '1000')
+    .description('Watch store directory; re-index when files change')
+    .option('--debounce <ms>', 'Wait N ms after last change before re-indexing (default: 1000)', '1000')
     .action(async (storeIdOrName: string, options: { debounce?: string }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);

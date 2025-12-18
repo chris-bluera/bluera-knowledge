@@ -1778,90 +1778,90 @@ Return as JSON: { "synthesis": "...", "actionItems": ["...", "..."] }`;
 
 export function createQualityCommand(_getOptions: () => GlobalOptions): Command {
   const quality = new Command('quality')
-    .description('View search quality test results and metrics');
+    .description('Test and measure search quality using Claude-evaluated queries');
 
   quality
     .command('corpus')
-    .description('Show corpus/fixtures info')
+    .description('Show test corpus: Vue/Express/Hono repos + docs in tests/fixtures/corpus/')
     .action(() => {
       showCorpus();
     });
 
   quality
     .command('queries')
-    .description('Show query sets')
-    .option('-v, --verbose', 'Show all queries in detail')
+    .description('List query sets (.json files in tests/fixtures/queries/)')
+    .option('--verbose', 'Print each query\'s full text and intent')
     .action((options: { verbose?: boolean }) => {
       showQueries(options.verbose);
     });
 
   quality
     .command('runs')
-    .description('Show test runs overview')
+    .description('List test runs (tests/quality-results/) with scores')
     .action(() => {
       showRuns();
     });
 
   quality
     .command('run <id>')
-    .description('Show detailed run results')
+    .description('Show run details: per-query scores, AI analysis, top result sources')
     .action((id: string) => {
       showRunDetail(id);
     });
 
   quality
     .command('query <id>')
-    .description('Show query performance across runs')
+    .description('Track one query across runs: see if ranking improvements helped')
     .action((id: string) => {
       showQueryPerformance(id);
     });
 
   quality
     .command('trends')
-    .description('Show score trends over time')
-    .option('-l, --limit <n>', 'Number of runs to show', '10')
+    .description('Compare overall scores across runs (▲ up, ▼ down, — unchanged)')
+    .option('-l, --limit <count>', 'Number of recent runs to include (default: 10)', '10')
     .action((options: { limit?: string }) => {
       showTrends(parseInt(options.limit || '10', 10));
     });
 
   // Action commands
   quality
-    .command('index')
-    .description('Index the test corpus (creates/rebuilds bluera-test-corpus store)')
+    .command('reindex')
+    .description('Delete bluera-test-corpus store, recreate from tests/fixtures/corpus/')
     .action(async () => {
       await doIndex();
     });
 
   quality
     .command('test')
-    .description('Run quality tests against the corpus')
-    .option('--explore', 'Generate queries from corpus instead of using query set')
-    .option('--set <name>', 'Query set to use (default: core)')
-    .option('-q, --quiet', 'Summary output only')
-    .option('--update-baseline', 'Update baseline after test run')
+    .description('Run queries, search corpus, have Claude score results 0-1 per dimension')
+    .option('--explore', 'Generate queries on-the-fly instead of using saved query set')
+    .option('--set <name>', 'Query set file from tests/fixtures/queries/ (default: core)')
+    .option('--quiet', 'One line per query; skip printing all search results')
+    .option('--update-baseline', 'Save scores to baseline.json after run finishes')
     .action(async (options: { explore?: boolean; set?: string; quiet?: boolean; updateBaseline?: boolean }) => {
       await doTest(options);
     });
 
   quality
     .command('baseline')
-    .description('Update baseline from the latest test run')
+    .description('Save latest run to tests/quality-results/baseline.json')
     .action(async () => {
       await doBaseline();
     });
 
   quality
     .command('generate')
-    .description('Generate new queries interactively using Claude')
-    .option('--seed <name>', 'Seed from existing query set')
+    .description('Claude explores corpus files, proposes queries; you accept/edit/drop')
+    .option('--seed <name>', 'Start with existing queries, ask Claude to add more')
     .action(async (options: { seed?: string }) => {
       await doGenerate(options);
     });
 
   quality
     .command('review [run-id]')
-    .description('Human-in-the-loop review of test results')
-    .option('--list', 'List available runs for review')
+    .description('Rate each query\'s results (good/okay/poor/terrible) to calibrate AI')
+    .option('--list', 'Just show available runs, don\'t start reviewing')
     .action(async (runId: string | undefined, options: { list?: boolean }) => {
       await doReview({ runId, list: options.list });
     });

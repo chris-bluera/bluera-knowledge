@@ -6,13 +6,13 @@ import { createStoreId } from '../../types/brands.js';
 
 export function createSearchCommand(getOptions: () => GlobalOptions): Command {
   const search = new Command('search')
-    .description('Search across knowledge stores')
+    .description('Search indexed documents using vector similarity + full-text matching')
     .argument('<query>', 'Search query')
-    .option('-s, --stores <stores>', 'Comma-separated store IDs/names')
-    .option('-m, --mode <mode>', 'Search mode: vector | fts | hybrid', 'hybrid')
-    .option('-n, --limit <number>', 'Max results', '10')
-    .option('-t, --threshold <number>', 'Minimum relevance score 0-1')
-    .option('--include-content', 'Include full content in results')
+    .option('-s, --stores <stores>', 'Limit search to specific stores (comma-separated IDs or names)')
+    .option('-m, --mode <mode>', 'vector (embeddings only), fts (text only), hybrid (both, default)', 'hybrid')
+    .option('-n, --limit <count>', 'Maximum results to return (default: 10)', '10')
+    .option('-t, --threshold <score>', 'Minimum score 0-1; omit low-relevance results')
+    .option('--include-content', 'Show full document content, not just preview snippet')
     .action(async (query: string, options: {
       stores?: string;
       mode?: SearchMode;

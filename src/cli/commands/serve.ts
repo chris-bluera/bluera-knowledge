@@ -6,9 +6,9 @@ import type { GlobalOptions } from '../program.js';
 
 export function createServeCommand(getOptions: () => GlobalOptions): Command {
   return new Command('serve')
-    .description('Start HTTP server for API access')
-    .option('-p, --port <port>', 'Port number', '3847')
-    .option('--host <host>', 'Host to bind', '127.0.0.1')
+    .description('Start HTTP API server for programmatic search access')
+    .option('-p, --port <port>', 'Port to listen on (default: 3847)', '3847')
+    .option('--host <host>', 'Bind address (default: 127.0.0.1, use 0.0.0.0 for all interfaces)', '127.0.0.1')
     .action(async (options: { port?: string; host?: string }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
