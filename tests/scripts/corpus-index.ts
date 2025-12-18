@@ -68,7 +68,7 @@ async function main() {
   );
 
   console.log('\n✅ Corpus indexed successfully!');
-  console.log(`   Run quality tests with: npm run test:search-quality`);
+  console.log(`   Run quality tests with: npm run test:quality`);
 }
 
 main().catch((error) => {

@@ -101,9 +101,9 @@ function showCorpus(): void {
 
   // Count files in each directory
   const directories = [
-    { name: 'oss-repos/vue', desc: 'Vue.js v3.5.x' },
-    { name: 'oss-repos/express', desc: 'Express.js v5.x' },
-    { name: 'oss-repos/hono', desc: 'Hono v4.6.0' },
+    { name: 'oss-repos/vue', desc: 'Vue.js core (full repo)' },
+    { name: 'oss-repos/express', desc: 'Express.js (full repo)' },
+    { name: 'oss-repos/hono', desc: 'Hono (full repo)' },
     { name: 'documentation', desc: 'Express/Node excerpts' },
     { name: 'articles', desc: 'React, TypeScript, JWT' },
   ];
