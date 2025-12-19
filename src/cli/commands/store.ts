@@ -17,6 +17,11 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
 
       if (globalOpts.format === 'json') {
         console.log(JSON.stringify(stores, null, 2));
+      } else if (globalOpts.quiet === true) {
+        // Quiet mode: just list store names, one per line
+        for (const s of stores) {
+          console.log(s.name);
+        }
       } else {
         if (stores.length === 0) {
           console.log('No stores found.');
@@ -76,7 +81,7 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
       const s = await services.store.getByIdOrName(storeIdOrName);
 
       if (s === undefined) {
-        console.error(`Store not found: ${storeIdOrName}`);
+        console.error(`Error: Store not found: ${storeIdOrName}`);
         process.exit(3);
       }
 
@@ -99,14 +104,38 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     .command('delete <store>')
     .description('Remove store and its indexed documents from LanceDB')
     .option('-f, --force', 'Delete without confirmation prompt')
-    .action(async (storeIdOrName: string, options: { force?: boolean }) => {
+    .option('-y, --yes', 'Alias for --force')
+    .action(async (storeIdOrName: string, options: { force?: boolean; yes?: boolean }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
       const s = await services.store.getByIdOrName(storeIdOrName);
 
       if (s === undefined) {
-        console.error(`Store not found: ${storeIdOrName}`);
+        console.error(`Error: Store not found: ${storeIdOrName}`);
         process.exit(3);
+      }
+
+      // Require --force or -y in non-TTY mode, prompt in TTY mode
+      const skipConfirmation = options.force || options.yes;
+      if (!skipConfirmation) {
+        if (!process.stdin.isTTY) {
+          console.error('Error: Use --force or -y to delete without confirmation in non-interactive mode');
+          process.exit(1);
+        }
+        // Interactive confirmation
+        const readline = await import('node:readline');
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+        const answer = await new Promise<string>((resolve) => {
+          rl.question(`Delete store "${s.name}"? [y/N] `, resolve);
+        });
+        rl.close();
+        if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
+          console.log('Cancelled.');
+          process.exit(0);
+        }
       }
 
       const result = await services.store.delete(s.id);

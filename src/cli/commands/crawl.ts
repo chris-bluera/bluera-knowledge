@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { createHash } from 'node:crypto';
-import ora from 'ora';
+import ora, { type Ora } from 'ora';
 import { createServices } from '../../services/index.js';
 import { PythonBridge } from '../../crawl/bridge.js';
 import { createDocumentId } from '../../types/brands.js';
@@ -18,16 +18,27 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
 
       const store = await services.store.getByIdOrName(storeIdOrName);
       if (!store || store.type !== 'web') {
-        console.error('Web store not found:', storeIdOrName);
+        console.error(`Error: Web store not found: ${storeIdOrName}`);
         process.exit(3);
       }
 
-      const spinner = ora(`Crawling ${url}`).start();
+      // Use spinner in interactive mode (not quiet, not json output)
+      const isInteractive = process.stdout.isTTY === true && globalOpts.quiet !== true && globalOpts.format !== 'json';
+      let spinner: Ora | undefined;
+
+      if (isInteractive) {
+        spinner = ora(`Crawling ${url}`).start();
+      } else if (globalOpts.quiet !== true && globalOpts.format !== 'json') {
+        console.log(`Crawling ${url}`);
+      }
+
       const bridge = new PythonBridge();
 
       try {
         const result = await bridge.crawl(url);
-        spinner.text = 'Indexing crawled content...';
+        if (spinner) {
+          spinner.text = 'Indexing crawled content...';
+        }
 
         await services.lance.initialize(store.id);
 
@@ -48,9 +59,28 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
         }
 
         await services.lance.addDocuments(store.id, docs);
-        spinner.succeed(`Crawled and indexed ${result.pages.length} pages`);
+
+        const crawlResult = {
+          success: true,
+          store: store.name,
+          url,
+          pagesCrawled: result.pages.length,
+        };
+
+        if (globalOpts.format === 'json') {
+          console.log(JSON.stringify(crawlResult, null, 2));
+        } else if (spinner !== undefined) {
+          spinner.succeed(`Crawled and indexed ${String(result.pages.length)} pages`);
+        } else if (globalOpts.quiet !== true) {
+          console.log(`Crawled and indexed ${String(result.pages.length)} pages`);
+        }
       } catch (error) {
-        spinner.fail(`Crawl failed: ${error instanceof Error ? error.message : String(error)}`);
+        const message = `Crawl failed: ${error instanceof Error ? error.message : String(error)}`;
+        if (spinner) {
+          spinner.fail(message);
+        } else {
+          console.error(`Error: ${message}`);
+        }
         process.exit(6);
       } finally {
         await bridge.stop();

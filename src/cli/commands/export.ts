@@ -14,14 +14,14 @@ export function createExportCommand(getOptions: () => GlobalOptions): Command {
 
       const store = await services.store.getByIdOrName(storeIdOrName);
       if (!store) {
-        console.error('Store not found:', storeIdOrName);
+        console.error(`Error: Store not found: ${storeIdOrName}`);
         process.exit(3);
       }
 
       await services.lance.initialize(store.id);
 
       // Get all documents by doing a search with empty vector
-      const dummyVector = new Array(384).fill(0);
+      const dummyVector: number[] = new Array<number>(384).fill(0);
       const docs = await services.lance.search(store.id, dummyVector, 10000);
 
       const exportData = {
@@ -32,6 +32,18 @@ export function createExportCommand(getOptions: () => GlobalOptions): Command {
       };
 
       await writeFile(outputPath, JSON.stringify(exportData, null, 2));
-      console.log(`Exported ${docs.length} documents to ${outputPath}`);
+
+      const result = {
+        success: true,
+        store: store.name,
+        documentsExported: docs.length,
+        outputPath,
+      };
+
+      if (globalOpts.format === 'json') {
+        console.log(JSON.stringify(result, null, 2));
+      } else if (globalOpts.quiet !== true) {
+        console.log(`Exported ${String(docs.length)} documents to ${outputPath}`);
+      }
     });
 }

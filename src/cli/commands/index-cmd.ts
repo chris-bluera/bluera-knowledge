@@ -8,24 +8,24 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
     .description('Scan store files, chunk text, generate embeddings, save to LanceDB')
     .argument('<store>', 'Store ID or name')
     .option('--force', 'Re-index all files even if unchanged')
-    .action(async (storeIdOrName: string, options: { force?: boolean }) => {
+    .action(async (storeIdOrName: string, _options: { force?: boolean }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
 
       const store = await services.store.getByIdOrName(storeIdOrName);
 
       if (store === undefined) {
-        console.error(`Store not found: ${storeIdOrName}`);
+        console.error(`Error: Store not found: ${storeIdOrName}`);
         process.exit(3);
       }
 
-      // Use spinner in interactive mode, simple output otherwise
-      const isInteractive = process.stdout.isTTY;
+      // Use spinner in interactive mode (not quiet, not json output)
+      const isInteractive = process.stdout.isTTY === true && globalOpts.quiet !== true && globalOpts.format !== 'json';
       let spinner: Ora | undefined;
 
       if (isInteractive) {
         spinner = ora(`Indexing store: ${store.name}`).start();
-      } else {
+      } else if (globalOpts.quiet !== true && globalOpts.format !== 'json') {
         console.log(`Indexing store: ${store.name}`);
       }
 
@@ -40,18 +40,19 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
       });
 
       if (result.success) {
-        const message = `Indexed ${result.data.documentsIndexed} documents, ${result.data.chunksCreated} chunks in ${result.data.timeMs}ms`;
-        if (spinner) {
-          spinner.succeed(message);
-        } else {
-          console.log(message);
-        }
         if (globalOpts.format === 'json') {
           console.log(JSON.stringify(result.data, null, 2));
+        } else {
+          const message = `Indexed ${String(result.data.documentsIndexed)} documents, ${String(result.data.chunksCreated)} chunks in ${String(result.data.timeMs)}ms`;
+          if (spinner !== undefined) {
+            spinner.succeed(message);
+          } else if (globalOpts.quiet !== true) {
+            console.log(message);
+          }
         }
       } else {
         const message = `Error: ${result.error.message}`;
-        if (spinner) {
+        if (spinner !== undefined) {
           spinner.fail(message);
         } else {
           console.error(message);
@@ -70,16 +71,20 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
 
       const store = await services.store.getByIdOrName(storeIdOrName);
       if (store === undefined || (store.type !== 'file' && store.type !== 'repo')) {
-        console.error(`File/repo store not found: ${storeIdOrName}`);
+        console.error(`Error: File/repo store not found: ${storeIdOrName}`);
         process.exit(3);
       }
 
       const { WatchService } = await import('../../services/watch.service.js');
       const watchService = new WatchService(services.index, services.lance);
 
-      console.log(`Watching ${store.name} for changes...`);
+      if (globalOpts.quiet !== true) {
+        console.log(`Watching ${store.name} for changes...`);
+      }
       await watchService.watch(store, parseInt(options.debounce ?? '1000', 10), () => {
-        console.log(`Re-indexed ${store.name}`);
+        if (globalOpts.quiet !== true) {
+          console.log(`Re-indexed ${store.name}`);
+        }
       });
 
       // Keep process alive

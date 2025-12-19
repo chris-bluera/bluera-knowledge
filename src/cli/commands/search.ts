@@ -2,7 +2,6 @@ import { Command } from 'commander';
 import { createServices } from '../../services/index.js';
 import type { GlobalOptions } from '../program.js';
 import type { SearchMode } from '../../types/search.js';
-import { createStoreId } from '../../types/brands.js';
 
 export function createSearchCommand(getOptions: () => GlobalOptions): Command {
   const search = new Command('search')
@@ -35,7 +34,7 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
           if (store !== undefined) {
             resolvedStores.push(store.id);
           } else {
-            console.error(`Store not found: ${requested}`);
+            console.error(`Error: Store not found: ${requested}`);
             process.exit(3);
           }
         }
@@ -64,6 +63,12 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
 
       if (globalOpts.format === 'json') {
         console.log(JSON.stringify(results, null, 2));
+      } else if (globalOpts.quiet === true) {
+        // Quiet mode: just list matching paths/URLs, one per line
+        for (const r of results.results) {
+          const path = r.metadata.path ?? r.metadata.url ?? 'unknown';
+          console.log(path);
+        }
       } else {
         console.log(`\nSearch: "${query}"`);
         console.log(`Mode: ${results.mode} | Stores: ${results.stores.length} | Results: ${results.totalResults} | Time: ${results.timeMs}ms\n`);
