@@ -268,8 +268,8 @@ describe('E2E Workflow Tests', () => {
     });
 
     it('exports a store', () => {
-      const output = cli(`export code-store --output "${exportPath}"`);
-      expect(output).toContain('export');
+      const output = cli(`export code-store "${exportPath}"`);
+      expect(output).toContain('Exported');
     });
 
     it('export file contains valid data', async () => {
@@ -283,8 +283,8 @@ describe('E2E Workflow Tests', () => {
     });
 
     it('imports to a new store', () => {
-      // Import may output to stderr, so check store list instead
-      cli(`import "${exportPath}" --name ${importedStoreName}`);
+      // Import uses positional arguments: import <path> <name>
+      cli(`import "${exportPath}" ${importedStoreName}`);
 
       const listOutput = cli('store list');
       expect(listOutput).toContain(importedStoreName);
