@@ -1773,6 +1773,141 @@ Return as JSON: { "synthesis": "...", "actionItems": ["...", "..."] }`;
 }
 
 // ============================================================================
+// Auto-Improve
+// ============================================================================
+
+import {
+  AutoImproveOrchestrator,
+  ProductionQualityRunner,
+  ProductionAgentRunner,
+  type ScoreDimension,
+} from '../../services/auto-improve/index.js';
+
+async function doAutoImprove(options: {
+  run?: string;
+  maxIterations?: string;
+  targetScore?: string;
+  minImprovement?: string;
+  rollbackThreshold?: string;
+  dryRun?: boolean;
+  focus?: string;
+}): Promise<void> {
+  validateClaudeEnvironment();
+
+  const projectRoot = getProjectRoot();
+  const resultsDir = getResultsDir();
+  const checkpointDir = join(resultsDir, '.checkpoints');
+
+  console.log('\n🤖 Auto-Improve Mode');
+  console.log('   Spawning AI agents to analyze and improve search quality...\n');
+
+  const maxIterations = parseInt(options.maxIterations ?? '3', 10);
+  const targetScore = parseFloat(options.targetScore ?? '0.7');
+  const minImprovement = parseFloat(options.minImprovement ?? '0.02');
+  const rollbackThreshold = parseFloat(options.rollbackThreshold ?? '0.03');
+  const focus = options.focus ?? 'auto';
+
+  console.log(`   Max iterations: ${String(maxIterations)}`);
+  console.log(`   Target score: ${targetScore.toFixed(2)}`);
+  console.log(`   Min improvement: ${minImprovement.toFixed(3)}`);
+  console.log(`   Rollback threshold: ${rollbackThreshold.toFixed(3)}`);
+  console.log(`   Focus: ${focus}`);
+  if (options.dryRun === true) {
+    console.log('   Mode: DRY RUN (no changes will be applied)');
+  }
+  console.log('');
+
+  const qualityRunner = new ProductionQualityRunner(resultsDir, projectRoot);
+  const agentRunner = new ProductionAgentRunner(projectRoot);
+
+  const orchestrator = new AutoImproveOrchestrator({
+    projectRoot,
+    checkpointDir,
+    resultsDir,
+    qualityRunner,
+    agentRunner,
+  });
+
+  try {
+    const runOptions: import('../../services/auto-improve/index.js').AutoImproveOptions = {
+      maxIterations,
+      targetScore,
+      minImprovement,
+      rollbackThreshold,
+      dryRun: options.dryRun === true,
+      focus: focus === 'auto' ? 'auto' : focus as ScoreDimension,
+    };
+    if (options.run !== undefined) {
+      runOptions.runId = options.run;
+    }
+    const result = await orchestrator.run(runOptions);
+
+    console.log('\n' + '═'.repeat(60));
+    console.log('📊 Auto-Improve Results');
+    console.log('═'.repeat(60));
+
+    console.log(`\n   Iterations: ${String(result.iterations.length)}`);
+    console.log(`   Changes applied: ${String(result.changesApplied)}`);
+    console.log(`   Total improvement: ${result.totalImprovement >= 0 ? '+' : ''}${result.totalImprovement.toFixed(3)}`);
+
+    console.log('\n   Final Scores:');
+    console.log(`     Relevance:      ${result.finalScores.relevance.toFixed(3)}`);
+    console.log(`     Ranking:        ${result.finalScores.ranking.toFixed(3)}`);
+    console.log(`     Coverage:       ${result.finalScores.coverage.toFixed(3)}`);
+    console.log(`     Snippet Quality: ${result.finalScores.snippetQuality.toFixed(3)}`);
+    console.log(`     Overall:        ${result.finalScores.overall.toFixed(3)}`);
+
+    console.log(`\n   Status: ${result.message}`);
+
+    if (result.iterations.length > 0) {
+      console.log('\n   Iteration Details:');
+      for (const iter of result.iterations) {
+        const status = iter.rolledBack ? '❌ ROLLED BACK' : '✅';
+        console.log(`     ${String(iter.iteration)}. ${status} (improvement: ${iter.improvement >= 0 ? '+' : ''}${iter.improvement.toFixed(3)})`);
+        if (iter.reason !== undefined) {
+          console.log(`        ${iter.reason}`);
+        }
+        if (iter.appliedChanges.length > 0) {
+          const isDryRun = iter.checkpointId === 'dry-run';
+          const changeLabel = isDryRun ? 'Proposed changes' : 'Applied changes';
+          console.log(`        ${changeLabel}:`);
+          for (const change of iter.appliedChanges) {
+            const fileBasename = change.file.split('/').pop() ?? change.file;
+            console.log(`          [${change.type}] ${fileBasename}: ${change.description}`);
+            if (isDryRun) {
+              // Show before/after in dry-run for review
+              const beforePreview = change.before.length > 60 ? change.before.slice(0, 60) + '...' : change.before;
+              const afterPreview = change.after.length > 60 ? change.after.slice(0, 60) + '...' : change.after;
+              console.log(`            Before: ${beforePreview.replace(/\n/g, '\\n')}`);
+              console.log(`            After:  ${afterPreview.replace(/\n/g, '\\n')}`);
+            }
+          }
+        }
+        // Show agent recommendations summary
+        if (iter.recommendations.length > 0) {
+          console.log(`        Agent recommendations: ${iter.recommendations.length}`);
+          for (const rec of iter.recommendations) {
+            console.log(`          - ${rec.agentId}: confidence=${rec.confidence.toFixed(2)}, target=${rec.targetDimension}, expected=+${rec.expectedImprovement.toFixed(3)}`);
+            console.log(`            ${rec.reasoning.slice(0, 100)}${rec.reasoning.length > 100 ? '...' : ''}`);
+          }
+        }
+      }
+    }
+
+    console.log('');
+
+    if (result.success) {
+      console.log('✅ Auto-improve completed successfully!');
+    } else {
+      console.log('⚠️  Auto-improve completed with issues.');
+    }
+  } catch (error) {
+    console.error('❌ Auto-improve failed:', error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+// ============================================================================
 // Command Factory
 // ============================================================================
 
@@ -1864,6 +1999,28 @@ export function createQualityCommand(_getOptions: () => GlobalOptions): Command 
     .option('--list', 'Just show available runs, don\'t start reviewing')
     .action(async (runId: string | undefined, options: { list?: boolean }) => {
       await doReview({ runId, list: options.list });
+    });
+
+  quality
+    .command('auto-improve')
+    .description('Spawn AI agents to analyze scores and apply improvements automatically')
+    .option('--run <id>', 'Quality run ID to analyze (default: latest)')
+    .option('--max-iterations <n>', 'Maximum improvement cycles (default: 3)', '3')
+    .option('--target-score <score>', 'Stop when overall score reaches this (default: 0.7)', '0.7')
+    .option('--min-improvement <delta>', 'Min improvement per iteration to continue (default: 0.02)', '0.02')
+    .option('--rollback-threshold <delta>', 'Rollback if score drops by this much (default: 0.03)', '0.03')
+    .option('--dry-run', 'Show proposed changes without applying them')
+    .option('--focus <dimension>', 'Focus on: relevance, ranking, coverage, snippetQuality, auto (default: auto)', 'auto')
+    .action(async (options: {
+      run?: string;
+      maxIterations?: string;
+      targetScore?: string;
+      minImprovement?: string;
+      rollbackThreshold?: string;
+      dryRun?: boolean;
+      focus?: string;
+    }) => {
+      await doAutoImprove(options);
     });
 
   return quality;
