@@ -113,17 +113,23 @@ Respond with a JSON object containing:
   "targetDimension": "<dimension to improve>",
   "changes": [
     {
-      "type": "<config|code|reindex>",
+      "type": "<code|reindex>",
       "priority": <1-10 number>,
       "file": "<relative file path>",
       "description": "<what this change does>",
-      "before": "<exact text to find>",
+      "before": "<exact text to find and replace - must be a unique substring>",
       "after": "<replacement text>"
     }
   ],
   "reasoning": "<why these changes will improve scores>",
   "expectedImprovement": <0-0.1 number>
-}`;
+}
+
+IMPORTANT change type rules:
+- Use "code" for ALL file modifications (finds "before" substring and replaces with "after")
+- Use "reindex" to trigger corpus reindexing after config/chunking changes
+- The "before" field must be an EXACT substring that appears in the file (copy-paste from source)
+- Keep "before" strings short but unique enough to match only once`;
 
       const schema = JSON.stringify({
         type: 'object',
@@ -135,7 +141,7 @@ Respond with a JSON object containing:
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['config', 'code', 'reindex'] },
+                type: { type: 'string', enum: ['code', 'reindex'] },
                 priority: { type: 'number' },
                 file: { type: 'string' },
                 description: { type: 'string' },

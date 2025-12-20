@@ -20,7 +20,7 @@ const INTENT_FILE_BOOSTS: Record<QueryIntent, Record<string, number>> = {
   'how-to': {
     'documentation-primary': 1.15,  // Modest boost for docs
     'documentation': 1.1,
-    'example': 1.2,                 // Examples are ideal for "how to"
+    'example': 1.35,                 // Examples are ideal for "how to"
     'source': 0.9,                  // Slight penalty - source might still have good content
     'source-internal': 0.85,        // Moderate penalty - internal code less useful
     'test': 0.9,
@@ -421,7 +421,7 @@ export class SearchService {
         baseBoost = 1.0;  // Source code baseline
         break;
       case 'source-internal':
-        baseBoost = 0.6;  // Internal implementation files
+        baseBoost = 0.75;  // Internal implementation files (not too harsh)
         break;
       case 'test':
         baseBoost = 0.7;  // Tests significantly lower

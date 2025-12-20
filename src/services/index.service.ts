@@ -41,8 +41,8 @@ export class IndexService {
     this.lanceStore = lanceStore;
     this.embeddingEngine = embeddingEngine;
     this.chunker = new ChunkingService({
-      chunkSize: options.chunkSize ?? 512,
-      chunkOverlap: options.chunkOverlap ?? 50,
+      chunkSize: options.chunkSize ?? 768,
+      chunkOverlap: options.chunkOverlap ?? 100,
     });
   }
 

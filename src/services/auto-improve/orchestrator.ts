@@ -89,7 +89,7 @@ export class AutoImproveOrchestrator {
 
       iterations.push(iterResult);
 
-      if (!iterResult.rolledBack) {
+      if (!iterResult.rolledBack && iterResult.checkpointId !== 'dry-run') {
         currentScores = iterResult.newScores;
         totalChangesApplied += iterResult.appliedChanges.length;
       }
@@ -163,8 +163,12 @@ export class AutoImproveOrchestrator {
       };
     }
 
-    // Get files that will be modified
-    const filesToBackup = [...new Set(consolidatedChanges.map(c => c.file))];
+    // Get files that will be modified (exclude reindex changes - they don't have real file paths)
+    const filesToBackup = [...new Set(
+      consolidatedChanges
+        .filter(c => c.type !== 'reindex')
+        .map(c => c.file)
+    )];
 
     // Create checkpoint
     const checkpoint = await this.checkpointService.create(

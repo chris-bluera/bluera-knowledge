@@ -23,13 +23,18 @@ export class ChunkingService {
   }
 
   /**
-   * Chunk text content. Uses semantic chunking for Markdown,
+   * Chunk text content. Uses semantic chunking for Markdown and code files,
    * falling back to sliding window for other content.
    */
   chunk(text: string, filePath?: string): Chunk[] {
     // Use semantic chunking for Markdown files
     if (filePath && /\.md$/i.test(filePath)) {
       return this.chunkMarkdown(text);
+    }
+
+    // Use semantic chunking for TypeScript/JavaScript files
+    if (filePath && /\.(ts|tsx|js|jsx)$/i.test(filePath)) {
+      return this.chunkCode(text);
     }
 
     return this.chunkSlidingWindow(text);
@@ -114,6 +119,67 @@ export class ChunkingService {
     }
 
     return chunks;
+  }
+
+  /**
+   * Semantic chunking for TypeScript/JavaScript code files.
+   * Splits on top-level declarations to keep functions/classes together.
+   */
+  private chunkCode(text: string): Chunk[] {
+    // Match top-level declarations: export/function/class/interface/type/const/let/var
+    const declarationRegex = /^(?:export\s+)?(?:async\s+)?(?:function|class|interface|type|const|let|var|enum)\s+\w+/gm;
+    const declarations: Array<{ startOffset: number; endOffset: number }> = [];
+    
+    let match: RegExpExecArray | null;
+    while ((match = declarationRegex.exec(text)) !== null) {
+      declarations.push({ startOffset: match.index, endOffset: match.index });
+    }
+
+    // If no declarations found or only one, use sliding window
+    if (declarations.length <= 1) {
+      return this.chunkSlidingWindow(text);
+    }
+
+    // Find end of each declaration (next declaration or EOF)
+    for (let i = 0; i < declarations.length; i++) {
+      const nextStart = i < declarations.length - 1 ? declarations[i + 1]!.startOffset : text.length;
+      declarations[i]!.endOffset = nextStart;
+    }
+
+    const chunks: Chunk[] = [];
+    
+    for (const decl of declarations) {
+      const content = text.slice(decl.startOffset, decl.endOffset).trim();
+      
+      if (content.length <= this.chunkSize) {
+        // Declaration fits in one chunk
+        chunks.push({
+          content,
+          chunkIndex: chunks.length,
+          totalChunks: 0,
+          startOffset: decl.startOffset,
+          endOffset: decl.endOffset,
+        });
+      } else {
+        // Split large declaration with sliding window
+        const declChunks = this.chunkSlidingWindow(content);
+        for (const subChunk of declChunks) {
+          chunks.push({
+            ...subChunk,
+            chunkIndex: chunks.length,
+            startOffset: decl.startOffset + subChunk.startOffset,
+            endOffset: decl.startOffset + subChunk.endOffset,
+          });
+        }
+      }
+    }
+
+    // Set totalChunks
+    for (const chunk of chunks) {
+      chunk.totalChunks = chunks.length;
+    }
+
+    return chunks.length > 0 ? chunks : this.chunkSlidingWindow(text);
   }
 
   /**

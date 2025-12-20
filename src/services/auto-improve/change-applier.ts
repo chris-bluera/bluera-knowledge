@@ -27,7 +27,9 @@ export class ChangeApplier {
    * Stops on first error and reports partial success.
    */
   async apply(changes: Change[]): Promise<ApplyResult> {
-    const sortedChanges = [...changes].sort((a, b) => a.priority - b.priority);
+    // Filter out reindex changes - they're just triggers, not actual file modifications
+    const fileChanges = changes.filter(c => c.type !== 'reindex');
+    const sortedChanges = [...fileChanges].sort((a, b) => a.priority - b.priority);
     const result: ApplyResult = {
       success: true,
       appliedCount: 0,
@@ -55,12 +57,14 @@ export class ChangeApplier {
    * Checks that all files exist and before content matches.
    */
   async validate(changes: Change[]): Promise<ValidateResult> {
+    // Filter out reindex changes - they don't have actual files to validate
+    const fileChanges = changes.filter(c => c.type !== 'reindex');
     const result: ValidateResult = {
       valid: true,
       errors: [],
     };
 
-    for (const change of changes) {
+    for (const change of fileChanges) {
       const validation = this.validateChange(change);
       if (!validation.valid) {
         result.valid = false;
