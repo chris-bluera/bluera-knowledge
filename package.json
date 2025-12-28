@@ -4,7 +4,7 @@
   "description": "CLI tool for managing knowledge stores with semantic search",
   "type": "module",
   "bin": {
-    "bluera-knowledge": "./dist/index.js"
+    "bkb": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

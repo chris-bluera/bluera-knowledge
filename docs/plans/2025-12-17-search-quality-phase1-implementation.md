@@ -6,7 +6,7 @@
 
 **Architecture:** Committed corpus (OSS repos + docs) indexed into dedicated test store, curated query sets in JSON, baseline comparison for regression detection.
 
-**Tech Stack:** TypeScript, bluera-knowledge CLI, Claude CLI for AI evaluation
+**Tech Stack:** TypeScript, bkb CLI, Claude CLI for AI evaluation
 
 ---
 

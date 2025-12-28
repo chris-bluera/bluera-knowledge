@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-A comprehensive CLI tool for managing knowledge stores with semantic search capabilities. Designed to provide full feature parity with the existing bluera-knowledge VS Code extension, enabling headless operation, scriptability, and integration with CI/CD pipelines.
+A comprehensive CLI tool for managing knowledge stores with semantic search capabilities. Designed to provide full feature parity with the existing bkbVS Code extension, enabling headless operation, scriptability, and integration with CI/CD pipelines.
 
 **Target Location**: `~/repos/bluera-studio-work/bluera-knowledge/`
 
@@ -13,7 +13,7 @@ A comprehensive CLI tool for managing knowledge stores with semantic search capa
 **Recommendation**: TypeScript primary with Python subprocess bridge
 
 **Rationale**:
-1. The existing bluera-knowledge module is 95% TypeScript
+1. The existing bkbmodule is 95% TypeScript
 2. Python is only used for crawl4ai web crawling (single dependency)
 3. Maintains codebase consistency with Bluera ecosystem
 4. Enables code sharing with existing implementation
@@ -180,7 +180,7 @@ function isFileStore(store: Store): store is FileStore {
 ### Global Options
 
 ```bash
-bluera-knowledge [command] [options]
+bkb[command] [options]
 
 Global Options:
   --config, -c     Path to config file (default: ~/.bluera/knowledge.json)
@@ -196,46 +196,46 @@ Global Options:
 
 ```bash
 # List all stores
-bluera-knowledge store list [--type <type>] [--status <status>]
+bkbstore list [--type <type>] [--status <status>]
 
 # Create a new store
-bluera-knowledge store create <name> --type <file|repo|web> --source <path|url>
+bkbstore create <name> --type <file|repo|web> --source <path|url>
   --type         Store type (required)
   --source       Source path or URL (required)
   --description  Optional description
   --tags         Comma-separated tags
 
 # Show store details
-bluera-knowledge store info <store-id|name>
+bkbstore info <store-id|name>
 
 # Update store configuration
-bluera-knowledge store update <store-id|name> [--name <new-name>] [--description <desc>]
+bkbstore update <store-id|name> [--name <new-name>] [--description <desc>]
 
 # Delete a store
-bluera-knowledge store delete <store-id|name> [--force]
+bkbstore delete <store-id|name> [--force]
 
 # Get store statistics
-bluera-knowledge store stats <store-id|name>
+bkbstore stats <store-id|name>
 ```
 
 ### Indexing Commands
 
 ```bash
 # Index a store (full reindex)
-bluera-knowledge index <store-id|name>
+bkbindex <store-id|name>
   --incremental    Only index changed files
   --force          Force reindex all files
   --concurrency    Number of parallel workers (default: 4)
   --progress       Show progress bar (default: true in TTY)
 
 # Index status
-bluera-knowledge index status <store-id|name>
+bkbindex status <store-id|name>
 
 # Cancel ongoing indexing
-bluera-knowledge index cancel <store-id|name>
+bkbindex cancel <store-id|name>
 
 # Watch for changes and auto-index
-bluera-knowledge index watch <store-id|name>
+bkbindex watch <store-id|name>
   --debounce       Debounce interval in ms (default: 1000)
 ```
 
@@ -243,7 +243,7 @@ bluera-knowledge index watch <store-id|name>
 
 ```bash
 # Search across stores
-bluera-knowledge search <query>
+bkbsearch <query>
   --stores, -s     Comma-separated store IDs/names (default: all)
   --mode           Search mode: vector | fts | hybrid (default: hybrid)
   --limit, -n      Max results (default: 10)
@@ -252,17 +252,17 @@ bluera-knowledge search <query>
   --include-content  Include full content in results
 
 # Search with context (returns surrounding chunks)
-bluera-knowledge search <query> --context <lines>
+bkbsearch <query> --context <lines>
 
 # Interactive search mode
-bluera-knowledge search --interactive
+bkbsearch --interactive
 ```
 
 ### Web Crawling Commands
 
 ```bash
 # Crawl a URL/site
-bluera-knowledge crawl <url>
+bkbcrawl <url>
   --store          Target store ID/name
   --depth          Crawl depth (default: 1)
   --max-pages      Maximum pages to crawl (default: 50)
@@ -271,37 +271,37 @@ bluera-knowledge crawl <url>
   --respect-robots Respect robots.txt (default: true)
 
 # Check crawl status
-bluera-knowledge crawl status
+bkbcrawl status
 
 # Cancel ongoing crawl
-bluera-knowledge crawl cancel
+bkbcrawl cancel
 ```
 
 ### Maintenance Commands
 
 ```bash
 # Compact database (reclaim space)
-bluera-knowledge maintenance compact
+bkbmaintenance compact
 
 # Verify store integrity
-bluera-knowledge maintenance verify <store-id|name>
+bkbmaintenance verify <store-id|name>
 
 # Export store to portable format
-bluera-knowledge export <store-id|name> --output <path>
+bkbexport <store-id|name> --output <path>
   --format         Export format: json | parquet | lance
 
 # Import store from export
-bluera-knowledge import <path> --name <store-name>
+bkbimport <path> --name <store-name>
 
 # Clear all data
-bluera-knowledge maintenance reset --confirm
+bkbmaintenance reset --confirm
 ```
 
 ### Server Mode (for UI Integration)
 
 ```bash
 # Start HTTP server for UI/API access
-bluera-knowledge serve
+bkbserve
   --port, -p       Port number (default: 3847)
   --host           Host to bind (default: 127.0.0.1)
   --cors           Enable CORS (default: false)
@@ -757,37 +757,37 @@ export default [
 ### Index a Local Project
 ```bash
 # Create and index a file store (single file or folder)
-bluera-knowledge store create my-project --type file --source ./my-project
-bluera-knowledge index my-project
+bkbstore create my-project --type file --source ./my-project
+bkbindex my-project
 
 # Search the indexed content
-bluera-knowledge search "authentication flow"
+bkbsearch "authentication flow"
 ```
 
 ### Monitor a Repository
 ```bash
 # Create repo store (respects .gitignore)
-bluera-knowledge store create api-docs --type repo --source ~/projects/api
+bkbstore create api-docs --type repo --source ~/projects/api
 
 # Watch for changes
-bluera-knowledge index watch api-docs
+bkbindex watch api-docs
 ```
 
 ### Build a Knowledge Base from Documentation Sites
 ```bash
 # Crawl documentation
-bluera-knowledge store create vue-docs --type web --source https://vuejs.org/guide/
-bluera-knowledge crawl https://vuejs.org/guide/ --store vue-docs --depth 2
+bkbstore create vue-docs --type web --source https://vuejs.org/guide/
+bkbcrawl https://vuejs.org/guide/ --store vue-docs --depth 2
 
 # Search across all stores
-bluera-knowledge search "composition API reactivity" --stores vue-docs
+bkbsearch "composition API reactivity" --stores vue-docs
 ```
 
 ### Scripting/Automation
 ```bash
 # JSON output for scripting
-bluera-knowledge search "error handling" --format json | jq '.results[0].path'
+bkbsearch "error handling" --format json | jq '.results[0].path'
 
 # Pipe search results
-bluera-knowledge search "TODO" --include-content --format plain | grep -n "FIXME"
+bkbsearch "TODO" --include-content --format plain | grep -n "FIXME"
 ```

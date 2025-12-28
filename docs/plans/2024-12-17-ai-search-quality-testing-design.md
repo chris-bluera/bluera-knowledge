@@ -22,7 +22,7 @@ npm run test:search-quality
     │
     ├─► Phase 2: Search & Evaluation
     │   └─► For each query:
-    │       ├─► Run bluera-knowledge search
+    │       ├─► Run bkbsearch
     │       └─► Claude evaluates results (scores + analysis + suggestions)
     │
     └─► Output: tests/quality-results/2024-12-17T10-30-00.jsonl
@@ -125,7 +125,7 @@ Claude uses Glob/Read tools to browse fixtures, understands content types (auth 
 ### Phase 2: Per-Query Evaluation
 
 ```bash
-bluera-knowledge search "JWT refresh" --include-content | \
+bkbsearch "JWT refresh" --include-content | \
   claude -p --output-format json --json-schema '...' \
   "Evaluate these search results for the query 'JWT refresh'..."
 ```

@@ -138,7 +138,7 @@ export function createSetupCommand(getOptions: () => GlobalOptions): Command {
         }
       }
 
-      console.log('\nSetup complete! Use "bluera-knowledge search <query>" to search.\n');
+      console.log('\nSetup complete! Use "bkb search <query>" to search.\n');
     });
 
   return setup;

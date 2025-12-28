@@ -295,7 +295,7 @@ git commit -m "chore: install dependencies"
 ```typescript
 #!/usr/bin/env node
 
-console.log('bluera-knowledge CLI');
+console.log('bkb CLI');
 ```
 
 **Step 2: Create empty module index files**
@@ -344,7 +344,7 @@ Expected: Build succeeds, creates `dist/index.js`
 node dist/index.js
 ```
 
-Expected: Output `bluera-knowledge CLI`
+Expected: Output `bkb CLI`
 
 **Step 5: Commit**
 
@@ -2878,7 +2878,7 @@ describe('CLI Integration', () => {
 
   it('shows help', () => {
     const output = cli('--help');
-    expect(output).toContain('bluera-knowledge');
+    expect(output).toContain('bkb');
     expect(output).toContain('CLI tool for managing knowledge stores');
   });
 

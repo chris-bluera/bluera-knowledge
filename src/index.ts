@@ -57,7 +57,7 @@ function formatCommandHelp(cmd: Command, indent: string = ''): string[] {
  * Print comprehensive help showing all commands, subcommands, and options.
  */
 function printFullHelp(program: Command): void {
-  console.log('bluera-knowledge - CLI tool for managing knowledge stores with semantic search\n');
+  console.log('bkb - CLI tool for managing knowledge stores with semantic search\n');
 
   // Active paths
   console.log('Paths:');
