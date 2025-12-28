@@ -546,7 +546,8 @@ export class SearchService {
     const constMatch = content.match(/(?:export\s+)?const\s+(\w+)/);
     if (constMatch && constMatch[1]) return constMatch[1];
 
-    return '';
+    // Fallback: return "(anonymous)" for unnamed symbols
+    return '(anonymous)';
   }
 
   private inferType(fileType: string | undefined, codeUnit: CodeUnit | undefined): import('../types/search.js').ResultSummary['type'] {
@@ -556,14 +557,31 @@ export class SearchService {
   }
 
   private generatePurpose(content: string, _query: string): string {
+    // TODO: Use _query parameter for query-specific purpose generation in future enhancement
+
     // Extract first line of JSDoc comment if present
     const docMatch = content.match(/\/\*\*\s*\n\s*\*\s*([^\n]+)/);
     if (docMatch && docMatch[1]) return docMatch[1].trim();
 
-    // Fallback: first line that looks like a purpose
+    // Fallback: first line that looks like a purpose (skip imports and declarations)
     const lines = content.split('\n');
     for (const line of lines) {
       const cleaned = line.trim();
+
+      // Skip import statements, export statements, and function/class declarations
+      if (cleaned.startsWith('import ') ||
+          cleaned.startsWith('export ') ||
+          cleaned.startsWith('function ') ||
+          cleaned.startsWith('class ') ||
+          cleaned.startsWith('interface ') ||
+          cleaned.startsWith('type ') ||
+          cleaned.startsWith('const ') ||
+          cleaned.startsWith('let ') ||
+          cleaned.startsWith('var ')) {
+        continue;
+      }
+
+      // Return first meaningful line (not too short, not too long, not a comment)
       if (cleaned.length > 20 && cleaned.length < 100 && !cleaned.startsWith('//')) {
         return cleaned;
       }
@@ -604,11 +622,28 @@ export class SearchService {
   }
 
   private extractConcepts(content: string, _query: string): string[] {
+    // TODO: Use _query parameter to prioritize query-related concepts in future enhancement
+
+    // Common stopwords to filter out
+    const stopwords = new Set([
+      'this', 'that', 'these', 'those', 'from', 'with', 'have', 'will',
+      'would', 'should', 'could', 'about', 'been', 'were', 'being',
+      'function', 'return', 'const', 'import', 'export', 'default',
+      'type', 'interface', 'class', 'extends', 'implements', 'async',
+      'await', 'then', 'catch', 'throw', 'error', 'undefined', 'null',
+      'true', 'false', 'void', 'number', 'string', 'boolean', 'object',
+      'array', 'promise', 'callback', 'resolve', 'reject', 'value',
+      'param', 'params', 'args', 'props', 'options', 'config', 'data'
+    ]);
+
     // Simple keyword extraction
     const words = content.toLowerCase().match(/\b[a-z]{4,}\b/g) ?? [];
     const frequency = new Map<string, number>();
 
     for (const word of words) {
+      // Skip stopwords
+      if (stopwords.has(word)) continue;
+
       frequency.set(word, (frequency.get(word) ?? 0) + 1);
     }
 

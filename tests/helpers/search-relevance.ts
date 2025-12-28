@@ -50,32 +50,83 @@ export function parseSearchOutput(output: string): SearchResult[] {
 
   let currentResult: Partial<SearchResult> | null = null;
   let rank = 0;
+  let expectingLocation = false;
+  let locationSet = false;
 
   for (const line of lines) {
-    // Match result header: "1. [0.85] path/to/file.ts" or "1. [-0.23] path/to/file.ts"
+    // Match new format header: "1. [0.85] function: PROVIDERS"
+    // Or old format: "1. [0.85] path/to/file.ts"
     const headerMatch = line.match(/^(\d+)\.\s+\[(-?[0-9.]+)\]\s+(.+)$/);
     if (headerMatch) {
-      if (currentResult && currentResult.content) {
+      // Save previous result if it exists
+      if (currentResult) {
+        // If source is still empty, try to extract from content or use a placeholder
+        if (!currentResult.source) {
+          currentResult.source = 'unknown';
+        }
         results.push(currentResult as SearchResult);
       }
+
       rank++;
-      currentResult = {
-        rank,
-        score: parseFloat(headerMatch[2]),
-        source: headerMatch[3].trim(),
-        content: '',
-      };
+      const headerContent = headerMatch[3].trim();
+
+      // Check if this is new format (contains type prefix like "function:", "class:", etc.)
+      const typeMatch = headerContent.match(/^(function|class|interface|type|const|documentation):\s+(.+)$/);
+      if (typeMatch) {
+        // New format - next line should contain the location
+        currentResult = {
+          rank,
+          score: parseFloat(headerMatch[2]),
+          source: '', // Will be filled from next line
+          content: '',
+        };
+        expectingLocation = true;
+        locationSet = false;
+      } else {
+        // Old format - source is directly in header
+        currentResult = {
+          rank,
+          score: parseFloat(headerMatch[2]),
+          source: headerContent,
+          content: '',
+        };
+        expectingLocation = false;
+        locationSet = true;
+      }
       continue;
     }
 
-    // Accumulate content lines (indented with spaces)
+    // Process indented lines
     if (currentResult && line.startsWith('   ')) {
-      currentResult.content += (currentResult.content ? '\n' : '') + line.trim();
+      const trimmed = line.trim();
+
+      // If we're expecting location and haven't set it yet
+      if (expectingLocation && !locationSet) {
+        // First indented line after header is the location
+        // Extract just the file path, removing line numbers if present
+        const pathMatch = trimmed.match(/^([^:]+?)(?::\d+)?$/);
+        if (pathMatch) {
+          currentResult.source = pathMatch[1];
+        } else {
+          currentResult.source = trimmed;
+        }
+        locationSet = true;
+        expectingLocation = false;
+        continue;
+      }
+
+      // Accumulate content lines (all other indented lines)
+      if (locationSet) {
+        currentResult.content += (currentResult.content ? '\n' : '') + trimmed;
+      }
     }
   }
 
   // Don't forget the last result
-  if (currentResult && currentResult.content) {
+  if (currentResult) {
+    if (!currentResult.source) {
+      currentResult.source = 'unknown';
+    }
     results.push(currentResult as SearchResult);
   }
 

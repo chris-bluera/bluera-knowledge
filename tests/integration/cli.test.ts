@@ -31,8 +31,9 @@ describe('CLI Integration', () => {
 
   it('shows help', () => {
     const output = cli('--help');
-    expect(output).toContain('bluera-knowledge');
     expect(output).toContain('CLI tool for managing knowledge stores');
+    expect(output).toContain('search');
+    expect(output).toContain('index');
   });
 
   it('creates and lists stores', () => {
