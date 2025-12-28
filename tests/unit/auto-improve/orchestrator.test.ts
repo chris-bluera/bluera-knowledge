@@ -223,6 +223,43 @@ describe('AutoImproveOrchestrator', () => {
       expect(configContent).toBe('{"chunkSize": 512}');
     });
 
+    it('rolls back when score degrades by more than stricter threshold', async () => {
+      const degradedScores: Scores = {
+        ...baseScores,
+        overall: baseScores.overall - 0.015, // -0.015 exceeds new 0.01 threshold
+      };
+
+      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue(degradedScores);
+
+      const result = await orchestrator.run({ ...defaultOptions, rollbackThreshold: 0.01 });
+
+      expect(result.iterations[0].rolledBack).toBe(true);
+      expect(result.iterations[0].reason).toContain('degraded by 0.015');
+      // File should be restored
+      const configContent = await import('node:fs').then(fs =>
+        fs.readFileSync(join(tempDir, 'src', 'config.json'), 'utf-8')
+      );
+      expect(configContent).toBe('{"chunkSize": 512}');
+    });
+
+    it('does not roll back when score degrades within threshold', async () => {
+      const slightlyDegradedScores: Scores = {
+        ...baseScores,
+        overall: baseScores.overall - 0.005, // -0.005 is within 0.01 threshold (test variance)
+      };
+
+      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue(slightlyDegradedScores);
+
+      const result = await orchestrator.run({ ...defaultOptions, rollbackThreshold: 0.01 });
+
+      expect(result.iterations[0].rolledBack).toBe(false);
+      // File should still be changed
+      const configContent = await import('node:fs').then(fs =>
+        fs.readFileSync(join(tempDir, 'src', 'config.json'), 'utf-8')
+      );
+      expect(configContent).toBe('{"chunkSize": 1024}');
+    });
+
     it('stops when improvement is below threshold', async () => {
       mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue({
         ...baseScores,

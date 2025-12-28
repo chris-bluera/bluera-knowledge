@@ -1804,7 +1804,7 @@ async function doAutoImprove(options: {
   const maxIterations = parseInt(options.maxIterations ?? '3', 10);
   const targetScore = parseFloat(options.targetScore ?? '0.7');
   const minImprovement = parseFloat(options.minImprovement ?? '0.02');
-  const rollbackThreshold = parseFloat(options.rollbackThreshold ?? '0.03');
+  const rollbackThreshold = parseFloat(options.rollbackThreshold ?? '0.01');
   const focus = options.focus ?? 'auto';
 
   console.log(`   Max iterations: ${String(maxIterations)}`);
