@@ -30,6 +30,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@types/babel__core": "^7.20.5",
+    "@types/babel__traverse": "^7.28.0",
     "@types/node": "^25.0.2",
     "eslint": "^9.39.2",
     "node-gyp": "^12.1.0",
@@ -39,6 +41,9 @@
     "vitest": "^4.0.16"
   },
   "dependencies": {
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5",
     "@hono/node-server": "^1.19.7",
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.23.0",
