@@ -13,6 +13,7 @@ import { createExportCommand } from './cli/commands/export.js';
 import { createImportCommand } from './cli/commands/import.js';
 import { createQualityCommand } from './cli/commands/quality.js';
 import { createSetupCommand } from './cli/commands/setup.js';
+import { createMCPCommand } from './cli/commands/mcp.js';
 
 // Default paths
 const DEFAULT_DATA_DIR = join(homedir(), '.bluera', 'knowledge-data');
@@ -93,6 +94,7 @@ program.addCommand(createExportCommand(() => getGlobalOptions(program)));
 program.addCommand(createImportCommand(() => getGlobalOptions(program)));
 program.addCommand(createQualityCommand(() => getGlobalOptions(program)));
 program.addCommand(createSetupCommand(() => getGlobalOptions(program)));
+program.addCommand(createMCPCommand(() => getGlobalOptions(program)));
 
 // Show comprehensive help when no arguments provided
 if (process.argv.length <= 2) {
