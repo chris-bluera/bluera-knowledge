@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { createServices } from '../../services/index.js';
 import type { GlobalOptions } from '../program.js';
-import type { SearchMode } from '../../types/search.js';
+import type { SearchMode, DetailLevel } from '../../types/search.js';
 
 export function createSearchCommand(getOptions: () => GlobalOptions): Command {
   const search = new Command('search')
@@ -12,12 +12,14 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
     .option('-n, --limit <count>', 'Maximum results to return (default: 10)', '10')
     .option('-t, --threshold <score>', 'Minimum score 0-1; omit low-relevance results')
     .option('--include-content', 'Show full document content, not just preview snippet')
+    .option('--detail <level>', 'Context detail: minimal, contextual, full (default: minimal)', 'minimal')
     .action(async (query: string, options: {
       stores?: string;
       mode?: SearchMode;
       limit?: string;
       threshold?: string;
       includeContent?: boolean;
+      detail?: DetailLevel;
     }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
@@ -59,6 +61,7 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
         limit: parseInt(options.limit ?? '10', 10),
         threshold: options.threshold !== undefined ? parseFloat(options.threshold) : undefined,
         includeContent: options.includeContent,
+        detail: options.detail ?? 'minimal',
       });
 
       if (globalOpts.format === 'json') {
@@ -71,18 +74,32 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
         }
       } else {
         console.log(`\nSearch: "${query}"`);
-        console.log(`Mode: ${results.mode} | Stores: ${results.stores.length} | Results: ${results.totalResults} | Time: ${results.timeMs}ms\n`);
+        console.log(`Mode: ${results.mode} | Detail: ${options.detail} | Stores: ${results.stores.length} | Results: ${results.totalResults} | Time: ${results.timeMs}ms\n`);
 
         if (results.results.length === 0) {
           console.log('No results found.\n');
         } else {
           for (let i = 0; i < results.results.length; i++) {
             const r = results.results[i]!;
-            const path = r.metadata.path ?? r.metadata.url ?? 'unknown';
-            console.log(`${i + 1}. [${r.score.toFixed(2)}] ${path}`);
-            // Use query-aware highlight if available, otherwise fall back to content preview
-            const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, ' ') + (r.content.length > 150 ? '...' : '');
-            console.log(`   ${preview}\n`);
+
+            if (r.summary) {
+              console.log(`${i + 1}. [${r.score.toFixed(2)}] ${r.summary.type}: ${r.summary.name}`);
+              console.log(`   ${r.summary.location}`);
+              console.log(`   ${r.summary.purpose}`);
+
+              if (r.context && options.detail !== 'minimal') {
+                console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(', ')}`);
+                console.log(`   Related: ${r.context.relatedConcepts.slice(0, 3).join(', ')}`);
+              }
+
+              console.log();
+            } else {
+              // Fallback to old format
+              const path = r.metadata.path ?? r.metadata.url ?? 'unknown';
+              console.log(`${i + 1}. [${r.score.toFixed(2)}] ${path}`);
+              const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, ' ') + (r.content.length > 150 ? '...' : '');
+              console.log(`   ${preview}\n`);
+            }
           }
         }
       }

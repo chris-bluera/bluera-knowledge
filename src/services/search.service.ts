@@ -1,8 +1,9 @@
 import type { LanceStore } from '../db/lance.js';
 import type { EmbeddingEngine } from '../db/embeddings.js';
-import type { SearchQuery, SearchResponse, SearchResult } from '../types/search.js';
+import type { SearchQuery, SearchResponse, SearchResult, DetailLevel } from '../types/search.js';
 import type { StoreId } from '../types/brands.js';
-import { extractSnippet } from './snippet.service.js';
+import { CodeUnitService } from './code-unit.service.js';
+import type { CodeUnit } from '../types/search.js';
 
 /**
  * Query intent classification for context-aware ranking.
@@ -176,6 +177,7 @@ export class SearchService {
   private readonly lanceStore: LanceStore;
   private readonly embeddingEngine: EmbeddingEngine;
   private readonly rrfConfig: RRFConfig;
+  private readonly codeUnitService: CodeUnitService;
 
   constructor(
     lanceStore: LanceStore,
@@ -186,6 +188,7 @@ export class SearchService {
     this.lanceStore = lanceStore;
     this.embeddingEngine = embeddingEngine;
     this.rrfConfig = rrfConfig;
+    this.codeUnitService = new CodeUnitService();
   }
 
   async search(query: SearchQuery): Promise<SearchResponse> {
@@ -193,6 +196,7 @@ export class SearchService {
     const mode = query.mode ?? 'hybrid';
     const limit = query.limit ?? 10;
     const stores = query.stores ?? [];
+    const detail = query.detail ?? 'minimal';
 
     let allResults: SearchResult[] = [];
 
@@ -211,18 +215,17 @@ export class SearchService {
     // Deduplicate by source file - keep best chunk per source (considers query relevance)
     const dedupedResults = this.deduplicateBySource(allResults, query.query);
 
-    // Generate query-aware snippets for each result
-    const resultsWithSnippets = dedupedResults.slice(0, limit).map(r => ({
-      ...r,
-      highlight: extractSnippet(r.content, query.query, { maxLength: 200 }),
-    }));
+    // Enhance results with progressive context
+    const enhancedResults = dedupedResults.slice(0, limit).map(r =>
+      this.addProgressiveContext(r, query.query, detail)
+    );
 
     return {
       query: query.query,
       mode,
       stores,
-      results: resultsWithSnippets,
-      totalResults: resultsWithSnippets.length,
+      results: enhancedResults,
+      totalResults: enhancedResults.length,
       timeMs: Date.now() - startTime,
     };
   }
@@ -466,5 +469,164 @@ export class SearchService {
     }
 
     return 1.0; // No framework context in query
+  }
+
+  private addProgressiveContext(
+    result: SearchResult,
+    query: string,
+    detail: DetailLevel
+  ): SearchResult {
+    const enhanced = { ...result };
+
+    // Layer 1: Always add summary
+    const path = result.metadata.path ?? result.metadata.url ?? 'unknown';
+    const fileType = result.metadata['fileType'] as string | undefined;
+
+    // Try to extract code unit
+    const codeUnit = this.extractCodeUnitFromResult(result);
+
+    enhanced.summary = {
+      type: this.inferType(fileType, codeUnit),
+      name: codeUnit?.name ?? this.extractSymbolName(result.content),
+      signature: codeUnit?.signature ?? '',
+      purpose: this.generatePurpose(result.content, query),
+      location: `${path}${codeUnit ? ':' + codeUnit.startLine : ''}`,
+      relevanceReason: this.generateRelevanceReason(result, query)
+    };
+
+    // Layer 2: Add context if requested
+    if (detail === 'contextual' || detail === 'full') {
+      enhanced.context = {
+        interfaces: this.extractInterfaces(result.content),
+        keyImports: this.extractImports(result.content),
+        relatedConcepts: this.extractConcepts(result.content, query),
+        usage: {
+          calledBy: 0, // TODO: Implement from code graph
+          calls: 0
+        }
+      };
+    }
+
+    // Layer 3: Add full context if requested
+    if (detail === 'full') {
+      enhanced.full = {
+        completeCode: codeUnit?.fullContent ?? result.content,
+        relatedCode: [], // TODO: Implement from code graph
+        documentation: this.extractDocumentation(result.content),
+        tests: undefined
+      };
+    }
+
+    return enhanced;
+  }
+
+  private extractCodeUnitFromResult(result: SearchResult): CodeUnit | undefined {
+    const path = result.metadata.path;
+    if (!path) return undefined;
+
+    const ext = path.split('.').pop() ?? '';
+    const language = ext === 'ts' || ext === 'tsx' ? 'typescript' :
+                     ext === 'js' || ext === 'jsx' ? 'javascript' : ext;
+
+    // Try to find a symbol name in the content
+    const symbolName = this.extractSymbolName(result.content);
+    if (!symbolName) return undefined;
+
+    return this.codeUnitService.extractCodeUnit(result.content, symbolName, language);
+  }
+
+  private extractSymbolName(content: string): string {
+    // Extract function or class name
+    const funcMatch = content.match(/(?:export\s+)?(?:async\s+)?function\s+(\w+)/);
+    if (funcMatch && funcMatch[1]) return funcMatch[1];
+
+    const classMatch = content.match(/(?:export\s+)?class\s+(\w+)/);
+    if (classMatch && classMatch[1]) return classMatch[1];
+
+    const constMatch = content.match(/(?:export\s+)?const\s+(\w+)/);
+    if (constMatch && constMatch[1]) return constMatch[1];
+
+    return '';
+  }
+
+  private inferType(fileType: string | undefined, codeUnit: CodeUnit | undefined): import('../types/search.js').ResultSummary['type'] {
+    if (codeUnit) return codeUnit.type as import('../types/search.js').ResultSummary['type'];
+    if (fileType === 'documentation' || fileType === 'documentation-primary') return 'documentation';
+    return 'function';
+  }
+
+  private generatePurpose(content: string, _query: string): string {
+    // Extract first line of JSDoc comment if present
+    const docMatch = content.match(/\/\*\*\s*\n\s*\*\s*([^\n]+)/);
+    if (docMatch && docMatch[1]) return docMatch[1].trim();
+
+    // Fallback: first line that looks like a purpose
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const cleaned = line.trim();
+      if (cleaned.length > 20 && cleaned.length < 100 && !cleaned.startsWith('//')) {
+        return cleaned;
+      }
+    }
+
+    return 'Code related to query';
+  }
+
+  private generateRelevanceReason(result: SearchResult, query: string): string {
+    const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    const contentLower = result.content.toLowerCase();
+
+    const matchedTerms = queryTerms.filter(term => contentLower.includes(term));
+
+    if (matchedTerms.length > 0) {
+      return `Matches: ${matchedTerms.join(', ')}`;
+    }
+
+    return 'Semantically similar to query';
+  }
+
+  private extractInterfaces(content: string): string[] {
+    const interfaces: string[] = [];
+    const matches = content.matchAll(/interface\s+(\w+)/g);
+    for (const match of matches) {
+      if (match[1]) interfaces.push(match[1]);
+    }
+    return interfaces;
+  }
+
+  private extractImports(content: string): string[] {
+    const imports: string[] = [];
+    const matches = content.matchAll(/import\s+.*?from\s+['"]([^'"]+)['"]/g);
+    for (const match of matches) {
+      if (match[1]) imports.push(match[1]);
+    }
+    return imports.slice(0, 5); // Top 5
+  }
+
+  private extractConcepts(content: string, _query: string): string[] {
+    // Simple keyword extraction
+    const words = content.toLowerCase().match(/\b[a-z]{4,}\b/g) ?? [];
+    const frequency = new Map<string, number>();
+
+    for (const word of words) {
+      frequency.set(word, (frequency.get(word) ?? 0) + 1);
+    }
+
+    return Array.from(frequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([word]) => word);
+  }
+
+  private extractDocumentation(content: string): string {
+    const docMatch = content.match(/\/\*\*([\s\S]*?)\*\//);
+    if (docMatch && docMatch[1]) {
+      return docMatch[1]
+        .split('\n')
+        .map(line => line.replace(/^\s*\*\s?/, '').trim())
+        .filter(line => line.length > 0)
+        .join('\n');
+    }
+    return '';
   }
 }

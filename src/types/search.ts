@@ -13,6 +13,38 @@ export interface CodeUnit {
   language: string;
 }
 
+export interface ResultSummary {
+  readonly type: 'function' | 'class' | 'interface' | 'pattern' | 'documentation';
+  readonly name: string;
+  readonly signature: string;
+  readonly purpose: string;
+  readonly location: string;
+  readonly relevanceReason: string;
+}
+
+export interface ResultContext {
+  readonly interfaces: readonly string[];
+  readonly keyImports: readonly string[];
+  readonly relatedConcepts: readonly string[];
+  readonly usage: {
+    readonly calledBy: number;
+    readonly calls: number;
+  };
+}
+
+export interface ResultFull {
+  readonly completeCode: string;
+  readonly relatedCode: ReadonlyArray<{
+    readonly file: string;
+    readonly summary: string;
+    readonly relationship: string;
+  }>;
+  readonly documentation: string;
+  readonly tests?: string | undefined;
+}
+
+export type DetailLevel = 'minimal' | 'contextual' | 'full';
+
 export interface SearchQuery {
   readonly query: string;
   readonly stores?: readonly StoreId[] | undefined;
@@ -22,6 +54,9 @@ export interface SearchQuery {
   readonly filter?: Record<string, unknown> | undefined;
   readonly includeContent?: boolean | undefined;
   readonly contextLines?: number | undefined;
+
+  // NEW: Detail level for progressive context
+  readonly detail?: DetailLevel | undefined;
 }
 
 export interface SearchResult {
@@ -33,6 +68,11 @@ export interface SearchResult {
 
   // NEW: Structured code unit for AI agents
   readonly codeUnit?: CodeUnit | undefined;
+
+  // NEW: Progressive context layers
+  readonly summary?: ResultSummary | undefined;
+  readonly context?: ResultContext | undefined;
+  readonly full?: ResultFull | undefined;
 }
 
 export interface SearchResponse {
