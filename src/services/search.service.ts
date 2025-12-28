@@ -556,35 +556,84 @@ export class SearchService {
     return 'function';
   }
 
-  private generatePurpose(content: string, _query: string): string {
-    // TODO: Use _query parameter for query-specific purpose generation in future enhancement
-
+  private generatePurpose(content: string, query: string): string {
     // Extract first line of JSDoc comment if present
     const docMatch = content.match(/\/\*\*\s*\n\s*\*\s*([^\n]+)/);
     if (docMatch && docMatch[1]) return docMatch[1].trim();
 
-    // Fallback: first line that looks like a purpose (skip imports and declarations)
     const lines = content.split('\n');
+    const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+
+    // Helper to check if line is skippable (imports, declarations)
+    const shouldSkip = (cleaned: string): boolean => {
+      return cleaned.startsWith('import ') ||
+             cleaned.startsWith('export ') ||
+             cleaned.startsWith('function ') ||
+             cleaned.startsWith('class ') ||
+             cleaned.startsWith('interface ') ||
+             cleaned.startsWith('type ') ||
+             cleaned.startsWith('const ') ||
+             cleaned.startsWith('let ') ||
+             cleaned.startsWith('var ');
+    };
+
+    // Helper to score a line based on query term matches
+    const scoreLine = (cleaned: string): number => {
+      const lowerLine = cleaned.toLowerCase();
+      return queryTerms.filter(term => lowerLine.includes(term)).length;
+    };
+
+    // Helper to check if line is meaningful (length, not a comment)
+    const isMeaningful = (cleaned: string): boolean => {
+      if (cleaned.length === 0) return false;
+      if (cleaned.startsWith('//') || cleaned.startsWith('/*')) return false;
+      // Accept Markdown headings
+      if (cleaned.startsWith('#') && cleaned.length > 3) return true;
+      // Accept lines 15+ chars
+      return cleaned.length >= 15;
+    };
+
+    // First pass: find lines with query terms
+    let bestLine: string | null = null;
+    let bestScore = 0;
+
     for (const line of lines) {
       const cleaned = line.trim();
+      if (shouldSkip(cleaned) || !isMeaningful(cleaned)) continue;
 
-      // Skip import statements, export statements, and function/class declarations
-      if (cleaned.startsWith('import ') ||
-          cleaned.startsWith('export ') ||
-          cleaned.startsWith('function ') ||
-          cleaned.startsWith('class ') ||
-          cleaned.startsWith('interface ') ||
-          cleaned.startsWith('type ') ||
-          cleaned.startsWith('const ') ||
-          cleaned.startsWith('let ') ||
-          cleaned.startsWith('var ')) {
-        continue;
+      const score = scoreLine(cleaned);
+      if (score > bestScore) {
+        bestScore = score;
+        bestLine = cleaned;
+      }
+    }
+
+    // If we found a line with query terms, use it
+    if (bestLine && bestScore > 0) {
+      if (bestLine.length > 150) {
+        const firstSentence = bestLine.match(/^[^.!?]+[.!?]/);
+        if (firstSentence && firstSentence[0].length >= 20 && firstSentence[0].length <= 150) {
+          return firstSentence[0].trim();
+        }
+        return bestLine.substring(0, 147) + '...';
+      }
+      return bestLine;
+    }
+
+    // Fallback: first meaningful line (original logic)
+    for (const line of lines) {
+      const cleaned = line.trim();
+      if (shouldSkip(cleaned) || !isMeaningful(cleaned)) continue;
+
+      if (cleaned.length > 150) {
+        const firstSentence = cleaned.match(/^[^.!?]+[.!?]/);
+        if (firstSentence && firstSentence[0].length >= 20 && firstSentence[0].length <= 150) {
+          return firstSentence[0].trim();
+        }
+        return cleaned.substring(0, 147) + '...';
       }
 
-      // Return first meaningful line (not too short, not too long, not a comment)
-      if (cleaned.length > 20 && cleaned.length < 100 && !cleaned.startsWith('//')) {
-        return cleaned;
-      }
+      return cleaned;
     }
 
     return 'Code related to query';
