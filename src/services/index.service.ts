@@ -104,6 +104,7 @@ export class IndexService {
             // New metadata for ranking
             fileType,
             sectionHeader: chunk.sectionHeader,
+            functionName: chunk.functionName,
             hasDocComments: /\/\*\*[\s\S]*?\*\//.test(chunk.content),
           },
         };

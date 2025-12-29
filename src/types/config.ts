@@ -53,7 +53,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   indexing: {
     concurrency: 4,
-    chunkSize: 600,
+    chunkSize: 800,
     chunkOverlap: 100,
     ignorePatterns: ['node_modules/**', '.git/**', '*.min.js', '*.map'],
   },
