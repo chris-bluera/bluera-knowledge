@@ -1159,7 +1159,7 @@ function evaluateResults(
   query: string,
   intent: string,
   results: SearchResult[],
-  config: QualityConfig
+  _config: QualityConfig
 ): { evaluation: EvaluationResult; timeMs: number } {
   const startTime = Date.now();
   const schema = loadSchema('evaluation');
@@ -1209,7 +1209,7 @@ Be critical. A result that just mentions "Vue reactivity" is not helpful if it d
 
   const result = runCommand(args.join(' '), {
     cwd: getProjectRoot(),
-    timeout: config.timeoutMs,
+    timeout: 600000, // 10 minutes - Claude CLI evaluation can take time for complex results
   });
 
   return {

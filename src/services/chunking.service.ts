@@ -129,12 +129,20 @@ export class ChunkingService {
    */
   private chunkCode(text: string): Chunk[] {
     // Match top-level declarations with optional JSDoc/comments before them
-    const declarationRegex = /^(?:\/\*\*[\s\S]*?\*\/\s*)?^(?:export\s+)?(?:async\s+)?(?:function|class|interface|type|const|let|var|enum)\s+\w+/gm;
-    const declarations: Array<{ startOffset: number; endOffset: number }> = [];
+    const declarationRegex = /^(?:\/\*\*[\s\S]*?\*\/\s*)?^(?:export\s+)?(?:async\s+)?(?:function|class|interface|type|const|let|var|enum)\s+(\w+)/gm;
+    const declarations: Array<{ startOffset: number; endOffset: number; name?: string }> = [];
     
     let match: RegExpExecArray | null;
     while ((match = declarationRegex.exec(text)) !== null) {
-      declarations.push({ startOffset: match.index, endOffset: match.index });
+      const name = match[1];
+      const decl: { startOffset: number; endOffset: number; name?: string } = {
+        startOffset: match.index,
+        endOffset: match.index,
+      };
+      if (name !== undefined) {
+        decl.name = name;
+      }
+      declarations.push(decl);
     }
 
     // If no declarations found or only one, use sliding window

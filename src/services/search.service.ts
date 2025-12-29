@@ -593,7 +593,7 @@ export class SearchService {
       return cleaned.length >= 15;
     };
 
-    // First pass: find lines with query terms
+    // First pass: find lines with query terms, preferring complete sentences
     let bestLine: string | null = null;
     let bestScore = 0;
 
@@ -601,7 +601,19 @@ export class SearchService {
       const cleaned = line.trim();
       if (shouldSkip(cleaned) || !isMeaningful(cleaned)) continue;
 
-      const score = scoreLine(cleaned);
+      let score = scoreLine(cleaned);
+      
+      // Boost score for complete sentences (end with period, !, ?)
+      if (/[.!?]$/.test(cleaned)) {
+        score += 0.5;
+      }
+      
+      // Boost score for code examples (contains function calls or assignments)
+      // Favor complete patterns: function calls WITH arguments, assignments with values
+      if (/\w+\([^)]*\)|=\s*\w+\(|=>/.test(cleaned)) {
+        score += 0.5;  // Increased from 0.3 to prioritize actionable code
+      }
+      
       if (score > bestScore) {
         bestScore = score;
         bestLine = cleaned;
