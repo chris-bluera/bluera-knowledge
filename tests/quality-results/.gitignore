@@ -1,0 +1,9 @@
+# Test result files (.jsonl) are TRACKED to monitor quality/performance over time
+# These files contain historical test runs that help us:
+# - Track quality score trends across iterations
+# - Analyze regression patterns
+# - Compare auto-improve effectiveness
+# - Maintain performance history
+
+# Only ignore temporary checkpoint data
+.checkpoints/
