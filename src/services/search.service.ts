@@ -573,13 +573,8 @@ export class SearchService {
     const shouldSkip = (cleaned: string): boolean => {
       return cleaned.startsWith('import ') ||
              cleaned.startsWith('export ') ||
-             cleaned.startsWith('function ') ||
-             cleaned.startsWith('class ') ||
              cleaned.startsWith('interface ') ||
-             cleaned.startsWith('type ') ||
-             cleaned.startsWith('const ') ||
-             cleaned.startsWith('let ') ||
-             cleaned.startsWith('var ');
+             cleaned.startsWith('type ');
     };
 
     // Helper to score a line based on query term matches

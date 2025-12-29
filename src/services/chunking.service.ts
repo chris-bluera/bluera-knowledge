@@ -11,6 +11,8 @@ export interface Chunk {
   endOffset: number;
   /** Section header if this chunk starts a markdown section */
   sectionHeader?: string | undefined;
+  /** Function or class name if this chunk contains a code declaration */
+  functionName?: string | undefined;
 }
 
 export class ChunkingService {
