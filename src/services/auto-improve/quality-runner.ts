@@ -71,7 +71,7 @@ export class ProductionQualityRunner implements QualityRunner {
     const output = execSync('node dist/index.js quality test --quiet', {
       cwd: this.projectRoot,
       encoding: 'utf-8',
-      timeout: 300000, // 5 minutes
+      timeout: 1800000, // 30 minutes - quality tests with 15-17 queries can take 7-22 minutes
       maxBuffer: 10 * 1024 * 1024,
     });
 
