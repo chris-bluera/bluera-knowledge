@@ -74,17 +74,36 @@ export class ProductionQualityRunner implements QualityRunner {
       queryCount: 17,
     };
 
+    // Generous timeouts - only fail if process is truly stuck
+    // Quick (17 queries): ~5-15 min expected, 1 hour timeout (4x max)
+    // Comprehensive (60 queries): ~60-90 min expected, 4 hour timeout (2.5x max)
+    const timeout = testConfig.tier === 'comprehensive'
+      ? 14400000  // 4 hours for comprehensive
+      : 3600000;  // 1 hour for quick
+
     // Build CLI command with specific query set
     const args = ['quality', 'test', '--set', testConfig.querySet, '--quiet'];
     const command = `node dist/index.js ${args.join(' ')}`;
 
     // Run the quality test using the CLI
-    const output = execSync(command, {
-      cwd: this.projectRoot,
-      encoding: 'utf-8',
-      timeout: 1800000, // 30 minutes
-      maxBuffer: 10 * 1024 * 1024,
-    });
+    let output: string;
+    try {
+      output = execSync(command, {
+        cwd: this.projectRoot,
+        encoding: 'utf-8',
+        timeout,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+    } catch (error: unknown) {
+      // Check if this was a timeout
+      if (error instanceof Error && 'killed' in error && error.killed && 'signal' in error) {
+        throw new Error(
+          `Quality test timed out after ${timeout / 60000} minutes - process may be stuck. ` +
+          `Expected ${testConfig.queryCount} queries on ${testConfig.querySet} set.`
+        );
+      }
+      throw error;
+    }
 
     // Parse the output to find the score
     const overallMatch = output.match(/Average overall score:\s*([\d.]+)/);
@@ -101,6 +120,14 @@ export class ProductionQualityRunner implements QualityRunner {
     const summary = this.parseRunSummary(runs[0].path);
     if (summary === null) {
       throw new Error('Quality test completed but no summary found');
+    }
+
+    // CRITICAL: Validate run completed expected number of queries
+    if (summary.totalQueries < testConfig.queryCount) {
+      throw new Error(
+        `Incomplete test run: only ${summary.totalQueries}/${testConfig.queryCount} queries completed. ` +
+        `Test may have failed or timed out before completion.`
+      );
     }
 
     return Promise.resolve({
