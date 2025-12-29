@@ -5,5 +5,18 @@
   "stores": ["bluera-test-corpus"],
   "timeoutMs": 120000,
   "querySet": "extended",
-  "corpusVersion": "1.0.0"
+  "corpusVersion": "1.0.0",
+
+  "autoImprove": {
+    "quickTest": {
+      "querySet": "core",
+      "queryCount": 17
+    },
+    "comprehensiveTest": {
+      "querySet": "extended",
+      "queryCount": 60
+    },
+    "requireComprehensiveValidation": true,
+    "statisticalSignificanceLevel": 0.05
+  }
 }

@@ -10,6 +10,8 @@ import type {
   IterationResult,
   QualityRunSummary,
   IndexState,
+  TestConfig,
+  ValidationResult,
 } from './types.js';
 
 /**
@@ -18,7 +20,7 @@ import type {
  */
 export interface QualityRunner {
   getLatestRun(runId?: string): Promise<QualityRunSummary>;
-  runQualityTest(): Promise<Scores>;
+  runQualityTest(config?: TestConfig): Promise<ValidationResult>;
 }
 
 /**
@@ -156,6 +158,13 @@ export class AutoImproveOrchestrator {
         checkpointId: 'dry-run',
         recommendations,
         appliedChanges: consolidatedChanges, // Include proposed changes for display
+        quickValidation: {
+          tier: 'quick',
+          scores: currentScores,
+          queryCount: 0,
+          passed: false,
+          confidence: 0,
+        },
         newScores: currentScores,
         improvement: 0,
         rolledBack: false,
@@ -188,6 +197,13 @@ export class AutoImproveOrchestrator {
         checkpointId: checkpoint.id,
         recommendations,
         appliedChanges: [],
+        quickValidation: {
+          tier: 'quick',
+          scores: currentScores,
+          queryCount: 0,
+          passed: false,
+          confidence: 0,
+        },
         newScores: currentScores,
         improvement: 0,
         rolledBack: true,
@@ -195,32 +211,96 @@ export class AutoImproveOrchestrator {
       };
     }
 
-    // Run quality test
-    const newScores = await this.qualityRunner.runQualityTest();
-    const improvement = newScores.overall - currentScores.overall;
+    // TIER 1: Quick validation (small sample for fast feedback)
+    console.log('   Running quick validation (core, 17 queries)...');
+    const quickValidation = await this.qualityRunner.runQualityTest(
+      options.quickTestConfig ?? {
+        tier: 'quick',
+        querySet: 'core',
+        queryCount: 17,
+      }
+    );
 
-    // Check if we need to rollback
-    if (improvement < -options.rollbackThreshold) {
+    const quickImprovement = quickValidation.scores.overall - currentScores.overall;
+
+    // Rollback if quick validation fails
+    if (quickImprovement < -options.rollbackThreshold) {
+      console.log(`   ❌ Quick validation failed (${quickImprovement.toFixed(3)})`);
       this.checkpointService.restore(checkpoint.id);
       return {
         iteration: iterationNumber,
         checkpointId: checkpoint.id,
         recommendations,
         appliedChanges: consolidatedChanges,
-        newScores: currentScores, // Restored to original
+        quickValidation: { ...quickValidation, passed: false },
+        newScores: currentScores,
         improvement: 0,
         rolledBack: true,
-        reason: `Score degraded by ${(-improvement).toFixed(3)}, exceeding threshold`,
+        reason: `Quick validation failed: score degraded by ${(-quickImprovement).toFixed(3)}`,
       };
     }
 
+    console.log(`   ✅ Quick validation passed (+${quickImprovement.toFixed(3)})`);
+
+    // TIER 2: Comprehensive validation (full query set)
+    if (options.requireComprehensiveValidation !== false) {
+      console.log('   Running comprehensive validation (extended, 60 queries)...');
+      const comprehensiveValidation = await this.qualityRunner.runQualityTest(
+        options.comprehensiveTestConfig ?? {
+          tier: 'comprehensive',
+          querySet: 'extended',
+          queryCount: 60,
+        }
+      );
+
+      const finalImprovement = comprehensiveValidation.scores.overall - currentScores.overall;
+
+      // Rollback if comprehensive validation fails (OVERFITTING DETECTED)
+      if (finalImprovement < -options.rollbackThreshold) {
+        console.log(`   ❌ Comprehensive validation failed (${finalImprovement.toFixed(3)})`);
+        console.log(`      Quick: +${quickImprovement.toFixed(3)}, Comprehensive: ${finalImprovement.toFixed(3)}`);
+        console.log('      ⚠️  WARNING: Changes overfitted to small sample!');
+
+        this.checkpointService.restore(checkpoint.id);
+        return {
+          iteration: iterationNumber,
+          checkpointId: checkpoint.id,
+          recommendations,
+          appliedChanges: consolidatedChanges,
+          quickValidation: { ...quickValidation, passed: true },
+          comprehensiveValidation: { ...comprehensiveValidation, passed: false },
+          newScores: currentScores,
+          improvement: 0,
+          rolledBack: true,
+          reason: `Comprehensive validation failed: overfitting detected (quick: +${quickImprovement.toFixed(3)}, comprehensive: ${finalImprovement.toFixed(3)})`,
+        };
+      }
+
+      console.log(`   ✅ Comprehensive validation passed (+${finalImprovement.toFixed(3)})`);
+      console.log(`      Sample consistency: quick +${quickImprovement.toFixed(3)}, comprehensive +${finalImprovement.toFixed(3)}`);
+
+      return {
+        iteration: iterationNumber,
+        checkpointId: checkpoint.id,
+        recommendations,
+        appliedChanges: consolidatedChanges,
+        quickValidation: { ...quickValidation, passed: true },
+        comprehensiveValidation: { ...comprehensiveValidation, passed: true },
+        newScores: comprehensiveValidation.scores,
+        improvement: finalImprovement,
+        rolledBack: false,
+      };
+    }
+
+    // Quick validation only (if comprehensive validation is disabled)
     return {
       iteration: iterationNumber,
       checkpointId: checkpoint.id,
       recommendations,
       appliedChanges: consolidatedChanges,
-      newScores,
-      improvement,
+      quickValidation: { ...quickValidation, passed: true },
+      newScores: quickValidation.scores,
+      improvement: quickImprovement,
       rolledBack: false,
     };
   }

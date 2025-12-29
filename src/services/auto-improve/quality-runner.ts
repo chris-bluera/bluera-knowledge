@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { execSync } from 'node:child_process';
 import type { QualityRunner } from './orchestrator.js';
-import type { Scores, ScoreDimension, QualityRunSummary } from './types.js';
+import type { Scores, ScoreDimension, QualityRunSummary, TestConfig, ValidationResult } from './types.js';
 
 interface RunFileLine {
   type: string;
@@ -66,12 +66,23 @@ export class ProductionQualityRunner implements QualityRunner {
     });
   }
 
-  runQualityTest(): Promise<Scores> {
+  runQualityTest(config?: TestConfig): Promise<ValidationResult> {
+    // Use default config if not provided
+    const testConfig = config ?? {
+      tier: 'quick' as const,
+      querySet: 'core',
+      queryCount: 17,
+    };
+
+    // Build CLI command with specific query set
+    const args = ['quality', 'test', '--set', testConfig.querySet, '--quiet'];
+    const command = `node dist/index.js ${args.join(' ')}`;
+
     // Run the quality test using the CLI
-    const output = execSync('node dist/index.js quality test --quiet', {
+    const output = execSync(command, {
       cwd: this.projectRoot,
       encoding: 'utf-8',
-      timeout: 1800000, // 30 minutes - quality tests with 15-17 queries can take 7-22 minutes
+      timeout: 1800000, // 30 minutes
       maxBuffer: 10 * 1024 * 1024,
     });
 
@@ -92,7 +103,13 @@ export class ProductionQualityRunner implements QualityRunner {
       throw new Error('Quality test completed but no summary found');
     }
 
-    return Promise.resolve(summary.averageScores);
+    return Promise.resolve({
+      tier: testConfig.tier,
+      scores: summary.averageScores,
+      queryCount: summary.totalQueries,
+      passed: true, // Will be determined by caller based on thresholds
+      confidence: this.calculateConfidence(summary.totalQueries),
+    });
   }
 
   private listRuns(): Array<{ id: string; path: string }> {
@@ -143,5 +160,15 @@ export class ProductionQualityRunner implements QualityRunner {
     return dimensions.reduce((min, dim) =>
       scores[dim] < scores[min] ? dim : min
     );
+  }
+
+  private calculateConfidence(sampleSize: number): number {
+    // Confidence decreases with smaller samples
+    // 60+ queries = 0.95, 17 queries = 0.70, 10 queries = 0.60
+    if (sampleSize >= 60) return 0.95;
+    if (sampleSize >= 30) return 0.85;
+    if (sampleSize >= 17) return 0.70;
+    if (sampleSize >= 10) return 0.60;
+    return 0.50;
   }
 }

@@ -68,7 +68,14 @@ describe('AutoImproveOrchestrator', () => {
       } satisfies QualityRunSummary),
       runQualityTest: vi.fn().mockImplementation(async () => {
         qualityRunCount++;
-        return qualityRunCount === 1 ? improvedScores : improvedScores;
+        const scores = qualityRunCount === 1 ? improvedScores : improvedScores;
+        return {
+          tier: 'quick',
+          scores,
+          queryCount: 17,
+          passed: true,
+          confidence: 0.70,
+        };
       }),
     };
 
@@ -152,8 +159,14 @@ describe('AutoImproveOrchestrator', () => {
 
     it('stops when target score is reached', async () => {
       mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue({
-        ...improvedScores,
-        overall: 0.75, // Above target
+        tier: 'quick',
+        scores: {
+          ...improvedScores,
+          overall: 0.75, // Above target
+        },
+        queryCount: 17,
+        passed: true,
+        confidence: 0.70,
       });
 
       const result = await orchestrator.run({ ...defaultOptions, targetScore: 0.7 });
@@ -193,13 +206,19 @@ describe('AutoImproveOrchestrator', () => {
       mockQualityRunner.runQualityTest = vi.fn().mockImplementation(async () => {
         qualityCallCount++;
         return {
-          ...baseScores,
-          overall: baseScores.overall + (0.02 * qualityCallCount), // Progressive improvement
+          tier: 'quick',
+          scores: {
+            ...baseScores,
+            overall: baseScores.overall + (0.02 * qualityCallCount), // Progressive improvement
+          },
+          queryCount: 17,
+          passed: true,
+          confidence: 0.70,
         };
       });
 
-      // Set minImprovement to 0 to focus on testing max iterations
-      const result = await orchestrator.run({ ...defaultOptions, maxIterations: 2, minImprovement: 0 });
+      // Set minImprovement to 0 and high target score to focus on testing max iterations
+      const result = await orchestrator.run({ ...defaultOptions, maxIterations: 2, minImprovement: 0, targetScore: 0.99 });
 
       expect(result.iterations).toHaveLength(2);
       expect(result.message).toContain('max iterations');
@@ -211,7 +230,13 @@ describe('AutoImproveOrchestrator', () => {
         overall: baseScores.overall - 0.05, // Worse than threshold
       };
 
-      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue(degradedScores);
+      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue({
+        tier: 'quick',
+        scores: degradedScores,
+        queryCount: 17,
+        passed: true,
+        confidence: 0.70,
+      });
 
       const result = await orchestrator.run(defaultOptions);
 
@@ -229,7 +254,13 @@ describe('AutoImproveOrchestrator', () => {
         overall: baseScores.overall - 0.015, // -0.015 exceeds new 0.01 threshold
       };
 
-      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue(degradedScores);
+      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue({
+        tier: 'quick',
+        scores: degradedScores,
+        queryCount: 17,
+        passed: true,
+        confidence: 0.70,
+      });
 
       const result = await orchestrator.run({ ...defaultOptions, rollbackThreshold: 0.01 });
 
@@ -248,7 +279,13 @@ describe('AutoImproveOrchestrator', () => {
         overall: baseScores.overall - 0.005, // -0.005 is within 0.01 threshold (test variance)
       };
 
-      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue(slightlyDegradedScores);
+      mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue({
+        tier: 'quick',
+        scores: slightlyDegradedScores,
+        queryCount: 17,
+        passed: true,
+        confidence: 0.70,
+      });
 
       const result = await orchestrator.run({ ...defaultOptions, rollbackThreshold: 0.01 });
 
@@ -262,8 +299,14 @@ describe('AutoImproveOrchestrator', () => {
 
     it('stops when improvement is below threshold', async () => {
       mockQualityRunner.runQualityTest = vi.fn().mockResolvedValue({
-        ...baseScores,
-        overall: baseScores.overall + 0.01, // Below minImprovement threshold
+        tier: 'quick',
+        scores: {
+          ...baseScores,
+          overall: baseScores.overall + 0.01, // Below minImprovement threshold
+        },
+        queryCount: 17,
+        passed: true,
+        confidence: 0.70,
       });
 
       const result = await orchestrator.run({ ...defaultOptions, minImprovement: 0.02 });

@@ -12,6 +12,8 @@ export interface Scores {
 
 export type ScoreDimension = keyof Scores;
 
+export type ValidationTier = 'quick' | 'comprehensive';
+
 export type ChangeType = 'config' | 'code' | 'reindex';
 
 export interface Change {
@@ -50,11 +52,27 @@ export interface IndexState {
   documentCount: number;
 }
 
+export interface TestConfig {
+  tier: ValidationTier;
+  querySet: string; // 'core' | 'extended'
+  queryCount: number;
+}
+
+export interface ValidationResult {
+  tier: ValidationTier;
+  scores: Scores;
+  queryCount: number;
+  passed: boolean;
+  confidence?: number;
+}
+
 export interface IterationResult {
   iteration: number;
   checkpointId: string;
   recommendations: AgentRecommendation[];
   appliedChanges: Change[];
+  quickValidation: ValidationResult;
+  comprehensiveValidation?: ValidationResult;
   newScores: Scores;
   improvement: number;
   rolledBack: boolean;
@@ -69,6 +87,10 @@ export interface AutoImproveOptions {
   rollbackThreshold: number;
   dryRun: boolean;
   focus: ScoreDimension | 'auto';
+  quickTestConfig?: TestConfig;
+  comprehensiveTestConfig?: TestConfig;
+  requireComprehensiveValidation?: boolean;
+  statisticalSignificanceLevel?: number;
 }
 
 export interface AutoImproveResult {
