@@ -15,9 +15,9 @@ import { createSetupCommand } from './cli/commands/setup.js';
 import { createMCPCommand } from './cli/commands/mcp.js';
 
 // Default paths
-const DEFAULT_DATA_DIR = join(homedir(), '.bluera', 'knowledge-data');
-const DEFAULT_CONFIG = join(homedir(), '.bluera', 'knowledge.json');
-const DEFAULT_REPOS_DIR = join(homedir(), '.bluera', 'repos');
+const DEFAULT_DATA_DIR = join(homedir(), '.bluera', 'claude-knowledge-base', 'data');
+const DEFAULT_CONFIG = join(homedir(), '.bluera', 'claude-knowledge-base', 'config.json');
+const DEFAULT_REPOS_DIR = join(homedir(), '.bluera', 'claude-knowledge-base', 'repos');
 
 /**
  * Format a command and its subcommands recursively for comprehensive help output.

@@ -9,7 +9,7 @@ import { createServices } from '../../services/index.js';
 import { DEFAULT_REPOS, type DefaultRepo } from '../../defaults/repos.js';
 import type { GlobalOptions } from '../program.js';
 
-const DEFAULT_REPOS_DIR = join(homedir(), '.bluera', 'repos');
+const DEFAULT_REPOS_DIR = join(homedir(), '.bluera', 'claude-knowledge-base', 'repos');
 
 export function createSetupCommand(getOptions: () => GlobalOptions): Command {
   const setup = new Command('setup')
@@ -17,8 +17,8 @@ export function createSetupCommand(getOptions: () => GlobalOptions): Command {
 
   setup
     .command('repos')
-    .description('Clone repos to ~/.bluera/repos/, create stores, index all content')
-    .option('--repos-dir <path>', 'Clone destination (default: ~/.bluera/repos/)', DEFAULT_REPOS_DIR)
+    .description('Clone repos to ~/.bluera/claude-knowledge-base/repos/, create stores, index all content')
+    .option('--repos-dir <path>', 'Clone destination (default: ~/.bluera/claude-knowledge-base/repos/)', DEFAULT_REPOS_DIR)
     .option('--skip-clone', 'Don\'t clone; assume repos already exist locally')
     .option('--skip-index', 'Clone and create stores but don\'t index yet')
     .option('--only <names>', 'Only process matching repos (comma-separated, partial match)')

@@ -32,4 +32,4 @@ Usage:
 - If `--name` is new: Creates new store with that name
 - If no `--name`: Uses repo name (e.g., "core" from vuejs/core)
 
-Clones to `.bluera/repos/<store-name>/` making it accessible to both vector search and Grep/Read.
+Clones to `.bluera/claude-knowledge-base/repos/<store-name>/` making it accessible to both vector search and Grep/Read.

@@ -26,8 +26,8 @@ search_codebase("vue reactivity system")
 ### 2. Direct File Access (Grep/Read)
 Precise lookups in cloned library source:
 ```
-Grep: pattern="defineReactive" path=".bluera/repos/vue/"
-Read: .bluera/repos/pydantic/pydantic/validators.py
+Grep: pattern="defineReactive" path=".bluera/claude-knowledge-base/repos/vue/"
+Read: .bluera/claude-knowledge-base/repos/pydantic/pydantic/validators.py
 ```
 
 ## Both Are Valid!
@@ -44,6 +44,6 @@ User: "How does Vue's computed properties work internally?"
 Claude:
 1. Check stores: `list_stores` MCP tool → vue store exists
 2. Vector search: `search_codebase("vue computed properties")` → finds computed.ts
-3. Read file: `.bluera/repos/vue/packages/reactivity/src/computed.ts`
+3. Read file: `.bluera/claude-knowledge-base/repos/vue/packages/reactivity/src/computed.ts`
 4. Grep for implementation: pattern="class ComputedRefImpl"
 5. Explain with authoritative source code examples

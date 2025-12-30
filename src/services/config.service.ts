@@ -10,7 +10,7 @@ export class ConfigService {
   private config: AppConfig | null = null;
 
   constructor(
-    configPath = `${homedir()}/.bluera/knowledge.json`,
+    configPath = `${homedir()}/.bluera/claude-knowledge-base/config.json`,
     dataDir?: string
   ) {
     this.configPath = configPath;
