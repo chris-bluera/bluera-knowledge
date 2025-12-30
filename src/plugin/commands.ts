@@ -1,6 +1,8 @@
 import { createServices } from '../services/index.js';
 import { extractRepoName } from './git-clone.js';
-import { analyzeDependencies } from './dependency-analyzer.js';
+import { DependencyUsageAnalyzer } from '../analysis/dependency-usage-analyzer.js';
+import { RepoUrlResolver } from '../analysis/repo-url-resolver.js';
+import ora from 'ora';
 
 export async function handleSearch(args: {
   query: string;
@@ -147,8 +149,8 @@ export async function handleStores(): Promise<void> {
   if (stores.length === 0) {
     console.log('No stores found.');
     console.log('\nCreate a store with:');
-    console.log('  /bk:add-repo <url> --name=<name>');
-    console.log('  /bk:add-folder <path> --name=<name>');
+    console.log('  /bluera-knowledge:add-repo <url> --name=<name>');
+    console.log('  /bluera-knowledge:add-folder <path> --name=<name>');
     return;
   }
 
@@ -174,29 +176,72 @@ export async function handleSuggest(): Promise<void> {
 
   console.log('Analyzing project dependencies...\n');
 
-  const suggestions = await analyzeDependencies(projectRoot);
+  // Create analyzer instance
+  const services = await createServices();
+  const analyzer = new DependencyUsageAnalyzer();
+  const resolver = new RepoUrlResolver();
 
-  if (suggestions.length === 0) {
-    console.log('No recognized dependencies found to suggest.');
-    console.log('\nYou can manually add repos with:');
-    console.log('  /bk:add-repo <url> --name=<name>');
+  // Analyze with progress indicator
+  const spinner = ora('Scanning source files...').start();
+
+  const result = await analyzer.analyze(projectRoot, (current, total, message) => {
+    spinner.text = `${message} (${String(current)}/${String(total)})`;
+  });
+
+  spinner.stop();
+
+  if (!result.success) {
+    console.error(`Error: ${result.error.message}`);
+    process.exit(1);
+  }
+
+  const { usages, totalFilesScanned, skippedFiles } = result.data;
+
+  console.log(`✔ Scanned ${String(totalFilesScanned)} files${skippedFiles > 0 ? ` (skipped ${String(skippedFiles)})` : ''}\n`);
+
+  if (usages.length === 0) {
+    console.log('No external dependencies found in this project.');
+    console.log('\nMake sure you have a package.json or requirements.txt file.');
     return;
   }
 
-  console.log('Suggested library sources to add:\n');
+  // Filter out packages already in stores
+  const existingStores = await services.store.list();
+  const existingRepoNames = new Set(existingStores.map(s => s.name));
 
-  for (const suggestion of suggestions) {
-    const badge = {
-      critical: '⭐️',
-      high: '🔵',
-      medium: '◆'
-    }[suggestion.importance];
+  const newUsages = usages.filter(u => !existingRepoNames.has(u.packageName));
 
-    console.log(`${badge} ${suggestion.name}`);
-    console.log(`   ${suggestion.reason}`);
-    console.log(`   /bk:add-repo ${suggestion.url} --name=${suggestion.name}\n`);
+  if (newUsages.length === 0) {
+    console.log('✔ All dependencies are already in knowledge stores!');
+    return;
   }
 
-  console.log(`Showing ${String(suggestions.length)} important dependencies.`);
-  console.log('Not suggesting minor/specific packages - focus on core libraries.');
+  // Show top 5 suggestions
+  const topSuggestions = newUsages.slice(0, 5);
+
+  console.log('Top dependencies by usage in this project:\n');
+  topSuggestions.forEach((usage, i) => {
+    console.log(`${String(i + 1)}. ${usage.packageName}`);
+    console.log(`   ${String(usage.importCount)} imports across ${String(usage.fileCount)} files\n`);
+  });
+
+  console.log('Searching for repository URLs...\n');
+
+  // For each package, find repo URL
+  for (const usage of topSuggestions) {
+    const repoResult = await resolver.findRepoUrl(
+      usage.packageName,
+      'javascript' // TODO: detect language from project
+    );
+
+    if (repoResult.url !== null) {
+      console.log(`✔ ${usage.packageName}: ${repoResult.url}`);
+      console.log(`  /bluera-knowledge:add-repo ${repoResult.url} --name=${usage.packageName}\n`);
+    } else {
+      console.log(`✗ ${usage.packageName}: Could not find repository URL`);
+      console.log(`  You can manually add it: /bluera-knowledge:add-repo <url> --name=${usage.packageName}\n`);
+    }
+  }
+
+  console.log('Use the commands above to add repositories to your knowledge stores.');
 }
