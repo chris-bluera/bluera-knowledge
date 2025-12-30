@@ -1,14 +1,11 @@
 {
   "name": "bluera-knowledge",
   "version": "0.1.0",
-  "displayName": "Bluera Knowledge (BK)",
   "description": "Project-specific knowledge stores for definitive library sources. Clone and index important dependencies for authoritative reference.",
-  "author": "Bluera",
-  "autoActivate": true,
-  "commands": "commands/",
-  "skills": ["knowledge-search", "when-to-query"],
-  "mcp": {
-    "enabled": true,
-    "configFile": ".mcp.json"
-  }
+  "author": {
+    "name": "Bluera"
+  },
+  "commands": ["./commands/"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
 }
