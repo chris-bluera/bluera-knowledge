@@ -5,7 +5,7 @@
   "description": "Project-specific knowledge stores for definitive library sources. Clone and index important dependencies for authoritative reference.",
   "author": "Bluera",
   "autoActivate": true,
-  "commands": ["search", "add-repo", "add-folder", "index", "stores", "suggest"],
+  "commands": "commands/",
   "skills": ["knowledge-search", "when-to-query"],
   "mcp": {
     "enabled": true,
