@@ -13,6 +13,7 @@ import { createExportCommand } from './cli/commands/export.js';
 import { createImportCommand } from './cli/commands/import.js';
 import { createSetupCommand } from './cli/commands/setup.js';
 import { createMCPCommand } from './cli/commands/mcp.js';
+import { createAddRepoCommand, createAddFolderCommand, createStoresCommand, createSuggestCommand } from './cli/commands/plugin-api.js';
 
 // Default paths
 const DEFAULT_DATA_DIR = join(homedir(), '.bluera', 'bluera-knowledge', 'data');
@@ -84,6 +85,13 @@ function printFullHelp(program: Command): void {
 
 const program = createProgram();
 
+// Plugin API commands (simple interface)
+program.addCommand(createAddRepoCommand(() => getGlobalOptions(program)));
+program.addCommand(createAddFolderCommand(() => getGlobalOptions(program)));
+program.addCommand(createStoresCommand(() => getGlobalOptions(program)));
+program.addCommand(createSuggestCommand(() => getGlobalOptions(program)));
+
+// Advanced CLI commands
 program.addCommand(createStoreCommand(() => getGlobalOptions(program)));
 program.addCommand(createSearchCommand(() => getGlobalOptions(program)));
 program.addCommand(createIndexCommand(() => getGlobalOptions(program)));
