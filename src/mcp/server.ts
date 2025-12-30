@@ -34,7 +34,7 @@ export function createMCPServer(options: MCPServerOptions): Server {
       tools: [
         {
           name: 'search_codebase',
-          description: 'Search codebase with pattern detection and AI-optimized results. Returns structured code units with progressive context layers.',
+          description: 'Search indexed library sources with pattern detection and AI-optimized results. Returns structured code units with progressive context layers.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -65,6 +65,79 @@ export function createMCPServer(options: MCPServerOptions): Server {
               }
             },
             required: ['query']
+          }
+        },
+        {
+          name: 'list_stores',
+          description: 'List all indexed knowledge stores (library sources, reference material, documentation)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['file', 'repo', 'web'],
+                description: 'Filter by store type (optional)'
+              }
+            }
+          }
+        },
+        {
+          name: 'get_store_info',
+          description: 'Get detailed information about a specific store including its file path for direct access',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              store: {
+                type: 'string',
+                description: 'Store name or ID'
+              }
+            },
+            required: ['store']
+          }
+        },
+        {
+          name: 'create_store',
+          description: 'Create a new knowledge store from git URL or local path',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+                description: 'Store name'
+              },
+              type: {
+                type: 'string',
+                enum: ['file', 'repo'],
+                description: 'Store type'
+              },
+              source: {
+                type: 'string',
+                description: 'Git URL or local path'
+              },
+              branch: {
+                type: 'string',
+                description: 'Git branch (for repo type)'
+              },
+              description: {
+                type: 'string',
+                description: 'Store description'
+              }
+            },
+            required: ['name', 'type', 'source']
+          }
+        },
+        {
+          name: 'index_store',
+          description: 'Index or re-index a knowledge store to make it searchable',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              store: {
+                type: 'string',
+                description: 'Store name or ID'
+              }
+            },
+            required: ['store']
           }
         },
         {
@@ -143,22 +216,185 @@ export function createMCPServer(options: MCPServerOptions): Server {
         return sum + tokens;
       }, 0);
 
+      // Add repoRoot to results for cloned repos
+      const enhancedResults = await Promise.all(results.results.map(async (r) => {
+        const storeId = r.metadata.storeId;
+        const store = await services.store.getByIdOrName(storeId);
+
+        return {
+          id: r.id,
+          score: r.score,
+          summary: {
+            ...r.summary,
+            repoRoot: store !== undefined && store.type === 'repo' ? store.path : undefined
+          },
+          context: r.context,
+          full: r.full
+        };
+      }));
+
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify({
-              results: results.results.map(r => ({
-                id: r.id,
-                score: r.score,
-                summary: r.summary,
-                context: r.context,
-                full: r.full
-              })),
+              results: enhancedResults,
               totalResults: results.totalResults,
               estimatedTokens,
               mode: results.mode,
               timeMs: results.timeMs
+            }, null, 2)
+          }
+        ]
+      };
+    }
+
+    if (name === 'list_stores') {
+      const services = await createServices(options.config, options.dataDir);
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const typeFilter = args?.['type'] as 'file' | 'repo' | 'web' | undefined;
+
+      const stores = await services.store.list();
+      const filtered = typeFilter !== undefined
+        ? stores.filter(s => s.type === typeFilter)
+        : stores;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              stores: filtered.map(s => ({
+                id: s.id,
+                name: s.name,
+                type: s.type,
+                path: 'path' in s ? s.path : undefined,
+                url: 'url' in s && s.url !== undefined ? s.url : undefined,
+                description: s.description,
+                createdAt: s.createdAt.toISOString()
+              }))
+            }, null, 2)
+          }
+        ]
+      };
+    }
+
+    if (name === 'get_store_info') {
+      const services = await createServices(options.config, options.dataDir);
+
+      if (!args) {
+        throw new Error('No arguments provided');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const storeName = args['store'] as string;
+      const store = await services.store.getByIdOrName(storeName);
+
+      if (store === undefined) {
+        throw new Error(`Store not found: ${storeName}`);
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              id: store.id,
+              name: store.name,
+              type: store.type,
+              path: 'path' in store ? store.path : undefined,
+              url: 'url' in store && store.url !== undefined ? store.url : undefined,
+              branch: 'branch' in store ? store.branch : undefined,
+              description: store.description,
+              status: store.status,
+              createdAt: store.createdAt.toISOString(),
+              updatedAt: store.updatedAt.toISOString()
+            }, null, 2)
+          }
+        ]
+      };
+    }
+
+    if (name === 'create_store') {
+      const services = await createServices(options.config, options.dataDir);
+
+      if (!args) {
+        throw new Error('No arguments provided');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const storeName = args['name'] as string;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const storeType = args['type'] as 'file' | 'repo';
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const source = args['source'] as string;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const branch = args['branch'] as string | undefined;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const description = args['description'] as string | undefined;
+
+      // Determine if source is a URL or path
+      const isUrl = source.startsWith('http://') || source.startsWith('https://') || source.startsWith('git@');
+
+      const result = await services.store.create({
+        name: storeName,
+        type: storeType,
+        ...(isUrl ? { url: source } : { path: source }),
+        ...(branch !== undefined ? { branch } : {}),
+        ...(description !== undefined ? { description } : {})
+      });
+
+      if (!result.success) {
+        throw new Error(result.error.message);
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              id: result.data.id,
+              name: result.data.name,
+              type: result.data.type,
+              path: 'path' in result.data ? result.data.path : undefined,
+              created: true
+            }, null, 2)
+          }
+        ]
+      };
+    }
+
+    if (name === 'index_store') {
+      const services = await createServices(options.config, options.dataDir);
+
+      if (!args) {
+        throw new Error('No arguments provided');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const storeName = args['store'] as string;
+      const store = await services.store.getByIdOrName(storeName);
+
+      if (store === undefined) {
+        throw new Error(`Store not found: ${storeName}`);
+      }
+
+      const result = await services.index.indexStore(store);
+
+      if (!result.success) {
+        throw new Error(result.error.message);
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              storeId: store.id,
+              storeName: store.name,
+              documentsIndexed: result.data.documentsIndexed,
+              timeMs: result.data.timeMs
             }, null, 2)
           }
         ]

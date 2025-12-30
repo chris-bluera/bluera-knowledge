@@ -15,7 +15,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "keywords": [
     "knowledge",
@@ -34,6 +35,7 @@
     "@types/babel__traverse": "^7.28.0",
     "@types/node": "^25.0.2",
     "eslint": "^9.39.2",
+    "husky": "^9.1.7",
     "node-gyp": "^12.1.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
