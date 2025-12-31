@@ -6,7 +6,7 @@ export function createProgram(): Command {
   program
     .name('bkb')
     .description('CLI tool for managing knowledge stores with semantic search')
-    .version('0.1.0');
+    .version('0.2.1');
 
   program
     .option('-c, --config <path>', 'Path to config file')
