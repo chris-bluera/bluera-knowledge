@@ -11,16 +11,14 @@ Show all configured knowledge stores in the project.
 
 1. Use the mcp__bluera-knowledge__list_stores tool to retrieve all stores
 
-2. Present results in a table format:
+2. Present results in a clean table format:
 
 ```
-## Knowledge Stores
-
 | Name | Type | ID | Source |
 |------|------|----|--------------------|
-| react | repo | a1b2c3d4... | https://github.com/facebook/react |
-| lodash | repo | e5f6g7h8... | https://github.com/lodash/lodash |
-| my-docs | file | i9j0k1l2... | /Users/me/docs |
+| react | repo | a1b2c3d4 | https://github.com/facebook/react |
+| lodash | repo | e5f6g7h8 | https://github.com/lodash/lodash |
+| my-docs | file | i9j0k1l2 | ~/docs |
 
 **Total**: 3 stores
 ```
@@ -28,10 +26,10 @@ Show all configured knowledge stores in the project.
 3. Format each row:
    - **Name**: The store name
    - **Type**: Store type (repo, file, or web)
-   - **ID**: First 8 characters of the store ID followed by "..."
+   - **ID**: First 8 characters of the store ID (no ellipsis)
    - **Source**:
      - For repo stores: The git URL
-     - For file stores: The local path
+     - For file stores: The local path (use ~ for home directory to keep it concise)
      - For web stores: The base URL
 
 ## If No Stores Found
