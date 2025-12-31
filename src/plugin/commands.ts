@@ -159,20 +159,24 @@ export async function handleStores(): Promise<void> {
     return;
   }
 
-  console.log('Knowledge Stores:\n');
+  // Table header
+  console.log('| Name | Type | ID | Source |');
+  console.log('|------|------|----|--------------------|');
+
+  // Table rows
   for (const store of stores) {
-    console.log(`${store.name} (${store.type})`);
-    console.log(`  ID: ${store.id}`);
-    if ('path' in store) {
-      console.log(`  Path: ${store.path}`);
-    }
+    const name = store.name;
+    const type = store.type;
+    const id = store.id;
+    let source = '';
+
     if ('url' in store && store.url !== undefined) {
-      console.log(`  URL: ${store.url}`);
+      source = store.url;
+    } else if ('path' in store) {
+      source = store.path;
     }
-    if (store.description !== undefined) {
-      console.log(`  Description: ${store.description}`);
-    }
-    console.log('');
+
+    console.log(`| ${name} | ${type} | ${id.substring(0, 8)}... | ${source} |`);
   }
 }
 
