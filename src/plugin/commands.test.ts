@@ -615,7 +615,10 @@ describe('Commands - handleStores', () => {
 
     await handleStores();
 
-    expect(consoleLogSpy).toHaveBeenCalledWith('Knowledge Stores:\n');
+    // Check table header
+    expect(consoleLogSpy).toHaveBeenCalledWith('| Name | Type | ID | Source |');
+    expect(consoleLogSpy).toHaveBeenCalledWith('|------|------|----|--------------------|');
+    // Check row content
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('test-file'));
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('test-repo'));
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('store-1'));
