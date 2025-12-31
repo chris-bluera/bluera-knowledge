@@ -6,7 +6,9 @@ allowed-tools: [Bash(*)]
 
 Crawling and indexing: $ARGUMENTS
 
-!`node ${CLAUDE_PLUGIN_ROOT}/dist/index.js crawl $ARGUMENTS`
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/dist/index.js crawl $ARGUMENTS
+```
 
 The web pages will be crawled with intelligent link selection and optional natural language extraction, then indexed for searching.
 
