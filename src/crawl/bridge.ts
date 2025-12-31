@@ -55,6 +55,11 @@ export class PythonBridge {
     }
     const rl = createInterface({ input: this.process.stdout });
     rl.on('line', (line) => {
+      // Filter out non-JSON lines (crawl4ai verbose output)
+      if (!line.trim().startsWith('{')) {
+        return;
+      }
+
       try {
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         const response = JSON.parse(line) as {
