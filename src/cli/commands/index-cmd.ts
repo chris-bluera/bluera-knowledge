@@ -92,7 +92,9 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
         void (async (): Promise<void> => {
           await watchService.unwatchAll();
           process.exit(0);
-        })();
+        })().catch(() => {
+          // Error during shutdown - process.exit already called
+        });
       });
     });
 

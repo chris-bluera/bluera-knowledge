@@ -50,7 +50,8 @@ export class PythonBridge {
     }
 
     if (this.process.stdout === null) {
-      throw new Error('Python bridge process stdout is null');
+      this.process = null;  // Clean up partial state
+      return Promise.reject(new Error('Python bridge process stdout is null'));
     }
     const rl = createInterface({ input: this.process.stdout });
     rl.on('line', (line) => {
@@ -63,13 +64,16 @@ export class PythonBridge {
         };
         const pending = this.pending.get(response.id);
         if (pending !== undefined) {
-          clearTimeout(pending.timeout);
           if (response.error !== undefined) {
+            clearTimeout(pending.timeout);
+            this.pending.delete(response.id);
             pending.reject(new Error(response.error.message));
           } else if (response.result !== undefined) {
+            clearTimeout(pending.timeout);
+            this.pending.delete(response.id);
             pending.resolve(response.result);
           }
-          this.pending.delete(response.id);
+          // If neither result nor error, leave pending (will timeout)
         }
       } catch (err) {
         console.error('Failed to parse JSON response from Python bridge:', err, 'Line:', line);

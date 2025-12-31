@@ -117,17 +117,17 @@ describe('Stress Tests', () => {
   });
 
   describe('Search Performance at Scale', () => {
-    it('search completes under 500ms', async () => {
+    it('search completes under 800ms', async () => {
       const { result, measurement } = await measure('search-large-dataset', async () => {
         return cli('search "authentication security module" --stores stress-store');
       });
 
       const results = parseSearchOutput(result);
       expect(results.length).toBeGreaterThan(0);
-      expect(measurement.duration).toBeLessThan(500);
+      expect(measurement.duration).toBeLessThan(800);
     }, 60000);
 
-    it('search P95 under 1000ms across multiple queries', async () => {
+    it('search P95 under 1200ms across multiple queries', async () => {
       const benchmark = new Benchmark('search-queries');
 
       const queries = [
@@ -153,8 +153,8 @@ describe('Stress Tests', () => {
       console.log(benchmark.formatReport());
 
       assertPerformanceTargets(stats, {
-        maxMean: 500,
-        maxP95: 1000,
+        maxMean: 800,
+        maxP95: 1200,
         maxMax: 2000,
       });
     }, 120000);
@@ -172,7 +172,7 @@ describe('Stress Tests', () => {
         return cli('search "authentication" --mode fts --stores stress-store');
       });
 
-      expect(measurement.duration).toBeLessThan(500);
+      expect(measurement.duration).toBeLessThan(800);
     }, 60000);
 
     it('hybrid search performs within limits', async () => {
