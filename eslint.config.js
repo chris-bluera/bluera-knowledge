@@ -14,6 +14,7 @@ export default tseslint.config(
   },
   {
     rules: {
+      // Type safety
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unsafe-assignment': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
@@ -23,8 +24,13 @@ export default tseslint.config(
       '@typescript-eslint/explicit-module-boundary-types': 'error',
       '@typescript-eslint/prefer-readonly': 'error',
       '@typescript-eslint/strict-boolean-expressions': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
+
+      // Dead code detection
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unreachable': 'error',
+      'no-unreachable-loop': 'error',
+      'no-constant-condition': ['error', { checkLoops: false }],
     },
   },
   {

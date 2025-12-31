@@ -16,6 +16,7 @@
     "test:run": "vitest run",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
+    "precommit": "npm run lint && npm run typecheck && npm run build",
     "prepare": "husky"
   },
   "keywords": [
