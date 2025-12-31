@@ -1,5 +1,10 @@
 # Bluera Knowledge
 
+![Version](https://img.shields.io/badge/version-0.4.4-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
+![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue)
+
 A Claude Code plugin for providing canonical, definitive source information to AI coding agents.
 
 ## Overview
@@ -42,6 +47,32 @@ The plugin provides AI agents with three complementary search capabilities:
 - Enables Grep, Glob, and Read operations on source files
 - Supports precise pattern matching and code navigation
 - Full access to complete file trees
+
+<details>
+<summary><b>How Commands Work</b></summary>
+
+When you use `/bluera-knowledge:` commands, here's what happens:
+
+1. **You issue a command** - Type `/bluera-knowledge:stores` or similar in Claude Code
+2. **Claude receives instructions** - The command provides step-by-step instructions for Claude
+3. **Claude executes MCP tools** - Behind the scenes, Claude uses `mcp__bluera-knowledge__*` tools
+4. **Results are formatted** - Claude formats and displays the output directly to you
+
+**Example Flow:**
+```
+You: /bluera-knowledge:stores
+  ↓
+Command file instructs Claude to use list_stores tool
+  ↓
+MCP tool queries LanceDB for store metadata
+  ↓
+Claude formats results as a table
+  ↓
+You see: Beautiful table of all your knowledge stores
+```
+
+This architecture means commands provide a clean user interface while MCP tools handle the backend operations.
+</details>
 
 ---
 
@@ -108,22 +139,28 @@ pip install crawl4ai
 
 ## Quick Start
 
-```bash
-# 1. Analyze your project to find important dependencies
-/bluera-knowledge:suggest
+Follow these steps to set up knowledge stores for your project:
 
-# 2. Add suggested libraries
-/bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query
+- [ ] **Analyze dependencies**: `/bluera-knowledge:suggest`
+- [ ] **Add a library**: `/bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query`
+- [ ] **Index your docs**: `/bluera-knowledge:add-folder ./docs --name=project-docs`
+- [ ] **Test search**: `/bluera-knowledge:search "how to invalidate queries"`
+- [ ] **View stores**: `/bluera-knowledge:stores`
 
-# 3. Add your project documentation
-/bluera-knowledge:add-folder ./docs --name=project-docs
+> [!TIP]
+> Start with `/bluera-knowledge:suggest` to automatically discover which libraries your project uses most.
 
-# 4. Search your knowledge stores
-/bluera-knowledge:search "how to invalidate queries"
+## Quick Reference
 
-# 5. View all stores
-/bluera-knowledge:stores
-```
+| Command | Purpose | Arguments |
+|---------|---------|-----------|
+| `/bluera-knowledge:suggest` | Analyze project dependencies | None |
+| `/bluera-knowledge:add-repo` | Clone and index Git repository | `<url> [--name=<name>] [--branch=<branch>]` |
+| `/bluera-knowledge:add-folder` | Index local folder | `<path> --name=<name>` |
+| `/bluera-knowledge:search` | Search knowledge stores | `"<query>" [--stores=<names>] [--limit=<N>]` |
+| `/bluera-knowledge:stores` | List all stores | None |
+| `/bluera-knowledge:index` | Re-index a store | `<store-name-or-id>` |
+| `/bluera-knowledge:crawl` | Crawl web pages | `<url> <store-name> [--crawl "<instruction>"]` |
 
 ## Commands
 
@@ -137,19 +174,45 @@ Analyze your project to suggest libraries worth indexing as knowledge stores:
 
 Scans all source files, counts import statements, and suggests the top 5 most-used dependencies as indexing targets with their GitHub URLs.
 
-**Example output:**
+<details>
+<summary><b>Expected Output</b></summary>
+
 ```
-Top dependencies by usage in this project:
+## Dependency Analysis
 
-1. react
-   156 imports across 87 files
+Scanned 342 source files and found 24 dependencies.
 
-2. vitest
-   40 imports across 40 files
+### Top Dependencies by Usage
 
-✔ react: https://github.com/facebook/react
-  /bluera-knowledge:add-repo https://github.com/facebook/react --name=react
+1. **react** (156 imports across 87 files)
+   Repository: https://github.com/facebook/react
+
+   Add with:
+   ```
+   /bluera-knowledge:add-repo https://github.com/facebook/react --name=react
+   ```
+
+2. **vitest** (40 imports across 40 files)
+   Repository: https://github.com/vitest-dev/vitest
+
+   Add with:
+   ```
+   /bluera-knowledge:add-repo https://github.com/vitest-dev/vitest --name=vitest
+   ```
+
+3. **lodash** (28 imports across 15 files)
+   Repository: https://github.com/lodash/lodash
+
+   Add with:
+   ```
+   /bluera-knowledge:add-repo https://github.com/lodash/lodash --name=lodash
+   ```
+
+---
+
+Already indexed: typescript, express
 ```
+</details>
 
 ### `/bluera-knowledge:add-repo`
 
@@ -164,6 +227,21 @@ Clone and index a Git repository:
 /bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query
 /bluera-knowledge:add-repo https://github.com/facebook/react --branch=main --name=react
 ```
+
+<details>
+<summary><b>Expected Output</b></summary>
+
+```
+✓ Cloning https://github.com/facebook/react...
+✓ Created store: react (a1b2c3d4...)
+  Location: ~/.local/share/bluera-knowledge/stores/a1b2c3d4.../
+
+✓ Indexing...
+✓ Indexed 1,247 files
+
+Store is ready for searching!
+```
+</details>
 
 ### `/bluera-knowledge:add-folder`
 
@@ -186,6 +264,21 @@ Index a local folder:
 /bluera-knowledge:add-folder ./docs --name=project-docs
 /bluera-knowledge:add-folder ./architecture --name=design-docs
 ```
+
+<details>
+<summary><b>Expected Output</b></summary>
+
+```
+✓ Adding folder: ~/my-project/docs...
+✓ Created store: project-docs (e5f6g7h8...)
+  Location: ~/.local/share/bluera-knowledge/stores/e5f6g7h8.../
+
+✓ Indexing...
+✓ Indexed 342 files
+
+Store is ready for searching!
+```
+</details>
 
 ### `/bluera-knowledge:search`
 
@@ -210,6 +303,44 @@ Search across indexed knowledge stores:
 /bluera-knowledge:search "testing patterns" --limit=5
 ```
 
+<details>
+<summary><b>Expected Output</b></summary>
+
+```
+## Search Results for "button component"
+
+Found 3 results:
+
+---
+
+**Score: 0.95** - `src/components/Button.tsx:15`
+
+**Purpose**: Implements a reusable button component with variants
+
+**Context**:
+- Exports: Button, ButtonProps
+- Uses: React, styled-components
+
+---
+
+**Score: 0.87** - `src/hooks/useButton.ts:8`
+
+**Purpose**: Custom hook for button state management
+
+**Context**:
+- Exports: useButton
+- Uses: React, useState
+
+---
+
+**Score: 0.81** - `src/components/IconButton.tsx:22`
+
+**Purpose**: Button component with icon support
+
+---
+```
+</details>
+
 ### `/bluera-knowledge:stores`
 
 List all indexed knowledge stores:
@@ -218,22 +349,51 @@ List all indexed knowledge stores:
 /bluera-knowledge:stores
 ```
 
-Shows store name, type, source location, size, and last indexed date.
+Shows store name, type, ID, and source location in a clean table format.
+
+<details>
+<summary><b>Expected Output</b></summary>
+
+```
+| Name | Type | ID | Source |
+|------|------|----|--------------------|
+| react | repo | 459747c7 | https://github.com/facebook/react |
+| crawl4ai | repo | b5a72a94 | https://github.com/unclecode/crawl4ai.git |
+| project-docs | file | 70f6309b | ~/repos/my-project/docs |
+| claude-docs | web | 9cc62018 | https://code.claude.com/docs |
+
+**Total**: 4 stores
+```
+</details>
 
 ### `/bluera-knowledge:index`
 
-Re-index an existing store:
+Re-index an existing store to update the search index:
 
 ```bash
-/bluera-knowledge:index <store-name>
+/bluera-knowledge:index <store-name-or-id>
 ```
+
+**When to re-index:**
+- The source repository has been updated (for repo stores)
+- Files have been added or modified (for file stores)
+- Search results seem out of date
 
 **Example:**
 ```bash
-cd .bluera/bluera-knowledge/data/repos/react
-git pull
 /bluera-knowledge:index react
 ```
+
+<details>
+<summary><b>Expected Output</b></summary>
+
+```
+✓ Indexing store: react...
+✓ Indexed 1,247 documents in 3,421ms
+
+Store search index is up to date!
+```
+</details>
 
 ### `/bluera-knowledge:crawl`
 
@@ -255,6 +415,70 @@ Crawl web pages and add content to a web store:
 ```
 
 The web page will be crawled, converted to markdown, and indexed for semantic search.
+
+## Troubleshooting
+
+<details>
+<summary><b>Command not found or not recognized</b></summary>
+
+Ensure the plugin is installed and enabled:
+
+```bash
+/plugin list
+/plugin enable bluera-knowledge
+```
+
+If the plugin isn't listed, install it:
+
+```bash
+/plugin install https://github.com/bluera/bluera-knowledge
+```
+</details>
+
+<details>
+<summary><b>Web crawling fails</b></summary>
+
+Check Python dependencies:
+
+```bash
+python3 --version  # Should be 3.8+
+pip install crawl4ai
+```
+
+The plugin attempts to auto-install `crawl4ai` on first use, but manual installation may be needed in some environments.
+</details>
+
+<details>
+<summary><b>Search returns no results</b></summary>
+
+1. Verify store exists: `/bluera-knowledge:stores`
+2. Check store is indexed: `/bluera-knowledge:index <store-name>`
+3. Try broader search terms
+4. Verify you're searching the correct store with `--stores=<name>`
+</details>
+
+<details>
+<summary><b>"Store not found" error</b></summary>
+
+List all stores to see available names and IDs:
+
+```bash
+/bluera-knowledge:stores
+```
+
+Use the exact store name or ID shown in the table.
+</details>
+
+<details>
+<summary><b>Indexing is slow or fails</b></summary>
+
+Large repositories (10,000+ files) may take several minutes to index. If indexing fails:
+
+1. Check available disk space
+2. Ensure the source repository/folder is accessible
+3. For repo stores, verify git is installed: `git --version`
+4. Check for network connectivity (for repo stores)
+</details>
 
 ## Use Cases
 
@@ -307,6 +531,9 @@ Combine canonical library code with project-specific patterns:
 ## MCP Integration
 
 The plugin includes a Model Context Protocol server that exposes search tools. This is configured in `.mcp.json`:
+
+> [!NOTE]
+> **Commands vs MCP Tools**: You interact with the plugin using `/bluera-knowledge:` slash commands. Behind the scenes, these commands instruct Claude to use MCP tools (`mcp__bluera-knowledge__*`) which handle the actual operations. Commands provide the user interface, while MCP tools are the backend that AI agents use to access your knowledge stores.
 
 ```json
 {
@@ -436,7 +663,30 @@ MIT
 
 ## Version History
 
-### v0.2.0 (Current)
+### v0.4.4 (Current)
+- Table formatting refinements (clean IDs, ~ for home paths)
+- Improved readability of stores command output
+
+### v0.4.3
+- Store list outputs in beautiful table format
+- Enhanced command output presentation
+
+### v0.4.2
+- Commands converted to use MCP tools instead of bash execution
+- Improved architecture for command handling
+- Better integration with Claude Code's tool system
+
+### v0.4.1
+- Auto-install Python dependencies via SessionStart hook
+- Seamless setup experience for web crawling features
+- PEP 668 compliance for modern Python environments
+
+### v0.3.0
+- Web crawling with crawl4ai integration
+- Create and index web stores from documentation sites
+- Markdown conversion of web content
+
+### v0.2.0
 - Smart usage-based dependency suggestions
 - Automatic repository URL resolution via package registries
 - Improved analysis performance
@@ -446,5 +696,5 @@ MIT
 - Initial release
 - Repository cloning and indexing
 - Local folder indexing
-- Semantic search
+- Semantic vector search with embeddings
 - MCP server integration
