@@ -4,6 +4,13 @@ export interface RepoSearchResult {
   source: 'registry' | 'search' | 'fallback';
 }
 
+/**
+ * Type guard to check if a value is a non-null object
+ */
+function isObject(value: unknown): value is Record<PropertyKey, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 export class RepoUrlResolver {
   /**
    * Find the GitHub repository URL for a package
@@ -40,19 +47,23 @@ export class RepoUrlResolver {
         return null;
       }
 
-      const jsonData = await response.json();
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const data = jsonData as Record<string, unknown>;
-
-      // Extract repository URL
-      const repo = data['repository'];
-      if (typeof repo === 'object' && repo !== null && 'url' in repo) {
-        const url = String(repo.url);
-        return this.normalizeRepoUrl(url);
+      const data: unknown = await response.json();
+      if (!isObject(data)) {
+        return null;
       }
 
-      if (typeof repo === 'string') {
-        return this.normalizeRepoUrl(repo);
+      // Extract repository URL - safely access nested property
+      if ('repository' in data) {
+        const repo = data['repository'];
+        if (isObject(repo) && 'url' in repo) {
+          const urlValue = repo['url'];
+          const url = String(urlValue);
+          return this.normalizeRepoUrl(url);
+        }
+
+        if (typeof repo === 'string') {
+          return this.normalizeRepoUrl(repo);
+        }
       }
 
       return null;
@@ -72,28 +83,28 @@ export class RepoUrlResolver {
         return null;
       }
 
-      const jsonData = await response.json();
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const data = jsonData as Record<string, unknown>;
+      const data: unknown = await response.json();
+      if (!isObject(data)) {
+        return null;
+      }
 
       // Extract repository URL from project URLs
-      const info = data['info'];
-      if (typeof info === 'object' && info !== null && 'project_urls' in info) {
-        const projectUrls = info.project_urls;
+      if ('info' in data) {
+        const info = data['info'];
+        if (isObject(info) && 'project_urls' in info) {
+          const projectUrls = info['project_urls'];
 
-        if (typeof projectUrls === 'object' && projectUrls !== null) {
-          // Try various common keys
-          const urlKeys = ['Source', 'Repository', 'Code', 'Homepage'];
+          if (isObject(projectUrls)) {
+            // Try various common keys
+            const urlKeys = ['Source', 'Repository', 'Code', 'Homepage'];
 
-          for (const key of urlKeys) {
-            if (key in projectUrls && typeof projectUrls === 'object') {
-              // Access the property safely
-              // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-              const urlsObj = projectUrls as Record<string, unknown>;
-              const urlValue = urlsObj[key];
-              const url = String(urlValue);
-              if (url.includes('github.com')) {
-                return this.normalizeRepoUrl(url);
+            for (const key of urlKeys) {
+              if (key in projectUrls) {
+                const urlValue = projectUrls[key];
+                const url = String(urlValue);
+                if (url.includes('github.com')) {
+                  return this.normalizeRepoUrl(url);
+                }
               }
             }
           }

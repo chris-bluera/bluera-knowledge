@@ -12,6 +12,8 @@ export class EmbeddingEngine {
 
   async initialize(): Promise<void> {
     if (this.extractor !== null) return;
+    // @ts-expect-error TS2590: TypeScript can't represent the complex union type from pipeline()
+    // This is a known limitation with @huggingface/transformers overloaded signatures
     this.extractor = await pipeline('feature-extraction', this.modelName, {
       dtype: 'fp32',
     });
@@ -28,8 +30,8 @@ export class EmbeddingEngine {
       pooling: 'mean',
       normalize: true,
     });
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    return Array.from(output.data as Float32Array);
+    const result = Array.from(output.data);
+    return result.map(v => Number(v));
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
