@@ -1,0 +1,16 @@
+{
+  "description": "bluera-knowledge plugin hooks - automatic dependency checking and installation",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/check-dependencies.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

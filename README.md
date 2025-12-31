@@ -85,6 +85,21 @@ Install the plugin directly from GitHub in Claude Code:
 
 The plugin is immediately available with the `/bluera-knowledge:` command prefix.
 
+### Dependencies
+
+The plugin automatically checks for and attempts to install Python dependencies on first use:
+
+**Required:**
+- **Python 3.8+** - Required for all functionality
+- **crawl4ai** - Required for web crawling features (auto-installed via SessionStart hook)
+
+If auto-installation fails, you can install manually:
+```bash
+pip install crawl4ai
+```
+
+**Note:** The plugin will work without crawl4ai, but web crawling features (`/bluera-knowledge:crawl`) will be unavailable.
+
 ### Update Plugin
 
 ```
