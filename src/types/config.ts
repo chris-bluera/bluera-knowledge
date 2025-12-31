@@ -45,7 +45,7 @@ export interface AppConfig {
 
 export const DEFAULT_CONFIG: AppConfig = {
   version: 1,
-  dataDir: '~/.bluera/bluera-knowledge/data',
+  dataDir: '.bluera/bluera-knowledge/data',
   embedding: {
     model: 'Xenova/all-MiniLM-L6-v2',
     batchSize: 32,

@@ -5,13 +5,17 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { createServices } from '../services/index.js';
-import type { SearchQuery, DetailLevel } from '../types/search.js';
-import type { StoreId } from '../types/brands.js';
+import type { SearchQuery, DetailLevel, SearchResult } from '../types/search.js';
+import type { StoreId, DocumentId } from '../types/brands.js';
 
 interface MCPServerOptions {
   dataDir?: string | undefined;
   config?: string | undefined;
 }
+
+// In-memory result cache for get_full_context
+// Maps document ID to full search result
+const resultCache = new Map<DocumentId, SearchResult>();
 
 // eslint-disable-next-line @typescript-eslint/no-deprecated
 export function createMCPServer(options: MCPServerOptions): Server {
@@ -208,6 +212,11 @@ export function createMCPServer(options: MCPServerOptions): Server {
 
       const results = await services.search.search(searchQuery);
 
+      // Cache results for get_full_context
+      for (const result of results.results) {
+        resultCache.set(result.id, result);
+      }
+
       // Calculate estimated tokens
       const estimatedTokens = results.results.reduce((sum, r) => {
         let tokens = 100; // Base for summary
@@ -402,14 +411,97 @@ export function createMCPServer(options: MCPServerOptions): Server {
     }
 
     if (name === 'get_full_context') {
-      // TODO: Implement result caching and retrieval by ID
+      if (!args) {
+        throw new Error('No arguments provided');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const resultId = args['resultId'] as DocumentId | undefined;
+
+      if (!resultId || typeof resultId !== 'string') {
+        throw new Error('Invalid resultId: must be a non-empty string');
+      }
+
+      // Check cache for result
+      const cachedResult = resultCache.get(resultId);
+
+      if (!cachedResult) {
+        throw new Error(`Result not found in cache: ${resultId}. Run a search first to cache results.`);
+      }
+
+      // If result already has full context, return it
+      if (cachedResult.full) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                id: cachedResult.id,
+                score: cachedResult.score,
+                summary: cachedResult.summary,
+                context: cachedResult.context,
+                full: cachedResult.full
+              }, null, 2)
+            }
+          ]
+        };
+      }
+
+      // Otherwise, re-query with full detail
+      const services = await createServices(options.config, options.dataDir);
+      const store = await services.store.getByIdOrName(cachedResult.metadata.storeId);
+
+      if (!store) {
+        throw new Error(`Store not found: ${cachedResult.metadata.storeId}`);
+      }
+
+      await services.lance.initialize(store.id);
+
+      const searchQuery: SearchQuery = {
+        query: cachedResult.content.substring(0, 100), // Use snippet of content as query
+        stores: [store.id],
+        mode: 'hybrid',
+        limit: 1,
+        detail: 'full'
+      };
+
+      const results = await services.search.search(searchQuery);
+
+      // Find matching result by ID
+      const fullResult = results.results.find(r => r.id === resultId);
+
+      if (!fullResult) {
+        // Return cached result even if we couldn't get full detail
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                id: cachedResult.id,
+                score: cachedResult.score,
+                summary: cachedResult.summary,
+                context: cachedResult.context,
+                warning: 'Could not retrieve full context, returning cached minimal result'
+              }, null, 2)
+            }
+          ]
+        };
+      }
+
+      // Update cache with full result
+      resultCache.set(resultId, fullResult);
+
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify({
-              error: 'Not yet implemented'
-            })
+              id: fullResult.id,
+              score: fullResult.score,
+              summary: fullResult.summary,
+              context: fullResult.context,
+              full: fullResult.full
+            }, null, 2)
           }
         ]
       };

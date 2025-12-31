@@ -1,5 +1,5 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import type { AppConfig } from '../types/config.js';
 import { DEFAULT_CONFIG } from '../types/config.js';
@@ -44,9 +44,15 @@ export class ConfigService {
   }
 
   private expandPath(path: string): string {
+    // Expand ~ to home directory
     if (path.startsWith('~')) {
       return path.replace('~', homedir());
     }
+    // Resolve relative paths against current working directory
+    if (!path.startsWith('/')) {
+      return resolve(process.cwd(), path);
+    }
+    // Return absolute paths as-is
     return path;
   }
 }

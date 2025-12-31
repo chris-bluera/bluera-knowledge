@@ -14,29 +14,42 @@ Instead of relying on:
 This plugin provides:
 - **Instant local access** - All content indexed and ready
 - **Complete source code** - Full repository clones, not just documentation
+- **Web crawling** - Crawl and index web documentation automatically
 - **Fast vector search** - Semantic search with relevance ranking
 - **Direct file access** - Grep/Glob operations on complete source trees
 
 ### How It Works
 
-The plugin provides AI agents with two complementary search capabilities:
+The plugin provides AI agents with three complementary search capabilities:
 
-**1. Semantic Vector Search** - Fast, AI-powered search across all indexed content:
+**1. Semantic Vector Search** - AI-powered search across all indexed content:
 - Searches by meaning and intent, not just keywords
-- Ranks results by relevance
-- Returns structured code units with progressive context
-- Works across all source types (code, docs, text)
+- Uses embeddings to find conceptually similar content
+- Ideal for discovering patterns and related concepts
 
-**2. Direct File Access** - Traditional file operations on cloned sources:
+**2. Full-Text Search (FTS)** - Fast keyword and pattern matching:
+- Traditional text search with exact matching
+- Supports regex patterns and boolean operators
+- Best for finding specific terms or identifiers
+
+**3. Hybrid Mode (Recommended)** - Combines vector and FTS search:
+- Merges results from both search modes with weighted ranking
+- Balances semantic understanding with exact matching
+- Provides best overall results for most queries
+
+**4. Direct File Access** - Traditional file operations on cloned sources:
 - Provides file paths to cloned repositories
 - Enables Grep, Glob, and Read operations on source files
 - Supports precise pattern matching and code navigation
 - Full access to complete file trees
 
+---
+
 **User Commands** - You manage knowledge stores through `/bluera-knowledge:` commands:
 - Analyze your project to find important dependencies
 - Add Git repositories (library source code)
 - Add local folders (documentation, standards, etc.)
+- Crawl web pages and documentation
 - Search across all indexed content
 - Manage and re-index stores
 
@@ -55,6 +68,7 @@ The plugin provides AI agents with two complementary search capabilities:
 - **Automatic Repository Discovery**: Queries NPM and PyPI package registries to automatically find GitHub repository URLs for any package
 - **Git Repository Indexing**: Clones and indexes library source code for both semantic search and direct file access
 - **Local Folder Indexing**: Indexes any local content - documentation, standards, reference materials, or custom content
+- **Web Crawling**: Crawl and index web pages using `crawl4ai` - convert documentation sites to searchable markdown
 - **Dual Search Modes**:
   - **Vector Search**: AI-powered semantic search with relevance ranking
   - **File Access**: Direct Grep/Glob operations on cloned source files
@@ -100,13 +114,13 @@ The plugin is immediately available with the `/bluera-knowledge:` command prefix
 
 ### `/bluera-knowledge:suggest`
 
-Analyze your project to identify the most-used dependencies:
+Analyze your project to suggest libraries worth indexing as knowledge stores:
 
 ```bash
 /bluera-knowledge:suggest
 ```
 
-Scans all source files, counts import statements, and shows the top 5 most-used dependencies with their GitHub URLs.
+Scans all source files, counts import statements, and suggests the top 5 most-used dependencies as indexing targets with their GitHub URLs.
 
 **Example output:**
 ```
@@ -163,7 +177,7 @@ Index a local folder:
 Search across indexed knowledge stores:
 
 ```bash
-/bluera-knowledge:search "<query>" [--store=<name>] [--limit=<number>]
+/bluera-knowledge:search "<query>" [--stores=<names>] [--limit=<number>]
 ```
 
 **Examples:**
@@ -172,7 +186,10 @@ Search across indexed knowledge stores:
 /bluera-knowledge:search "how to invalidate queries"
 
 # Search specific store
-/bluera-knowledge:search "useState implementation" --store=react
+/bluera-knowledge:search "useState implementation" --stores=react
+
+# Search multiple stores (comma-separated)
+/bluera-knowledge:search "authentication" --stores=react,tanstack-query
 
 # Limit results
 /bluera-knowledge:search "testing patterns" --limit=5
@@ -198,10 +215,31 @@ Re-index an existing store:
 
 **Example:**
 ```bash
-cd .bluera/bluera-knowledge/stores/repo/react
+cd .bluera/bluera-knowledge/data/repos/react
 git pull
 /bluera-knowledge:index react
 ```
+
+### `/bluera-knowledge:crawl`
+
+Crawl web pages and add content to a web store:
+
+```bash
+/bluera-knowledge:crawl <url> <store-name>
+```
+
+**Requirements:**
+- Python 3 with `crawl4ai` package installed
+- A web store must be created first
+
+**Examples:**
+```bash
+# Create a web store (via MCP)
+# Then crawl pages into it
+/bluera-knowledge:crawl https://docs.example.com/guide my-docs-store
+```
+
+The web page will be crawled, converted to markdown, and indexed for semantic search.
 
 ## Use Cases
 
@@ -279,7 +317,7 @@ Semantic vector search across all indexed stores. Returns structured code units 
 - `intent` - Search intent: find-pattern, find-implementation, find-usage, find-definition, find-documentation
 - `detail` - Context level: minimal, contextual, or full
 - `limit` - Maximum results (default: 10)
-- `stores` - Specific stores to search (optional)
+- `stores` - Array of specific store IDs to search (optional, searches all stores if not specified)
 
 #### `get_store_info`
 Get detailed information about a store including its file path for direct Grep/Glob access.
@@ -306,18 +344,18 @@ Retrieve complete code and context for a specific search result.
 
 ## Data Storage
 
-Knowledge stores are stored in your project:
+Knowledge stores are stored in your project root:
 
 ```
-.bluera/bluera-knowledge/
-├── stores/
-│   ├── repo/           # Git repositories (full clones)
-│   └── file/           # Local folders (indexed copies)
-├── index/              # Vector search indices
-└── metadata.json       # Store metadata
+<project-root>/.bluera/bluera-knowledge/
+├── data/
+│   ├── repos/<store-id>/       # Cloned Git repositories
+│   ├── documents_*.lance/      # Vector indices (Lance DB)
+│   └── stores.json             # Store registry
+└── config.json                 # Configuration
 ```
 
-**Recommendation**: Add `.bluera/` to your `.gitignore`.
+**Important**: Add `.bluera/` to your `.gitignore` to avoid committing large repositories and vector indices to version control.
 
 ## Development
 
