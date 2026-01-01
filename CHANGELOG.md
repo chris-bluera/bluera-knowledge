@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.16] - 2026-01-01
+
+### Changed
+- Replaced prompt-based table formatting with deterministic PostToolUse hook
+- Search results now formatted by Python script with precise column widths
+- Simplified search.md command - formatting handled by hook
+
+### Added
+- `hooks/format-search-results.py` - deterministic table formatter for search output
+
 ## [0.4.15] - 2026-01-01
 
 ### Fixed

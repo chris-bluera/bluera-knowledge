@@ -1,5 +1,5 @@
 {
-  "description": "bluera-knowledge plugin hooks - automatic dependency checking and job status monitoring",
+  "description": "bluera-knowledge plugin hooks - automatic dependency checking, job status monitoring, and search result formatting",
   "hooks": {
     "SessionStart": [
       {
@@ -19,6 +19,18 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/job-status-hook.sh",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__bluera-knowledge__search",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/format-search-results.py",
+            "timeout": 10
           }
         ]
       }
