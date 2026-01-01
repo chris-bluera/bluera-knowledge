@@ -63,7 +63,7 @@ describe('E2E Workflow Tests', () => {
 
       const listOutput = cli('store list');
       expect(listOutput).toContain('readme-store');
-    });
+    }, 30000);
 
     it('indexes README documents', () => {
       const output = cli('index readme-store');

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.15] - 2026-01-01
+
+### Fixed
+- Fixed search command table alignment by enforcing fixed-width columns with proper padding
+- Separator row now uses exact cell widths (7/14/47/50 chars) for proper vertical alignment
+- All column borders now align perfectly in terminal output
+
 ## [0.4.14] - 2026-01-01
 
 ### Fixed
