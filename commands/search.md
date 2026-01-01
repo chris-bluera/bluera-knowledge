@@ -27,20 +27,28 @@ Search indexed library sources for: **$ARGUMENTS**
 ```
 ## Search Results for "your query"
 
-| Score | Store       | File                                          | Purpose                                           |
-|------:|-------------|-----------------------------------------------|---------------------------------------------------|
-|  1.00 | react       | src/components/Button.tsx                     | Reusable button component with variants           |
-|  0.87 | react       | src/hooks/useButton.ts                        | Custom hook for button state management           |
-|  0.65 | lodash      | src/array.js                                  | Array utility functions                           |
+| Score | Store     | File                                          | Purpose                                          |
+|------:|-----------|-----------------------------------------------|--------------------------------------------------|
+|  1.00 | react     | src/components/Button.tsx                     | Reusable button component with variants          |
+|  0.87 | react     | src/hooks/useButton.ts                        | Custom hook for button state management          |
+|  0.65 | lodash    | src/array.js                                  | Array utility functions                          |
+|  0.52 | very-lo...| plugins/some-plugin/very/deep/nested/path/... | This is a very long purpose that gets truncat...|
 
-**Found**: 3 results
+**Found**: 4 results
 ```
 
-4. Format each column:
+4. Format each column (IMPORTANT - truncate content to fit):
    - **Score**: Relevance score (0-1, formatted to 2 decimals), right-aligned
-   - **Store**: Store name (from summary.storeName), max 15 chars
-   - **File**: Relative file path within repo (strip repoRoot prefix if present), max 45 chars with "..." if truncated
-   - **Purpose**: Brief summary, max 50 chars with "..." if truncated
+   - **Store**: Store name from summary.storeName
+     - Truncate to 12 chars if longer, replace last 3 chars with "..."
+   - **File**: Relative file path within repo (strip repoRoot prefix if present)
+     - Truncate to 45 chars if longer, replace last 3 chars with "..."
+     - Example: "plugins/plugin-dev/skills/command-dev..." (45 chars total)
+   - **Purpose**: Brief summary from summary.purpose
+     - Truncate to 48 chars if longer, replace last 3 chars with "..."
+     - Example: "Comprehensive guide for creating Claude Co..." (48 chars total)
+
+   CRITICAL: Ensure each cell content does NOT exceed its max length. Truncation must happen BEFORE rendering the table.
 
 5. If no results found:
 
