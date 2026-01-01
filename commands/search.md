@@ -27,13 +27,13 @@ Search indexed library sources for: **$ARGUMENTS**
    ```
    ## Search Results: "query" (hybrid search)
 
-   **1. [Score: 0.95] 🎯 store-name**
+   **1. [Score: 0.95] [Vector+FTS] Store: store-name**
    📄 path/to/file.ts
    → Purpose description here
    🔑 Top Terms (in this chunk): concept1, concept2, concept3
    📦 Imports (in this chunk): package1, package2
 
-   **2. [Score: 0.87] 🔍 store-name**
+   **2. [Score: 0.87] [Vector] Store: store-name**
    📄 path/to/file.js
    → Another purpose here
    🔑 Top Terms (in this chunk): other-concept
@@ -50,10 +50,10 @@ Search indexed library sources for: **$ARGUMENTS**
    **Formatting rules:**
    - Header: `## Search Results: "query" (mode search)` - Extract mode from response (vector/fts/hybrid)
    - Each result on its own block with blank line between
-   - Result header: `**N. [Score: X.XX] {{badge}} storeName**` where badge is:
-     - 🎯 if result.rankingMetadata has both vectorRank AND ftsRank (found by both methods)
-     - 🔍 if result.rankingMetadata has only vectorRank (semantic match only)
-     - 📝 if result.rankingMetadata has only ftsRank (keyword match only)
+   - Result header: `**N. [Score: X.XX] {{method}} Store: storeName**` where method is:
+     - `[Vector+FTS]` if result.rankingMetadata has both vectorRank AND ftsRank (found by both methods)
+     - `[Vector]` if result.rankingMetadata has only vectorRank (semantic match only)
+     - `[Keyword]` if result.rankingMetadata has only ftsRank (keyword match only)
    - File: `📄 filename` (strip repoRoot prefix from location)
    - Purpose: `→ purpose text` (arrow prefix, keep concise)
    - Top Terms: `🔑 Top Terms (in this chunk): ...` (top 5 most frequent words from this chunk, comma-separated)

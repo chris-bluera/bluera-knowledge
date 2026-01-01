@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-01-01
+
+### Changed
+- Replace emoji badges with text labels for search methods: [Vector+FTS], [Vector], [Keyword]
+- Add "Store:" prefix to search results for better clarity
+
 ## [0.5.0] - 2026-01-01
 
 ### Added
