@@ -72,6 +72,6 @@
     "slurp-ai": "^1.0.6",
     "turndown": "^7.2.2",
     "turndown-plugin-gfm": "^1.0.2",
-    "zod": "^4.2.1"
+    "zod": "^4.3.4"
   }
 }

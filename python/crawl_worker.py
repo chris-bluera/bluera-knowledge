@@ -45,17 +45,41 @@ async def process_request(crawler, request):
         # Perform async crawl
         result = await crawler.arun(url=url)
 
+        if not result.success:
+            raise Exception(f"Crawl failed: {result.error_message}")
+
+        # Extract title from metadata (crawl4ai 0.7.8 stores title in metadata dict)
+        title = ''
+        if result.metadata and isinstance(result.metadata, dict):
+            title = result.metadata.get('title', '')
+
+        # Get markdown content (crawl4ai 0.7.8)
+        markdown = result.markdown or result.cleaned_html or ''
+
+        # Extract links - crawl4ai 0.7.8 returns dict with 'internal' and 'external' keys
+        # Each link is an object with href, text, title, etc. - extract just href strings
+        all_links = []
+        if isinstance(result.links, dict):
+            internal = result.links.get('internal', [])
+            external = result.links.get('external', [])
+            # Extract href from link objects (crawl4ai 0.7.8 returns objects, not strings)
+            for link in internal + external:
+                if isinstance(link, dict):
+                    all_links.append(link.get('href', ''))
+                elif isinstance(link, str):
+                    all_links.append(link)
+
         response = {
             'jsonrpc': '2.0',
             'id': request.get('id'),
             'result': {
                 'pages': [{
                     'url': url,
-                    'title': result.title or '',
-                    'content': result.markdown or result.cleaned_html or '',
+                    'title': title,
+                    'content': markdown,
                     'html': result.html or '',
-                    'links': result.links.get('internal', []) + result.links.get('external', []) if isinstance(result.links, dict) else [],
-                    'crawledAt': '',  # crawl4ai 0.7.8 doesn't provide crawled_at
+                    'links': all_links,
+                    'crawledAt': '',  # crawl4ai 0.7.8 doesn't provide timestamp
                 }]
             }
         }

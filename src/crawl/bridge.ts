@@ -1,41 +1,30 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
+import { ZodError } from 'zod';
+import {
+  type CrawlResult,
+  type HeadlessResult,
+  type CrawledLink,
+  validateCrawlResult,
+  validateHeadlessResult,
+} from './schemas.js';
 
-interface CrawlResult {
-  pages: Array<{
-    url: string;
-    title: string;
-    content: string;
-    links: string[];
-    crawledAt: string;
-  }>;
-}
-
-export interface CrawledLink {
-  href: string;
-  text: string;
-  title: string;
-  base_domain: string;
-  head_data: unknown;
-  head_extraction_status: unknown;
-  head_extraction_error: unknown;
-  intrinsic_score: number;
-  contextual_score: unknown;
-  total_score: unknown;
-}
-
-interface HeadlessResult {
-  html: string;
-  markdown: string;
-  links: Array<CrawledLink | string>; // crawl4ai returns link objects, not just strings
-}
+// Re-export for backwards compatibility
+export type { CrawledLink };
 
 type PendingResult = CrawlResult | HeadlessResult;
 
+interface PendingRequest {
+  resolve: (v: PendingResult) => void;
+  reject: (e: Error) => void;
+  timeout: NodeJS.Timeout;
+  method: 'crawl' | 'fetch_headless';
+}
+
 export class PythonBridge {
   private process: ChildProcess | null = null;
-  private readonly pending: Map<string, { resolve: (v: PendingResult) => void; reject: (e: Error) => void; timeout: NodeJS.Timeout }> = new Map();
+  private readonly pending: Map<string, PendingRequest> = new Map();
 
   start(): Promise<void> {
     if (this.process) return Promise.resolve();
@@ -97,7 +86,27 @@ export class PythonBridge {
           } else if (response.result !== undefined) {
             clearTimeout(pending.timeout);
             this.pending.delete(response.id);
-            pending.resolve(response.result);
+
+            // Validate response structure based on method type
+            try {
+              let validated: PendingResult;
+              if (pending.method === 'crawl') {
+                validated = validateCrawlResult(response.result);
+              } else {
+                validated = validateHeadlessResult(response.result);
+              }
+              pending.resolve(validated);
+            } catch (error: unknown) {
+              // Log validation failure with original response for debugging
+              if (error instanceof ZodError) {
+                console.error('Python bridge response validation failed:', error.issues);
+                console.error('Original response:', JSON.stringify(response.result));
+                pending.reject(new Error(`Invalid response format from Python bridge: ${error.message}`));
+              } else {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                pending.reject(new Error(`Response validation error: ${errorMessage}`));
+              }
+            }
           }
           // If neither result nor error, leave pending (will timeout)
         }
@@ -131,7 +140,7 @@ export class PythonBridge {
       }, timeoutMs);
 
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout });
+      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout, method: 'crawl' });
       if (this.process === null || this.process.stdin === null) {
         reject(new Error('Python bridge process not available'));
         return;
@@ -161,7 +170,7 @@ export class PythonBridge {
       }, timeoutMs);
 
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout });
+      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout, method: 'fetch_headless' });
       if (this.process === null || this.process.stdin === null) {
         reject(new Error('Python bridge process not available'));
         return;
