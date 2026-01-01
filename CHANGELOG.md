@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-01-01
+
+### Added
+- Ranking attribution badges showing search method for each result (🎯 both, 🔍 vector, 📝 FTS)
+- Search mode display in results header (vector/fts/hybrid)
+- Performance metrics in search results footer (time in milliseconds)
+- Ranking metadata preserved in search results (vectorRank, ftsRank, RRF scores, boost factors)
+
+### Changed
+- Renamed "Keywords" to "Top Terms (in this chunk)" for clarity about scope and methodology
+- Updated "Imports" to "Imports (in this chunk)" to clarify chunk-level analysis
+- Search results now show which ranking method(s) contributed to each result
+
+### Improved
+- Search result transparency - users can now see how each result was found
+- Label clarity - all labels now explicitly state they analyze chunk content, not whole files
+
 ## [0.4.22] - 2026-01-01
 
 ### Changed

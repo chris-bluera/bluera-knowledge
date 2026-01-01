@@ -344,8 +344,20 @@ export class SearchService {
       }
     });
 
-    // Calculate RRF scores with file-type boosting
-    const rrfScores: Array<{ id: string; score: number; result: SearchResult }> = [];
+    // Calculate RRF scores with file-type boosting and preserve ranking metadata
+    const rrfScores: Array<{
+      id: string;
+      score: number;
+      result: SearchResult;
+      metadata: {
+        vectorRank?: number;
+        ftsRank?: number;
+        vectorRRF: number;
+        ftsRRF: number;
+        fileTypeBoost: number;
+        frameworkBoost: number;
+      };
+    }> = [];
     const { k, vectorWeight, ftsWeight } = this.rrfConfig;
 
     for (const [id, result] of allDocs) {
@@ -365,10 +377,32 @@ export class SearchService {
       // Apply framework context boost
       const frameworkBoost = this.getFrameworkContextBoost(query, result);
 
+      const metadata: {
+        vectorRank?: number;
+        ftsRank?: number;
+        vectorRRF: number;
+        ftsRRF: number;
+        fileTypeBoost: number;
+        frameworkBoost: number;
+      } = {
+        vectorRRF,
+        ftsRRF,
+        fileTypeBoost,
+        frameworkBoost,
+      };
+
+      if (vectorRank !== Infinity) {
+        metadata.vectorRank = vectorRank;
+      }
+      if (ftsRank !== Infinity) {
+        metadata.ftsRank = ftsRank;
+      }
+
       rrfScores.push({
         id,
         score: (vectorRRF + ftsRRF) * fileTypeBoost * frameworkBoost,
         result,
+        metadata,
       });
     }
 
@@ -380,7 +414,11 @@ export class SearchService {
       const first = sorted[0];
       const last = sorted[sorted.length - 1];
       if (first === undefined || last === undefined) {
-        return sorted.map(r => ({ ...r.result, score: r.score }));
+        return sorted.map(r => ({
+          ...r.result,
+          score: r.score,
+          rankingMetadata: r.metadata,
+        }));
       }
       const maxScore = first.score;
       const minScore = last.score;
@@ -389,12 +427,17 @@ export class SearchService {
       if (range > 0) {
         return sorted.map(r => ({
           ...r.result,
-          score: (r.score - minScore) / range, // Normalized to 0-1
+          score: (r.score - minScore) / range,
+          rankingMetadata: r.metadata,
         }));
       }
     }
 
-    return sorted.map(r => ({ ...r.result, score: r.score }));
+    return sorted.map(r => ({
+      ...r.result,
+      score: r.score,
+      rankingMetadata: r.metadata,
+    }));
   }
 
   async searchAllStores(

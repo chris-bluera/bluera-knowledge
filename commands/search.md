@@ -25,21 +25,21 @@ Search indexed library sources for: **$ARGUMENTS**
 3. Format and display results with rich context:
 
    ```
-   ## Search Results: "query"
+   ## Search Results: "query" (hybrid search)
 
-   **1. [Score: 0.95] store-name**
+   **1. [Score: 0.95] 🎯 store-name**
    📄 path/to/file.ts
    → Purpose description here
-   🔑 Keywords: concept1, concept2, concept3
-   📦 Imports: package1, package2
+   🔑 Top Terms (in this chunk): concept1, concept2, concept3
+   📦 Imports (in this chunk): package1, package2
 
-   **2. [Score: 0.87] store-name**
+   **2. [Score: 0.87] 🔍 store-name**
    📄 path/to/file.js
    → Another purpose here
-   🔑 Keywords: other-concept
+   🔑 Top Terms (in this chunk): other-concept
 
    ---
-   **Found 10 results**
+   **Found 10 results in 45ms**
 
    💡 **Next Steps:**
    - Read file: `Read /path/to/file.ts`
@@ -48,14 +48,18 @@ Search indexed library sources for: **$ARGUMENTS**
    ```
 
    **Formatting rules:**
+   - Header: `## Search Results: "query" (mode search)` - Extract mode from response (vector/fts/hybrid)
    - Each result on its own block with blank line between
-   - Header: `**N. [Score: X.XX] storeName**` (bold, with rank and score)
+   - Result header: `**N. [Score: X.XX] {{badge}} storeName**` where badge is:
+     - 🎯 if result.rankingMetadata has both vectorRank AND ftsRank (found by both methods)
+     - 🔍 if result.rankingMetadata has only vectorRank (semantic match only)
+     - 📝 if result.rankingMetadata has only ftsRank (keyword match only)
    - File: `📄 filename` (strip repoRoot prefix from location)
    - Purpose: `→ purpose text` (arrow prefix, keep concise)
-   - Keywords: `🔑 Keywords: ...` (from context.relatedConcepts - most frequent terms in content, first 4-5, comma-separated)
-   - Imports: `📦 Imports: ...` (from context.keyImports, first 3-4 imports, comma-separated)
-   - Skip Keywords/Imports lines if arrays are empty
-   - Footer: Total count + helpful next steps with actual result IDs
+   - Top Terms: `🔑 Top Terms (in this chunk): ...` (top 5 most frequent words from this chunk, comma-separated)
+   - Imports: `📦 Imports (in this chunk): ...` (import statements from this chunk, first 3-4, comma-separated)
+   - Skip Top Terms/Imports lines if arrays are empty
+   - Footer: `**Found {{totalResults}} results in {{timeMs}}ms**` with separator line above
 
 4. For the footer next steps, include:
    - First result's ID in the get_full_context example

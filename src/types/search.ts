@@ -55,24 +55,34 @@ export interface SearchQuery {
   readonly includeContent?: boolean | undefined;
   readonly contextLines?: number | undefined;
 
-  // NEW: Detail level for progressive context
+  // Detail level for progressive context
   readonly detail?: DetailLevel | undefined;
 }
 
 export interface SearchResult {
   readonly id: DocumentId;
-  readonly score: number;
+  score: number;
   readonly content: string;
   readonly highlight?: string | undefined;
   readonly metadata: DocumentMetadata;
 
-  // NEW: Structured code unit for AI agents
+  // Structured code unit for AI agents
   readonly codeUnit?: CodeUnit | undefined;
 
-  // NEW: Progressive context layers
+  // Progressive context layers
   readonly summary?: ResultSummary | undefined;
   readonly context?: ResultContext | undefined;
   readonly full?: ResultFull | undefined;
+
+  // Ranking attribution metadata for transparency
+  readonly rankingMetadata?: {
+    readonly vectorRank?: number;    // Position in vector results (1-based)
+    readonly ftsRank?: number;       // Position in FTS results (1-based)
+    readonly vectorRRF: number;      // Vector contribution to RRF score
+    readonly ftsRRF: number;         // FTS contribution to RRF score
+    readonly fileTypeBoost: number;  // File type multiplier applied
+    readonly frameworkBoost: number; // Framework context multiplier
+  } | undefined;
 }
 
 export interface SearchResponse {
