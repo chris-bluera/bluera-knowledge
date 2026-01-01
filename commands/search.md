@@ -22,30 +22,28 @@ Search indexed library sources for: **$ARGUMENTS**
    - detail: "contextual"
    - intent: "find-implementation"
 
-3. Format and display the results as a markdown table:
+3. **CRITICAL**: Format the results using the Python formatter for deterministic table output.
 
-   ```markdown
-   ## Search Results: "query"
-
-   | Score | Store | File | Purpose |
-   |------:|-------|------|---------|
-   | 0.95  | store-name | path/to/file.ts | Brief description |
-
-   **Found X results**
+   After calling the MCP tool, construct a JSON object for the formatter:
+   ```json
+   {
+     "tool_name": "mcp__bluera-knowledge__search",
+     "tool_input": { <the parameters you used> },
+     "tool_result": { <the full MCP response> }
+   }
    ```
 
-   **Formatting rules:**
-   - Score: Right-aligned, 2 decimal places (e.g., `0.95`, `1.00`)
-   - Store: Extract from `summary.storeName`
-   - File: Strip `summary.repoRoot` prefix from `summary.location`
-   - Purpose: Extract from `summary.purpose`, keep it concise (truncate if needed)
-   - Use standard markdown table syntax (don't worry about fixed-width alignment)
+   Then execute this bash command to format and display results:
+   ```bash
+   echo '<json_object>' | ${CLAUDE_PLUGIN_ROOT}/hooks/format-search-results.py
+   ```
 
-4. If no results:
-   ```markdown
-   No results found for "query"
+   The formatter outputs a fixed-width table that renders correctly in terminals.
 
-   Try:
-   - Broadening your search terms
-   - Checking indexed stores: /bluera-knowledge:stores
+4. If the formatter fails or if you cannot execute it, fall back to a simple list format:
+   ```
+   ## Search Results: "query"
+
+   1. [0.95] store-name: path/to/file.ts
+      Purpose: Brief description
    ```

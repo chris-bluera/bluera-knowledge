@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.19] - 2026-01-01
+
+### Fixed
+- Search command now uses Python formatter via Bash for deterministic table output
+- Fixed broken table alignment in terminal (columns now properly aligned with fixed widths)
+
+### Changed
+- Updated search.md to pipe MCP results through format-search-results.py
+- Command instructs Claude to execute Python formatter for proper table rendering
+
 ## [0.4.18] - 2026-01-01
 
 ### Fixed
