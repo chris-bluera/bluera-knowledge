@@ -202,11 +202,31 @@ export class IntelligentCrawler extends EventEmitter {
 
         // Add links to queue if we haven't reached max depth
         if (current.depth < maxDepth) {
-          const links = await this.extractLinks(current.url);
-          for (const link of links) {
-            if (!this.visited.has(link) && this.isSameDomain(seedUrl, link)) {
-              queue.push({ url: link, depth: current.depth + 1 });
+          try {
+            const links = await this.extractLinks(current.url, useHeadless);
+
+            if (links.length === 0) {
+              console.warn(`No links found on ${current.url} - page may be a leaf node`);
+            } else {
+              console.log(`Found ${links.length} links on ${current.url}`);
             }
+
+            for (const link of links) {
+              if (!this.visited.has(link) && this.isSameDomain(seedUrl, link)) {
+                queue.push({ url: link, depth: current.depth + 1 });
+              }
+            }
+          } catch (error) {
+            // Log link extraction failure but continue crawling other pages
+            const errorProgress: CrawlProgress = {
+              type: 'error',
+              pagesVisited,
+              totalPages: maxPages,
+              currentUrl: current.url,
+              message: `Failed to extract links from ${current.url}`,
+              error: error instanceof Error ? error : new Error(String(error)),
+            };
+            this.emit('progress', errorProgress);
           }
         }
       } catch (error) {
@@ -326,12 +346,30 @@ export class IntelligentCrawler extends EventEmitter {
   /**
    * Extract links from a page using Python bridge
    */
-  private async extractLinks(url: string): Promise<string[]> {
+  private async extractLinks(url: string, useHeadless: boolean = false): Promise<string[]> {
     try {
+      // Use headless mode for link extraction if enabled
+      if (useHeadless) {
+        const result = await this.pythonBridge.fetchHeadless(url);
+        return result.links || [];
+      }
+
       const result = await this.pythonBridge.crawl(url);
-      return result.pages[0]?.links || [];
-    } catch {
-      return [];
+
+      // Validate response structure
+      if (!result.pages || !result.pages[0]) {
+        throw new Error(`Invalid crawl response structure for ${url}: missing pages array`);
+      }
+
+      return result.pages[0].links || [];
+    } catch (error) {
+      // Log the error for debugging
+      console.error(`Failed to extract links from ${url}:`, error instanceof Error ? error.message : String(error));
+
+      // Re-throw the error instead of silently swallowing it
+      throw new Error(
+        `Link extraction failed for ${url}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

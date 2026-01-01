@@ -40,6 +40,7 @@ describe('IntelligentCrawler', () => {
     // Setup PythonBridge mock
     mockPythonBridge = {
       crawl: vi.fn(),
+      fetchHeadless: vi.fn(),
       stop: vi.fn().mockResolvedValue(undefined),
     };
     vi.mocked(PythonBridge).mockImplementation(function() { return mockPythonBridge; });
@@ -634,6 +635,106 @@ describe('IntelligentCrawler', () => {
       expect(results).toHaveLength(1);
       expect(results[0]?.extracted).toBeUndefined();
       expect(mockClaudeClient.extractContent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Link Extraction Error Handling', () => {
+    it('should throw error when Python bridge fails', async () => {
+      mockPythonBridge.crawl.mockRejectedValue(new Error('Network timeout'));
+
+      const crawler = new IntelligentCrawler();
+      // Access private property for testing
+      (crawler as any).pythonBridge = mockPythonBridge;
+
+      await expect((crawler as any).extractLinks('https://example.com')).rejects.toThrow(
+        'Link extraction failed'
+      );
+    });
+
+    it('should throw error on invalid response structure', async () => {
+      // Return a response without pages array
+      mockPythonBridge.crawl.mockResolvedValue({ invalid: 'structure' });
+
+      const crawler = new IntelligentCrawler();
+      (crawler as any).pythonBridge = mockPythonBridge;
+
+      await expect((crawler as any).extractLinks('https://example.com')).rejects.toThrow(
+        'Invalid crawl response structure'
+      );
+    });
+
+    it('should throw error when pages array is empty', async () => {
+      mockPythonBridge.crawl.mockResolvedValue({ pages: [] });
+
+      const crawler = new IntelligentCrawler();
+      (crawler as any).pythonBridge = mockPythonBridge;
+
+      await expect((crawler as any).extractLinks('https://example.com')).rejects.toThrow(
+        'Invalid crawl response structure'
+      );
+    });
+
+    it('should use headless mode for link extraction when enabled', async () => {
+      const headlessResult = {
+        html: '<html/>',
+        markdown: 'test',
+        links: ['https://example.com/page2', 'https://example.com/page3'],
+      };
+      mockPythonBridge.fetchHeadless.mockResolvedValue(headlessResult);
+
+      const crawler = new IntelligentCrawler();
+      (crawler as any).pythonBridge = mockPythonBridge;
+
+      const links = await (crawler as any).extractLinks('https://example.com', true);
+
+      expect(mockPythonBridge.fetchHeadless).toHaveBeenCalledWith('https://example.com');
+      expect(mockPythonBridge.crawl).not.toHaveBeenCalled();
+      expect(links).toEqual(['https://example.com/page2', 'https://example.com/page3']);
+    });
+
+    it('should use regular crawl when headless is disabled', async () => {
+      mockPythonBridge.crawl.mockResolvedValue({
+        pages: [{ links: ['https://example.com/page1'] }],
+      });
+
+      const crawler = new IntelligentCrawler();
+      (crawler as any).pythonBridge = mockPythonBridge;
+
+      const links = await (crawler as any).extractLinks('https://example.com', false);
+
+      expect(mockPythonBridge.crawl).toHaveBeenCalledWith('https://example.com');
+      expect(mockPythonBridge.fetchHeadless).not.toHaveBeenCalled();
+      expect(links).toEqual(['https://example.com/page1']);
+    });
+
+    it('should continue crawling other pages when link extraction fails in simple mode', async () => {
+      // First page succeeds, link extraction fails, second page succeeds
+      mockClaudeClient.determineCrawlUrls.mockResolvedValue({
+        urls: ['https://example.com/page1', 'https://example.com/page2'],
+        reasoning: 'Test URLs',
+      });
+
+      vi.mocked(axios.get)
+        .mockResolvedValueOnce({ data: '<html><body>Seed</body></html>' }) // Seed page
+        .mockResolvedValueOnce({ data: '<html><body>Page1</body></html>' }) // First URL
+        .mockResolvedValueOnce({ data: '<html><body>Page2</body></html>' }); // Second URL
+
+      // Make link extraction fail for first URL only
+      mockPythonBridge.crawl
+        .mockRejectedValueOnce(new Error('Link extraction failed'))
+        .mockResolvedValueOnce({ pages: [{ links: [] }] });
+
+      const results = [];
+      for await (const result of crawler.crawl('https://example.com', {
+        crawlInstruction: 'Find all',
+      })) {
+        results.push(result);
+      }
+
+      // Should successfully crawl both URLs despite link extraction failure
+      expect(results).toHaveLength(2);
+      expect(results[0]?.url).toBe('https://example.com/page1');
+      expect(results[1]?.url).toBe('https://example.com/page2');
     });
   });
 
