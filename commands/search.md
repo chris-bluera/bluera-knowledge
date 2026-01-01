@@ -22,28 +22,35 @@ Search indexed library sources for: **$ARGUMENTS**
    - detail: "contextual"
    - intent: "find-implementation"
 
-3. **CRITICAL**: Format the results using the Python formatter for deterministic table output.
+3. Format and display results in a clean list format:
 
-   After calling the MCP tool, construct a JSON object for the formatter:
-   ```json
-   {
-     "tool_name": "mcp__bluera-knowledge__search",
-     "tool_input": { <the parameters you used> },
-     "tool_result": { <the full MCP response> }
-   }
-   ```
-
-   Then execute this bash command to format and display results:
-   ```bash
-   echo '<json_object>' | ${CLAUDE_PLUGIN_ROOT}/hooks/format-search-results.py
-   ```
-
-   The formatter outputs a fixed-width table that renders correctly in terminals.
-
-4. If the formatter fails or if you cannot execute it, fall back to a simple list format:
    ```
    ## Search Results: "query"
 
-   1. [0.95] store-name: path/to/file.ts
-      Purpose: Brief description
+   **1. [Score: 0.95] store-name**
+   📄 path/to/file.ts
+   → Purpose description here
+
+   **2. [Score: 0.87] store-name**
+   📄 path/to/file.js
+   → Another purpose here
+
+   ---
+   **Found 10 results**
+   ```
+
+   **Formatting rules:**
+   - Each result on its own block with blank line between
+   - Header: `**N. [Score: X.XX] storeName**` (bold, with rank and score)
+   - File: `📄 filename` (strip repoRoot prefix from location)
+   - Purpose: `→ purpose text` (arrow prefix, keep concise)
+   - Footer: Total count with separator line above
+
+4. If no results:
+   ```
+   No results found for "query"
+
+   Try:
+   - Broadening your search terms
+   - Checking indexed stores: /bluera-knowledge:stores
    ```

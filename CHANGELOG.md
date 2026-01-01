@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.20] - 2026-01-01
+
+### Fixed
+- Search results now display directly in conversation (not in verbose mode)
+- Abandoned table formatting approach - Bash output is collapsed by default
+
+### Changed
+- Switched to clean list format with emoji icons for better readability
+- Results display immediately without requiring ctrl+o to expand
+
 ## [0.4.19] - 2026-01-01
 
 ### Fixed
