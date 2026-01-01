@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2026-01-01
+
+### Changed
+- Add text labels before all badges in search results (File:, Purpose:, Top Terms:, Imports:)
+
 ## [0.5.1] - 2026-01-01
 
 ### Changed
