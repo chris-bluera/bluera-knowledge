@@ -12,10 +12,23 @@ interface CrawlResult {
   }>;
 }
 
+export interface CrawledLink {
+  href: string;
+  text: string;
+  title: string;
+  base_domain: string;
+  head_data: unknown;
+  head_extraction_status: unknown;
+  head_extraction_error: unknown;
+  intrinsic_score: number;
+  contextual_score: unknown;
+  total_score: unknown;
+}
+
 interface HeadlessResult {
   html: string;
   markdown: string;
-  links: string[];
+  links: Array<CrawledLink | string>; // crawl4ai returns link objects, not just strings
 }
 
 type PendingResult = CrawlResult | HeadlessResult;

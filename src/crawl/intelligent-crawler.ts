@@ -7,7 +7,7 @@ import { EventEmitter } from 'node:events';
 import axios from 'axios';
 import { ClaudeClient, type CrawlStrategy } from './claude-client.js';
 import { convertHtmlToMarkdown } from './article-converter.js';
-import { PythonBridge } from './bridge.js';
+import { PythonBridge, type CrawledLink } from './bridge.js';
 
 export interface CrawlOptions {
   crawlInstruction?: string; // Natural language: what to crawl
@@ -208,7 +208,7 @@ export class IntelligentCrawler extends EventEmitter {
             if (links.length === 0) {
               console.warn(`No links found on ${current.url} - page may be a leaf node`);
             } else {
-              console.log(`Found ${links.length} links on ${current.url}`);
+              console.log(`Found ${String(links.length)} links on ${current.url}`);
             }
 
             for (const link of links) {
@@ -351,25 +351,30 @@ export class IntelligentCrawler extends EventEmitter {
       // Use headless mode for link extraction if enabled
       if (useHeadless) {
         const result = await this.pythonBridge.fetchHeadless(url);
-        return result.links || [];
+        // Extract href strings from link objects (crawl4ai returns objects, not strings)
+        return result.links.map((link: CrawledLink | string) => {
+          if (typeof link === 'string') return link;
+          return link.href;
+        });
       }
 
       const result = await this.pythonBridge.crawl(url);
 
-      // Validate response structure
-      if (!result.pages || !result.pages[0]) {
+      // Validate response structure (handle potential runtime type mismatches)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const firstPage = result.pages?.[0];
+      if (!firstPage) {
         throw new Error(`Invalid crawl response structure for ${url}: missing pages array`);
       }
 
-      return result.pages[0].links || [];
-    } catch (error) {
+      return firstPage.links;
+    } catch (error: unknown) {
       // Log the error for debugging
-      console.error(`Failed to extract links from ${url}:`, error instanceof Error ? error.message : String(error));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Failed to extract links from ${url}:`, errorMessage);
 
       // Re-throw the error instead of silently swallowing it
-      throw new Error(
-        `Link extraction failed for ${url}: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw new Error(`Link extraction failed for ${url}: ${errorMessage}`);
     }
   }
 

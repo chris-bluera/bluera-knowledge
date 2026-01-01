@@ -692,6 +692,31 @@ describe('IntelligentCrawler', () => {
       expect(links).toEqual(['https://example.com/page2', 'https://example.com/page3']);
     });
 
+    it('should extract href from link objects in headless mode', async () => {
+      // crawl4ai returns link objects, not strings
+      const headlessResult = {
+        html: '<html/>',
+        markdown: 'test',
+        links: [
+          { href: 'https://example.com/page1', text: 'Page 1', title: '', base_domain: 'example.com', head_data: null, head_extraction_status: null, head_extraction_error: null, intrinsic_score: 0, contextual_score: null, total_score: null },
+          { href: 'https://example.com/page2', text: 'Page 2', title: '', base_domain: 'example.com', head_data: null, head_extraction_status: null, head_extraction_error: null, intrinsic_score: 0, contextual_score: null, total_score: null },
+          'https://example.com/page3', // Also support plain strings
+        ],
+      };
+      mockPythonBridge.fetchHeadless.mockResolvedValue(headlessResult);
+
+      const crawler = new IntelligentCrawler();
+      (crawler as any).pythonBridge = mockPythonBridge;
+
+      const links = await (crawler as any).extractLinks('https://example.com', true);
+
+      expect(links).toEqual([
+        'https://example.com/page1',
+        'https://example.com/page2',
+        'https://example.com/page3',
+      ]);
+    });
+
     it('should use regular crawl when headless is disabled', async () => {
       mockPythonBridge.crawl.mockResolvedValue({
         pages: [{ links: ['https://example.com/page1'] }],
