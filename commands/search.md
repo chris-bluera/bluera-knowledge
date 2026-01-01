@@ -22,40 +22,25 @@ Search indexed library sources for: **$ARGUMENTS**
    - detail: "contextual" (shows summary, location, and context)
    - intent: "find-implementation" (for general searches)
 
-3. Display results clearly:
+3. Display results in a table format:
 
 ```
 ## Search Results for "your query"
 
-Found N results:
+| Score | Store | File | Purpose |
+|-------|-------|------|---------|
+| 1.00 | react | src/components/Button.tsx | Reusable button component with variants |
+| 0.87 | react | src/hooks/useButton.ts | Custom hook for button state management |
+| 0.65 | lodash | src/array.js | Array utility functions |
 
----
-
-**Score: 0.95** - `src/components/Button.tsx:15` (react-lib)
-
-**Purpose**: Implements a reusable button component with variants
-
-**Context**:
-- Exports: Button, ButtonProps
-- Uses: React, styled-components
-
----
-
-**Score: 0.87** - `src/hooks/useButton.ts:8` (react-lib)
-
-**Purpose**: Custom hook for button state management
-
----
-
-[Continue for all results...]
+**Found**: 3 results
 ```
 
-4. For each result, show:
+4. Format each column:
    - **Score**: Relevance score (0-1, formatted to 2 decimals)
-   - **Location**: File path and line number
-   - **Store**: Store name in parentheses after location (from summary.storeName)
-   - **Purpose**: Summary of what the code does
-   - **Context**: Key imports, exports, or dependencies (if available)
+   - **Store**: Store name (from summary.storeName)
+   - **File**: Relative file path within repo (strip repoRoot prefix if present)
+   - **Purpose**: Brief summary - truncate to ~50 chars if needed
 
 5. If no results found:
 
