@@ -601,9 +601,11 @@ The plugin includes a Model Context Protocol server that exposes search tools. T
   "mcpServers": {
     "bluera-knowledge": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server.js"],
+      "args": ["${CLAUDE_PLUGIN_ROOT:-./dist}/mcp/server.js"],
       "env": {
-        "DATA_DIR": "${PWD}/.bluera/bluera-knowledge"
+        "PWD": "${PWD}",
+        "DATA_DIR": "${PWD}/.bluera/bluera-knowledge/data",
+        "CONFIG_PATH": "${PWD}/.bluera/bluera-knowledge/config.json"
       }
     }
   }
