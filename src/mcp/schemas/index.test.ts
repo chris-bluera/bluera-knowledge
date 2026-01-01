@@ -6,6 +6,7 @@ import {
   GetStoreInfoArgsSchema,
   CreateStoreArgsSchema,
   IndexStoreArgsSchema,
+  DeleteStoreArgsSchema,
   CheckJobStatusArgsSchema,
   ListJobsArgsSchema,
   CancelJobArgsSchema
@@ -214,6 +215,28 @@ describe('MCP Schema Validation', () => {
 
     it('should reject missing store', () => {
       expect(() => IndexStoreArgsSchema.parse({}))
+        .toThrow();
+    });
+  });
+
+  describe('DeleteStoreArgsSchema', () => {
+    it('should validate valid store name', () => {
+      const result = DeleteStoreArgsSchema.parse({ store: 'my-store' });
+      expect(result.store).toBe('my-store');
+    });
+
+    it('should validate valid store ID', () => {
+      const result = DeleteStoreArgsSchema.parse({ store: 'abc123-def456' });
+      expect(result.store).toBe('abc123-def456');
+    });
+
+    it('should reject empty store', () => {
+      expect(() => DeleteStoreArgsSchema.parse({ store: '' }))
+        .toThrow('Store name or ID must be a non-empty string');
+    });
+
+    it('should reject missing store', () => {
+      expect(() => DeleteStoreArgsSchema.parse({}))
         .toThrow();
     });
   });

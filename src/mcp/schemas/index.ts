@@ -79,6 +79,15 @@ export const IndexStoreArgsSchema = z.object({
 
 export type IndexStoreArgs = z.infer<typeof IndexStoreArgsSchema>;
 
+/**
+ * Schema for delete_store tool arguments
+ */
+export const DeleteStoreArgsSchema = z.object({
+  store: z.string().min(1, 'Store name or ID must be a non-empty string')
+});
+
+export type DeleteStoreArgs = z.infer<typeof DeleteStoreArgsSchema>;
+
 // ============================================================================
 // Job Tool Schemas
 // ============================================================================

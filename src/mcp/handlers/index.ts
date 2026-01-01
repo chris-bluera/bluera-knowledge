@@ -7,6 +7,7 @@ import {
   GetStoreInfoArgsSchema,
   CreateStoreArgsSchema,
   IndexStoreArgsSchema,
+  DeleteStoreArgsSchema,
   CheckJobStatusArgsSchema,
   ListJobsArgsSchema,
   CancelJobArgsSchema
@@ -19,7 +20,8 @@ import {
   handleListStores,
   handleGetStoreInfo,
   handleCreateStore,
-  handleIndexStore
+  handleIndexStore,
+  handleDeleteStore
 } from './store.handler.js';
 import {
   handleCheckJobStatus,
@@ -83,6 +85,12 @@ export const tools: ToolDefinition[] = [
     description: 'Index or re-index a knowledge store to make it searchable',
     schema: IndexStoreArgsSchema,
     handler: handleIndexStore
+  },
+  {
+    name: 'delete_store',
+    description: 'Delete a knowledge store and all associated data (database, cloned files)',
+    schema: DeleteStoreArgsSchema,
+    handler: handleDeleteStore
   },
 
   // Job tools

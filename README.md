@@ -90,6 +90,7 @@ This architecture means commands provide a clean user interface while MCP tools 
 - `list_stores` - View available knowledge stores
 - `create_store` - Add new knowledge sources
 - `index_store` - Re-index existing stores
+- `delete_store` - Delete a store and all associated data
 - `get_full_context` - Retrieve complete code context
 - `check_job_status` - Check background job progress
 - `list_jobs` - List all background jobs
@@ -221,6 +222,7 @@ Follow these steps to set up knowledge stores for your project:
 | `/bluera-knowledge:search` | Search knowledge stores | `"<query>" [--stores=<names>] [--limit=<N>]` |
 | `/bluera-knowledge:stores` | List all stores | None |
 | `/bluera-knowledge:index` | Re-index a store | `<store-name-or-id>` |
+| `/bluera-knowledge:remove-store` | Delete a store and all data | `<store-name-or-id>` |
 | `/bluera-knowledge:crawl` | Crawl web pages | `<url> <store-name> [--crawl "<instruction>"]` |
 
 ## Commands
@@ -453,6 +455,37 @@ Re-index an existing store to update the search index:
 ✓ Indexed 1,247 documents in 3,421ms
 
 Store search index is up to date!
+```
+</details>
+
+### `/bluera-knowledge:remove-store`
+
+Delete a knowledge store and all associated data:
+
+```bash
+/bluera-knowledge:remove-store <store-name-or-id>
+```
+
+**What gets deleted:**
+- Store registry entry
+- LanceDB search index (vector embeddings)
+- Cloned repository files (for repo stores created from URLs)
+
+**Example:**
+```bash
+/bluera-knowledge:remove-store react
+```
+
+<details>
+<summary><b>Expected Output</b></summary>
+
+```
+Store "react" deleted successfully.
+
+Removed:
+- Store registry entry
+- LanceDB search index
+- Cloned repository files
 ```
 </details>
 

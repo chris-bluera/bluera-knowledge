@@ -1,15 +1,19 @@
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { ToolHandler, ToolResponse } from '../types.js';
 import type {
   ListStoresArgs,
   GetStoreInfoArgs,
   CreateStoreArgs,
-  IndexStoreArgs
+  IndexStoreArgs,
+  DeleteStoreArgs
 } from '../schemas/index.js';
 import {
   ListStoresArgsSchema,
   GetStoreInfoArgsSchema,
   CreateStoreArgsSchema,
-  IndexStoreArgsSchema
+  IndexStoreArgsSchema,
+  DeleteStoreArgsSchema
 } from '../schemas/index.js';
 import { JobService } from '../../services/job.service.js';
 import { spawnBackgroundWorker } from '../../workers/spawn-worker.js';
@@ -225,6 +229,65 @@ export const handleIndexStore: ToolHandler<IndexStoreArgs> = async (
             message: job.message
           },
           message: `Indexing started in background (Job ID: ${job.id})`
+        }, null, 2)
+      }
+    ]
+  };
+};
+
+/**
+ * Handle delete_store requests
+ *
+ * Deletes a store and all associated data:
+ * - Removes from store registry
+ * - Drops LanceDB table
+ * - For repo stores with URL, removes cloned files
+ */
+export const handleDeleteStore: ToolHandler<DeleteStoreArgs> = async (
+  args,
+  context
+): Promise<ToolResponse> => {
+  // Validate arguments with Zod
+  const validated = DeleteStoreArgsSchema.parse(args);
+
+  const { services, options } = context;
+
+  const store = await services.store.getByIdOrName(createStoreId(validated.store));
+
+  if (store === undefined) {
+    throw new Error(`Store not found: ${validated.store}`);
+  }
+
+  // Delete LanceDB table
+  await services.lance.deleteStore(store.id);
+
+  // For repo stores cloned from URL, remove the cloned directory
+  if (store.type === 'repo' && 'url' in store && store.url !== undefined) {
+    if (options.dataDir === undefined) {
+      throw new Error('dataDir is required to delete cloned repository files');
+    }
+    const repoPath = join(options.dataDir, 'repos', store.id);
+    await rm(repoPath, { recursive: true, force: true });
+  }
+
+  // Delete from registry
+  const result = await services.store.delete(store.id);
+  if (!result.success) {
+    throw new Error(result.error.message);
+  }
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          deleted: true,
+          store: {
+            id: store.id,
+            name: store.name,
+            type: store.type
+          },
+          message: `Successfully deleted store: ${store.name}`
         }, null, 2)
       }
     ]

@@ -3,14 +3,16 @@ import {
   handleListStores,
   handleGetStoreInfo,
   handleCreateStore,
-  handleIndexStore
+  handleIndexStore,
+  handleDeleteStore
 } from './store.handler.js';
 import type { HandlerContext } from '../types.js';
 import type {
   ListStoresArgs,
   GetStoreInfoArgs,
   CreateStoreArgs,
-  IndexStoreArgs
+  IndexStoreArgs,
+  DeleteStoreArgs
 } from '../schemas/index.js';
 import { StoreService } from '../../services/store.service.js';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
@@ -33,7 +35,10 @@ describe('store.handler', () => {
 
     mockContext = {
       services: {
-        store: storeService
+        store: storeService,
+        lance: {
+          deleteStore: vi.fn().mockResolvedValue(undefined)
+        }
       } as any,
       options: { dataDir: tempDir }
     };
@@ -291,6 +296,78 @@ describe('store.handler', () => {
       await expect(
         handleIndexStore(args, mockContext)
       ).rejects.toThrow('Store not found: nonexistent');
+    });
+  });
+
+  describe('handleDeleteStore', () => {
+    it('should delete existing store by name', async () => {
+      await storeService.create({
+        name: 'delete-test',
+        type: 'file',
+        path: tempDir
+      });
+
+      const args: DeleteStoreArgs = { store: 'delete-test' };
+      const result = await handleDeleteStore(args, mockContext);
+
+      const data = JSON.parse(result.content[0].text);
+      expect(data.deleted).toBe(true);
+      expect(data.store.name).toBe('delete-test');
+      expect(data.message).toContain('Successfully deleted');
+
+      // Verify store is actually deleted
+      const stores = await storeService.list();
+      expect(stores.find(s => s.name === 'delete-test')).toBeUndefined();
+    });
+
+    it('should delete store by ID', async () => {
+      const createResult = await storeService.create({
+        name: 'delete-by-id',
+        type: 'file',
+        path: tempDir
+      });
+
+      const args: DeleteStoreArgs = { store: createResult.data.id };
+      const result = await handleDeleteStore(args, mockContext);
+
+      const data = JSON.parse(result.content[0].text);
+      expect(data.deleted).toBe(true);
+      expect(data.store.id).toBe(createResult.data.id);
+    });
+
+    it('should call lance.deleteStore', async () => {
+      const createResult = await storeService.create({
+        name: 'lance-delete-test',
+        type: 'file',
+        path: tempDir
+      });
+
+      const args: DeleteStoreArgs = { store: 'lance-delete-test' };
+      await handleDeleteStore(args, mockContext);
+
+      expect(mockContext.services.lance.deleteStore).toHaveBeenCalledWith(createResult.data.id);
+    });
+
+    it('should throw if store not found', async () => {
+      const args: DeleteStoreArgs = { store: 'nonexistent' };
+
+      await expect(
+        handleDeleteStore(args, mockContext)
+      ).rejects.toThrow('Store not found: nonexistent');
+    });
+
+    it('should include store type in response', async () => {
+      await storeService.create({
+        name: 'type-test',
+        type: 'file',
+        path: tempDir
+      });
+
+      const args: DeleteStoreArgs = { store: 'type-test' };
+      const result = await handleDeleteStore(args, mockContext);
+
+      const data = JSON.parse(result.content[0].text);
+      expect(data.store.type).toBe('file');
     });
   });
 });
