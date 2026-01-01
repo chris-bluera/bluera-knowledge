@@ -1,6 +1,6 @@
 {
   "name": "bluera-knowledge",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "Project-specific knowledge stores for definitive library sources. Clone and index important dependencies for authoritative reference.",
   "author": {
     "name": "Bluera"
@@ -9,6 +9,5 @@
     "./commands/"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
-  "hooks": "./hooks/hooks.json"
+  "mcpServers": "./.mcp.json"
 }
