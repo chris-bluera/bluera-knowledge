@@ -674,6 +674,23 @@ npm run build
 npm test
 ```
 
+### NPM Commands
+
+| Command | Description | When to Use |
+|---------|-------------|-------------|
+| `npm run build` | Compile TypeScript to dist/ | Before testing CLI, after code changes |
+| `npm run dev` | Watch mode compilation | During active development |
+| `npm start` | Run the CLI | Execute CLI commands directly |
+| `npm test` | Run tests in watch mode | During TDD/active development |
+| `npm run test:run` | Run tests once | Quick verification |
+| `npm run test:coverage` | Run tests with coverage | Before committing, CI checks |
+| `npm run lint` | Run ESLint | Check code style issues |
+| `npm run typecheck` | Run TypeScript type checking | Verify type safety |
+| `npm run precommit` | Full validation suite | Before committing (runs automatically via husky) |
+| `npm run version:patch` | Bump patch version (0.0.x) | Bug fixes, minor updates |
+| `npm run version:minor` | Bump minor version (0.x.0) | New features, backwards compatible |
+| `npm run version:major` | Bump major version (x.0.0) | Breaking changes |
+
 ### Testing Locally
 
 ```bash
