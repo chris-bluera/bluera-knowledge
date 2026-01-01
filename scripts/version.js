@@ -47,8 +47,25 @@ async function updateVersion() {
   await writeFile('./.claude-plugin/plugin.json', JSON.stringify(pluginJson, null, 2) + '\n');
   console.log('✓ Updated .claude-plugin/plugin.json');
 
+  // Update .claude-plugin/marketplace.json
+  const marketplaceJson = JSON.parse(await readFile('./.claude-plugin/marketplace.json', 'utf-8'));
+  if (marketplaceJson.plugins?.[0]) {
+    marketplaceJson.plugins[0].version = newVersion;
+  }
+  await writeFile('./.claude-plugin/marketplace.json', JSON.stringify(marketplaceJson, null, 2) + '\n');
+  console.log('✓ Updated .claude-plugin/marketplace.json');
+
+  // Update README.md version badge
+  const readme = await readFile('./README.md', 'utf-8');
+  const updatedReadme = readme.replace(
+    /!\[Version\]\(https:\/\/img\.shields\.io\/badge\/version-[\d.]+(-[\w.]+)?-blue\)/,
+    `![Version](https://img.shields.io/badge/version-${newVersion}-blue)`
+  );
+  await writeFile('./README.md', updatedReadme);
+  console.log('✓ Updated README.md version badge');
+
   // Stage files
-  execSync('git add package.json package-lock.json .claude-plugin/plugin.json', { stdio: 'inherit' });
+  execSync('git add package.json package-lock.json .claude-plugin/plugin.json .claude-plugin/marketplace.json README.md', { stdio: 'inherit' });
   console.log('✓ Staged version files');
 
   console.log(`\nVersion bumped to ${newVersion}`);
