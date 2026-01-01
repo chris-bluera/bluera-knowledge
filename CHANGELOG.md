@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.17] - 2026-01-01
+
+### Fixed
+- Fixed duplicate search output by instructing Claude not to generate tables
+- PostToolUse hook now solely responsible for displaying formatted results
+
 ## [0.4.16] - 2026-01-01
 
 ### Changed

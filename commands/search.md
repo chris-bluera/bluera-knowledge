@@ -19,12 +19,11 @@ Search indexed library sources for: **$ARGUMENTS**
    - query: The search query string
    - stores: Array of store names (if --stores specified)
    - limit: Number of results (if --limit specified, default 10)
-   - detail: "contextual" (shows summary, location, and context)
-   - intent: "find-implementation" (for general searches)
+   - detail: "contextual"
+   - intent: "find-implementation"
 
-3. The results will be automatically formatted by the PostToolUse hook.
+3. **CRITICAL**: After calling the tool, DO NOT output any table, results, or formatted content.
+   The PostToolUse hook has already formatted and displayed the results above.
+   Simply output: "Search complete."
 
-4. If no results found, suggest:
-   - Broadening search terms
-   - Checking if relevant stores are indexed
-   - Using /bluera-knowledge:stores to see available stores
+4. If no results found, suggest broadening search terms or checking stores.
