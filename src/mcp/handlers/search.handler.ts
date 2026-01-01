@@ -81,6 +81,7 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
       score: r.score,
       summary: {
         ...r.summary,
+        storeName: store?.name,
         repoRoot: store !== undefined && store.type === 'repo' ? store.path : undefined
       },
       context: r.context,

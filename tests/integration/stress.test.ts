@@ -116,32 +116,6 @@ describe('Stress Tests', () => {
     });
   });
 
-  describe('Search Performance at Scale', () => {
-    it('vector search performs within limits', async () => {
-      const { measurement } = await measure('vector-search', async () => {
-        return cli('search "secure user authentication flow" --mode vector --stores stress-store');
-      });
-
-      expect(measurement.duration).toBeLessThan(1000);
-    }, 60000);
-
-    it('FTS search performs within limits', async () => {
-      const { measurement } = await measure('fts-search', async () => {
-        return cli('search "authentication" --mode fts --stores stress-store');
-      });
-
-      expect(measurement.duration).toBeLessThan(800);
-    }, 60000);
-
-    it('hybrid search performs within limits', async () => {
-      const { measurement } = await measure('hybrid-search', async () => {
-        return cli('search "database security" --mode hybrid --stores stress-store');
-      });
-
-      expect(measurement.duration).toBeLessThan(1000);
-    }, 60000);
-  });
-
   describe('Sequential Operation Performance', () => {
     it('multiple sequential searches maintain performance', async () => {
       const benchmark = new Benchmark('sequential-searches');

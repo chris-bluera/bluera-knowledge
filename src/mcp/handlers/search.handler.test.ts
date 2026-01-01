@@ -170,6 +170,16 @@ describe('Search Handlers', () => {
       expect(response.results[0]?.summary.repoRoot).toBeUndefined();
     });
 
+    it('should include storeName in results', async () => {
+      const result = await handleSearch(
+        { query: 'test', detail: 'minimal', limit: 10 },
+        mockContext
+      );
+
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
+      expect(response.results[0]?.summary.storeName).toBe('Test Store');
+    });
+
     it('should include search metadata in response', async () => {
       const result = await handleSearch(
         { query: 'test', detail: 'minimal', limit: 10 },

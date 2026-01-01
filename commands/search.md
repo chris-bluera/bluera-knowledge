@@ -31,7 +31,7 @@ Found N results:
 
 ---
 
-**Score: 0.95** - `src/components/Button.tsx:15`
+**Score: 0.95** - `src/components/Button.tsx:15` (react-lib)
 
 **Purpose**: Implements a reusable button component with variants
 
@@ -41,7 +41,7 @@ Found N results:
 
 ---
 
-**Score: 0.87** - `src/hooks/useButton.ts:8`
+**Score: 0.87** - `src/hooks/useButton.ts:8` (react-lib)
 
 **Purpose**: Custom hook for button state management
 
@@ -53,6 +53,7 @@ Found N results:
 4. For each result, show:
    - **Score**: Relevance score (0-1, formatted to 2 decimals)
    - **Location**: File path and line number
+   - **Store**: Store name in parentheses after location (from summary.storeName)
    - **Purpose**: Summary of what the code does
    - **Context**: Key imports, exports, or dependencies (if available)
 
