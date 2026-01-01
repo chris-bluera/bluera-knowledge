@@ -1,6 +1,6 @@
 # Bluera Knowledge
 
-![Version](https://img.shields.io/badge/version-0.4.4-blue)
+![Version](https://img.shields.io/badge/version-0.4.13-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue)
@@ -372,35 +372,13 @@ Search across indexed knowledge stores:
 ```
 ## Search Results for "button component"
 
-Found 3 results:
+| Score | Store       | File                                          | Purpose                                           |
+|------:|-------------|-----------------------------------------------|---------------------------------------------------|
+|  0.95 | react       | src/components/Button.tsx                     | Reusable button component with variants           |
+|  0.87 | react       | src/hooks/useButton.ts                        | Custom hook for button state management           |
+|  0.81 | react       | src/components/IconButton.tsx                 | Button component with icon support                |
 
----
-
-**Score: 0.95** - `src/components/Button.tsx:15`
-
-**Purpose**: Implements a reusable button component with variants
-
-**Context**:
-- Exports: Button, ButtonProps
-- Uses: React, styled-components
-
----
-
-**Score: 0.87** - `src/hooks/useButton.ts:8`
-
-**Purpose**: Custom hook for button state management
-
-**Context**:
-- Exports: useButton
-- Uses: React, useState
-
----
-
-**Score: 0.81** - `src/components/IconButton.tsx:22`
-
-**Purpose**: Button component with icon support
-
----
+**Found**: 3 results
 ```
 </details>
 
@@ -773,41 +751,4 @@ MIT
 
 - **Issues**: [GitHub Issues](https://github.com/bluera/bluera-knowledge/issues)
 - **Documentation**: [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
-
-## Version History
-
-### v0.4.4 (Current)
-- Table formatting refinements (clean IDs, ~ for home paths)
-- Improved readability of stores command output
-
-### v0.4.3
-- Store list outputs in beautiful table format
-- Enhanced command output presentation
-
-### v0.4.2
-- Commands converted to use MCP tools instead of bash execution
-- Improved architecture for command handling
-- Better integration with Claude Code's tool system
-
-### v0.4.1
-- Auto-install Python dependencies via SessionStart hook
-- Seamless setup experience for web crawling features
-- PEP 668 compliance for modern Python environments
-
-### v0.3.0
-- Web crawling with crawl4ai integration
-- Create and index web stores from documentation sites
-- Markdown conversion of web content
-
-### v0.2.0
-- Smart usage-based dependency suggestions
-- Automatic repository URL resolution via package registries
-- Improved analysis performance
-- Fixed command prefix inconsistencies
-
-### v0.1.x
-- Initial release
-- Repository cloning and indexing
-- Local folder indexing
-- Semantic vector search with embeddings
-- MCP server integration
+- **Changelog**: [CHANGELOG.md](./CHANGELOG.md)
