@@ -12,9 +12,17 @@ interface CrawlResult {
   }>;
 }
 
+interface HeadlessResult {
+  html: string;
+  markdown: string;
+  links: string[];
+}
+
+type PendingResult = CrawlResult | HeadlessResult;
+
 export class PythonBridge {
   private process: ChildProcess | null = null;
-  private readonly pending: Map<string, { resolve: (v: CrawlResult) => void; reject: (e: Error) => void; timeout: NodeJS.Timeout }> = new Map();
+  private readonly pending: Map<string, { resolve: (v: PendingResult) => void; reject: (e: Error) => void; timeout: NodeJS.Timeout }> = new Map();
 
   start(): Promise<void> {
     if (this.process) return Promise.resolve();
@@ -65,7 +73,7 @@ export class PythonBridge {
         const response = JSON.parse(line) as {
           id: string;
           error?: { message: string };
-          result?: CrawlResult;
+          result?: PendingResult;
         };
         const pending = this.pending.get(response.id);
         if (pending !== undefined) {
@@ -109,7 +117,38 @@ export class PythonBridge {
         }
       }, timeoutMs);
 
-      this.pending.set(id, { resolve, reject, timeout });
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout });
+      if (this.process === null || this.process.stdin === null) {
+        reject(new Error('Python bridge process not available'));
+        return;
+      }
+      this.process.stdin.write(JSON.stringify(request) + '\n');
+    });
+  }
+
+  async fetchHeadless(url: string, timeoutMs: number = 60000): Promise<HeadlessResult> {
+    if (!this.process) await this.start();
+
+    const id = randomUUID();
+    const request = {
+      jsonrpc: '2.0',
+      id,
+      method: 'fetch_headless',
+      params: { url },
+    };
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        const pending = this.pending.get(id);
+        if (pending) {
+          this.pending.delete(id);
+          reject(new Error(`Headless fetch timeout after ${String(timeoutMs)}ms for URL: ${url}`));
+        }
+      }, timeoutMs);
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout });
       if (this.process === null || this.process.stdin === null) {
         reject(new Error('Python bridge process not available'));
         return;

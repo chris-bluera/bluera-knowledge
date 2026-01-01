@@ -16,11 +16,13 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
     .option('--extract <instruction>', 'Natural language instruction for what to extract (e.g., "extract API references")')
     .option('--simple', 'Use simple BFS mode instead of intelligent crawling')
     .option('--max-pages <number>', 'Maximum number of pages to crawl', '50')
+    .option('--headless', 'Use headless browser for JavaScript-rendered sites')
     .action(async (url: string, storeIdOrName: string, cmdOptions: {
       crawl?: string;
       extract?: string;
       simple?: boolean;
       maxPages?: string;
+      headless?: boolean;
     }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
@@ -74,6 +76,7 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
           ...(cmdOptions.extract !== undefined && { extractInstruction: cmdOptions.extract }),
           maxPages,
           ...(cmdOptions.simple !== undefined && { simple: cmdOptions.simple }),
+          useHeadless: cmdOptions.headless ?? false,
         })) {
           // Embed and index the content (use extracted if available, otherwise markdown)
           const contentToEmbed = result.extracted !== undefined ? result.extracted : result.markdown;

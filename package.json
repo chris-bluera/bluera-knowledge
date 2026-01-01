@@ -1,6 +1,6 @@
 {
   "name": "bluera-knowledge",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "CLI tool for managing knowledge stores with semantic search",
   "type": "module",
   "bin": {
@@ -68,6 +68,7 @@
     "hono": "^4.11.1",
     "node-addon-api": "^8.5.0",
     "ora": "^9.0.0",
+    "slurp-ai": "^1.0.6",
     "turndown": "^7.2.2",
     "turndown-plugin-gfm": "^1.0.2",
     "zod": "^4.2.1"

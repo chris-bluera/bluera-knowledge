@@ -11,7 +11,27 @@ os.environ['CRAWL4AI_VERBOSE'] = '0'
 import io
 sys.stderr = io.StringIO()
 
-from crawl4ai import AsyncWebCrawler
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
+
+async def fetch_headless(url: str):
+    """Fetch URL with headless browser (Playwright via crawl4ai)"""
+    browser_config = BrowserConfig(headless=True, verbose=False)
+    run_config = CrawlerRunConfig(
+        wait_for="js:() => document.readyState === 'complete'",
+        page_timeout=30000
+    )
+
+    async with AsyncWebCrawler(config=browser_config, verbose=False) as crawler:
+        result = await crawler.arun(url, config=run_config)
+
+        if not result.success:
+            raise Exception(f"Crawl failed: {result.error_message}")
+
+        return {
+            "html": result.html or '',
+            "markdown": result.markdown or result.cleaned_html or '',
+            "links": result.links.get("internal", []) if isinstance(result.links, dict) else []
+        }
 
 async def process_request(crawler, request):
     """Process a single crawl request"""
@@ -55,8 +75,32 @@ async def main():
         for line in sys.stdin:
             try:
                 request = json.loads(line.strip())
-                if request.get('method') == 'crawl':
+                method = request.get('method')
+
+                if method == 'crawl':
                     await process_request(crawler, request)
+                elif method == 'fetch_headless':
+                    # Handle headless fetch request
+                    try:
+                        params = request.get('params', {})
+                        url = params.get('url')
+                        if not url:
+                            raise ValueError('URL parameter is required')
+
+                        result = await fetch_headless(url)
+                        response = {
+                            'jsonrpc': '2.0',
+                            'id': request.get('id'),
+                            'result': result
+                        }
+                        print(json.dumps(response), flush=True)
+                    except Exception as e:
+                        error_response = {
+                            'jsonrpc': '2.0',
+                            'id': request.get('id'),
+                            'error': {'code': -1, 'message': str(e)}
+                        }
+                        print(json.dumps(error_response), flush=True)
 
             except Exception as e:
                 error_response = {

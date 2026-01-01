@@ -15,6 +15,7 @@ export interface CrawlOptions {
   maxPages?: number; // Max pages to crawl (default: 50)
   timeout?: number; // Per-page timeout in ms (default: 30000)
   simple?: boolean; // Force simple BFS mode
+  useHeadless?: boolean; // Enable headless browser for JavaScript-rendered sites
 }
 
 export interface CrawlResult {
@@ -80,9 +81,9 @@ export class IntelligentCrawler extends EventEmitter {
 
     if (useIntelligentMode) {
       // TypeScript knows crawlInstruction is defined here due to useIntelligentMode check
-      yield* this.crawlIntelligent(seedUrl, crawlInstruction, extractInstruction, maxPages);
+      yield* this.crawlIntelligent(seedUrl, crawlInstruction, extractInstruction, maxPages, options.useHeadless ?? false);
     } else {
-      yield* this.crawlSimple(seedUrl, extractInstruction, maxPages);
+      yield* this.crawlSimple(seedUrl, extractInstruction, maxPages, options.useHeadless ?? false);
     }
 
     const completeProgress: CrawlProgress = {
@@ -101,6 +102,7 @@ export class IntelligentCrawler extends EventEmitter {
     crawlInstruction: string,
     extractInstruction: string | undefined,
     maxPages: number,
+    useHeadless: boolean = false,
   ): AsyncIterable<CrawlResult> {
     let strategy: CrawlStrategy;
 
@@ -115,7 +117,7 @@ export class IntelligentCrawler extends EventEmitter {
       };
       this.emit('progress', strategyStartProgress);
 
-      const seedHtml = await this.fetchHtml(seedUrl);
+      const seedHtml = await this.fetchHtml(seedUrl, useHeadless);
 
       // Step 2: Ask Claude which URLs to crawl
       strategy = await this.claudeClient.determineCrawlUrls(seedHtml, crawlInstruction);
@@ -150,7 +152,7 @@ export class IntelligentCrawler extends EventEmitter {
       if (this.visited.has(url)) continue;
 
       try {
-        const result = await this.crawlSinglePage(url, extractInstruction, pagesVisited);
+        const result = await this.crawlSinglePage(url, extractInstruction, pagesVisited, useHeadless);
         pagesVisited++;
         yield result;
       } catch (error) {
@@ -173,6 +175,7 @@ export class IntelligentCrawler extends EventEmitter {
     seedUrl: string,
     extractInstruction: string | undefined,
     maxPages: number,
+    useHeadless: boolean = false,
   ): AsyncIterable<CrawlResult> {
     const queue: Array<{ url: string; depth: number }> = [{ url: seedUrl, depth: 0 }];
     const maxDepth = 2; // Default depth limit for simple mode
@@ -190,6 +193,7 @@ export class IntelligentCrawler extends EventEmitter {
           current.url,
           extractInstruction,
           pagesVisited,
+          useHeadless,
         );
         result.depth = current.depth;
         pagesVisited++;
@@ -225,6 +229,7 @@ export class IntelligentCrawler extends EventEmitter {
     url: string,
     extractInstruction: string | undefined,
     pagesVisited: number,
+    useHeadless: boolean = false,
   ): Promise<CrawlResult> {
     const pageProgress: CrawlProgress = {
       type: 'page',
@@ -238,7 +243,7 @@ export class IntelligentCrawler extends EventEmitter {
     this.visited.add(url);
 
     // Fetch HTML
-    const html = await this.fetchHtml(url);
+    const html = await this.fetchHtml(url, useHeadless);
 
     // Convert to clean markdown using slurp-ai techniques
     const conversion = await convertHtmlToMarkdown(html, url);
@@ -289,7 +294,18 @@ export class IntelligentCrawler extends EventEmitter {
   /**
    * Fetch HTML content from a URL
    */
-  private async fetchHtml(url: string): Promise<string> {
+  private async fetchHtml(url: string, useHeadless: boolean = false): Promise<string> {
+    if (useHeadless) {
+      try {
+        const result = await this.pythonBridge.fetchHeadless(url);
+        return result.html;
+      } catch (error) {
+        // Fallback to axios if headless fails
+        console.warn(`Headless fetch failed for ${url}, falling back to axios:`, error);
+      }
+    }
+
+    // Original axios implementation for static sites
     try {
       const response = await axios.get<string>(url, {
         timeout: 30000,

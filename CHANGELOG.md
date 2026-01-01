@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-01-01
+
+### Added
+- Headless browser support via crawl4ai for JavaScript-rendered sites (Next.js, React, Vue, etc.)
+- `--headless` flag for crawl command to enable Playwright browser automation
+- Python bridge method `fetchHeadless()` using crawl4ai's AsyncWebCrawler
+- Automatic fallback to axios if headless fetch fails
+- Mermaid sequence diagrams in README.md showing crawler architecture for both modes
+- Comprehensive documentation for headless crawling in commands/crawl.md
+
+### Changed
+- `fetchHtml()` now accepts optional `useHeadless` parameter for browser automation
+- `CrawlOptions` interface includes `useHeadless` field
+- Updated Dependencies section in README with playwright installation instructions
+- Extended `crawl` command with `--headless` option and updated TypeScript types
+
+### Improved
+- Crawler now handles JavaScript-rendered sites that require client-side rendering
+- Preserves intelligent crawling with natural language instructions in both standard and headless modes
+
 ## [0.5.3] - 2026-01-01
 
 ### Changed

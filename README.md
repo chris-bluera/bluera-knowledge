@@ -185,13 +185,15 @@ The plugin automatically checks for and attempts to install Python dependencies 
 **Required:**
 - **Python 3.8+** - Required for all functionality
 - **crawl4ai** - Required for web crawling features (auto-installed via SessionStart hook)
+- **playwright** - Required for headless browser crawling (manual install needed for browser binaries)
 
 If auto-installation fails, you can install manually:
 ```bash
-pip install crawl4ai
+pip install crawl4ai playwright
+playwright install  # Install browser binaries for headless mode
 ```
 
-**Note:** The plugin will work without crawl4ai, but web crawling features (`/bluera-knowledge:crawl`) will be unavailable.
+**Note:** The plugin will work without crawl4ai/playwright, but web crawling features (`/bluera-knowledge:crawl`) will be unavailable. For JavaScript-rendered sites (Next.js, React, Vue), use the `--headless` flag which requires playwright browser binaries.
 
 ### Update Plugin
 
@@ -504,6 +506,76 @@ Crawl web pages and add content to a web store:
 ```
 
 The web page will be crawled, converted to markdown, and indexed for semantic search.
+
+## Crawler Architecture
+
+The crawler supports two modes: **standard mode** for static sites (fast) and **headless mode** for JavaScript-rendered sites (powerful).
+
+### Standard Mode (Static Sites)
+
+For static HTML sites, the crawler uses axios for fast HTTP requests:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI
+    participant IntelligentCrawler
+    participant Axios
+    participant Claude
+
+    User->>CLI: crawl URL --crawl "instruction"
+    CLI->>IntelligentCrawler: crawl(url, options)
+    IntelligentCrawler->>Axios: fetchHtml(url)
+    Axios-->>IntelligentCrawler: Static HTML
+    IntelligentCrawler->>Claude: determineCrawlUrls(html, instruction)
+    Claude-->>IntelligentCrawler: [urls to crawl]
+    loop For each URL
+        IntelligentCrawler->>Axios: fetchHtml(url)
+        Axios-->>IntelligentCrawler: HTML
+        IntelligentCrawler->>IntelligentCrawler: Convert to markdown & index
+    end
+```
+
+### Headless Mode (JavaScript-Rendered Sites)
+
+For JavaScript-rendered sites (Next.js, React, Vue), use `--headless` to render content with Playwright:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI
+    participant IntelligentCrawler
+    participant PythonBridge
+    participant crawl4ai
+    participant Playwright
+    participant Claude
+
+    User->>CLI: crawl URL --crawl "instruction" --headless
+    CLI->>IntelligentCrawler: crawl(url, {useHeadless: true})
+    IntelligentCrawler->>PythonBridge: fetchHeadless(url)
+    PythonBridge->>crawl4ai: AsyncWebCrawler.arun(url)
+    crawl4ai->>Playwright: Launch browser & render JS
+    Playwright-->>crawl4ai: Rendered HTML
+    crawl4ai-->>PythonBridge: {html, markdown, links}
+    PythonBridge-->>IntelligentCrawler: Rendered HTML
+    IntelligentCrawler->>Claude: determineCrawlUrls(html, instruction)
+    Note over Claude: Natural language instruction<br/>STILL FULLY ACTIVE
+    Claude-->>IntelligentCrawler: [urls to crawl]
+    loop For each URL
+        IntelligentCrawler->>PythonBridge: fetchHeadless(url)
+        PythonBridge->>crawl4ai: Render JS
+        crawl4ai-->>PythonBridge: HTML
+        PythonBridge-->>IntelligentCrawler: HTML
+        IntelligentCrawler->>IntelligentCrawler: Convert to markdown & index
+    end
+```
+
+### Key Points
+
+- **Intelligent crawling preserved**: Claude CLI analyzes pages and selects URLs based on natural language instructions in both modes
+- **crawl4ai role**: ONLY renders JavaScript to get HTML - doesn't replace Claude's intelligent URL selection
+- **Hybrid approach**: Fast axios for static sites, Playwright for JS-rendered sites
+- **Automatic fallback**: If headless fetch fails, automatically falls back to axios
 
 ## Troubleshooting
 

@@ -127,6 +127,7 @@ describe('crawl command execution', () => {
       expect(mockCrawler.crawl).toHaveBeenCalledWith('https://example.com', {
         crawlInstruction: 'all documentation pages',
         maxPages: 50,
+        useHeadless: false,
       });
       expect(mockServices.embeddings.embed).toHaveBeenCalledTimes(2);
       expect(mockServices.lance.addDocuments).toHaveBeenCalledWith(
@@ -192,6 +193,7 @@ describe('crawl command execution', () => {
       expect(mockCrawler.crawl).toHaveBeenCalledWith('https://example.com', {
         maxPages: 25,
         simple: true,
+        useHeadless: false,
       });
       expect(mockCrawler.stop).toHaveBeenCalled();
     });
@@ -281,6 +283,7 @@ describe('crawl command execution', () => {
         crawlInstruction: 'all Getting Started pages',
         extractInstruction: 'code examples',
         maxPages: 100,
+        useHeadless: false,
       });
     });
   });
