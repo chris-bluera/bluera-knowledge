@@ -361,7 +361,7 @@ export class IntelligentCrawler extends EventEmitter {
       const result = await this.pythonBridge.crawl(url);
 
       // Validate response structure (handle potential runtime type mismatches)
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- TypeScript types claim pages exists but Python bridge may return invalid structure at runtime
       const firstPage = result.pages?.[0];
       if (!firstPage) {
         throw new Error(`Invalid crawl response structure for ${url}: missing pages array`);

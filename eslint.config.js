@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import eslintComments from 'eslint-plugin-eslint-comments';
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -13,6 +14,9 @@ export default tseslint.config(
     },
   },
   {
+    plugins: {
+      'eslint-comments': eslintComments,
+    },
     rules: {
       // Type safety
       '@typescript-eslint/no-explicit-any': 'error',
@@ -31,6 +35,9 @@ export default tseslint.config(
       'no-unreachable': 'error',
       'no-unreachable-loop': 'error',
       'no-constant-condition': ['error', { checkLoops: false }],
+
+      // Require explanations for ESLint disable comments (warn for now to allow gradual fix)
+      'eslint-comments/require-description': 'warn',
     },
   },
   {
