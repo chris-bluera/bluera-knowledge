@@ -1,6 +1,7 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import eslintComments from 'eslint-plugin-eslint-comments';
+import requireSkipComment from './eslint-rules/require-skip-comment.js';
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -41,6 +42,20 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', '*.config.js', '**/*.test.ts'],
+    ignores: ['dist/**', 'node_modules/**', '*.config.js', '**/*.test.ts', 'tests/**/*.ts'],
+  },
+  // Test files: Apply custom skip-comment rule only
+  {
+    files: ['**/*.test.ts', 'tests/**/*.ts'],
+    plugins: {
+      'custom': {
+        rules: {
+          'require-skip-comment': requireSkipComment,
+        },
+      },
+    },
+    rules: {
+      'custom/require-skip-comment': 'error',
+    },
   }
 );
