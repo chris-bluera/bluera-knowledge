@@ -10,6 +10,7 @@ import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { ChunkingService } from './chunking.service.js';
 import type { ProgressCallback } from '../types/progress.js';
+import type { CodeGraphService } from './code-graph.service.js';
 
 interface IndexResult {
   documentsIndexed: number;
@@ -20,6 +21,7 @@ interface IndexResult {
 interface IndexOptions {
   chunkSize?: number;
   chunkOverlap?: number;
+  codeGraphService?: CodeGraphService;
 }
 
 const TEXT_EXTENSIONS = new Set([
@@ -32,6 +34,7 @@ export class IndexService {
   private readonly lanceStore: LanceStore;
   private readonly embeddingEngine: EmbeddingEngine;
   private readonly chunker: ChunkingService;
+  private readonly codeGraphService: CodeGraphService | undefined;
 
   constructor(
     lanceStore: LanceStore,
@@ -44,6 +47,7 @@ export class IndexService {
       chunkSize: options.chunkSize ?? 768,
       chunkOverlap: options.chunkOverlap ?? 100,
     });
+    this.codeGraphService = options.codeGraphService;
   }
 
   async indexStore(store: Store, onProgress?: ProgressCallback): Promise<Result<IndexResult>> {
@@ -64,6 +68,9 @@ export class IndexService {
     const documents: Document[] = [];
     let filesProcessed = 0;
 
+    // Collect source files for code graph building
+    const sourceFiles: Array<{ path: string; content: string }> = [];
+
     // Emit start event
     onProgress?.({
       type: 'start',
@@ -82,6 +89,11 @@ export class IndexService {
       const ext = extname(filePath).toLowerCase();
       const fileName = basename(filePath).toLowerCase();
       const fileType = this.classifyFileType(ext, fileName, filePath);
+
+      // Collect source files for code graph
+      if (['.ts', '.tsx', '.js', '.jsx'].includes(ext)) {
+        sourceFiles.push({ path: filePath, content });
+      }
 
       for (const chunk of chunks) {
         const vector = await this.embeddingEngine.embed(chunk.content);
@@ -124,6 +136,12 @@ export class IndexService {
 
     if (documents.length > 0) {
       await this.lanceStore.addDocuments(store.id, documents);
+    }
+
+    // Build and save code graph if service is available and we have source files
+    if (this.codeGraphService && sourceFiles.length > 0) {
+      const graph = this.codeGraphService.buildGraph(sourceFiles);
+      await this.codeGraphService.saveGraph(store.id, graph);
     }
 
     // Emit complete event

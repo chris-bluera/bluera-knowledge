@@ -165,6 +165,7 @@ Background jobs include significant performance optimizations:
 - **Dual Search Modes**:
   - **Vector Search**: AI-powered semantic search with relevance ranking
   - **File Access**: Direct Grep/Glob operations on cloned source files
+- **Code Graph Analysis**: During indexing, builds a graph of code relationships (calls, imports, extends) to provide usage context in search results - shows how many callers/callees each function has
 - **Multi-Language Support**: Analyzes JavaScript, TypeScript, and Python imports; indexes code in any language
 - **MCP Integration**: Exposes all functionality as Model Context Protocol tools for AI coding agents
 
@@ -825,7 +826,8 @@ tests/
 
 - **Claude Code Plugin System** with MCP server
 - **Runtime Validation**: Zod schemas for Python-TypeScript boundary
-- **AST Parsing**: @babel/parser, @babel/traverse
+- **AST Parsing**: @babel/parser, @babel/traverse for code analysis
+- **Code Graph**: Static analysis of function calls, imports, and class relationships
 - **Semantic Search**: AI-powered vector embeddings
 - **Git Operations**: Native git clone
 - **CLI**: Commander.js

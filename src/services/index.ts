@@ -2,6 +2,7 @@ import { ConfigService } from './config.service.js';
 import { StoreService } from './store.service.js';
 import { SearchService } from './search.service.js';
 import { IndexService } from './index.service.js';
+import { CodeGraphService } from './code-graph.service.js';
 import { LanceStore } from '../db/lance.js';
 import { EmbeddingEngine } from '../db/embeddings.js';
 
@@ -12,6 +13,7 @@ export { IndexService } from './index.service.js';
 export { JobService } from './job.service.js';
 export { WatchService } from './watch.service.js';
 export { ChunkingService } from './chunking.service.js';
+export { CodeGraphService } from './code-graph.service.js';
 
 export interface ServiceContainer {
   config: ConfigService;
@@ -20,6 +22,7 @@ export interface ServiceContainer {
   index: IndexService;
   lance: LanceStore;
   embeddings: EmbeddingEngine;
+  codeGraph: CodeGraphService;
 }
 
 export async function createServices(
@@ -42,8 +45,9 @@ export async function createServices(
   const store = new StoreService(resolvedDataDir);
   await store.initialize();
 
-  const search = new SearchService(lance, embeddings);
-  const index = new IndexService(lance, embeddings);
+  const codeGraph = new CodeGraphService(resolvedDataDir);
+  const search = new SearchService(lance, embeddings, undefined, codeGraph);
+  const index = new IndexService(lance, embeddings, { codeGraphService: codeGraph });
 
   return {
     config,
@@ -52,5 +56,6 @@ export async function createServices(
     index,
     lance,
     embeddings,
+    codeGraph,
   };
 }

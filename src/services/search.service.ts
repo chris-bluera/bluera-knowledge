@@ -4,6 +4,8 @@ import type { SearchQuery, SearchResponse, SearchResult, DetailLevel } from '../
 import type { StoreId } from '../types/brands.js';
 import { CodeUnitService } from './code-unit.service.js';
 import type { CodeUnit } from '../types/search.js';
+import type { CodeGraphService } from './code-graph.service.js';
+import type { CodeGraph } from '../analysis/code-graph.js';
 
 /**
  * Query intent classification for context-aware ranking.
@@ -178,17 +180,38 @@ export class SearchService {
   private readonly embeddingEngine: EmbeddingEngine;
   private readonly rrfConfig: RRFConfig;
   private readonly codeUnitService: CodeUnitService;
+  private readonly codeGraphService: CodeGraphService | undefined;
+  private readonly graphCache: Map<string, CodeGraph | null>;
 
   constructor(
     lanceStore: LanceStore,
     embeddingEngine: EmbeddingEngine,
     // Lower k value (20 vs 60) produces more differentiated scores for top results
-    rrfConfig: RRFConfig = { k: 20, vectorWeight: 0.6, ftsWeight: 0.4 }
+    rrfConfig: RRFConfig = { k: 20, vectorWeight: 0.6, ftsWeight: 0.4 },
+    codeGraphService?: CodeGraphService
   ) {
     this.lanceStore = lanceStore;
     this.embeddingEngine = embeddingEngine;
     this.rrfConfig = rrfConfig;
     this.codeUnitService = new CodeUnitService();
+    this.codeGraphService = codeGraphService;
+    this.graphCache = new Map();
+  }
+
+  /**
+   * Load code graph for a store, with caching.
+   * Returns null if no graph is available.
+   */
+  private async loadGraphForStore(storeId: StoreId): Promise<CodeGraph | null> {
+    if (!this.codeGraphService) return null;
+
+    const cached = this.graphCache.get(storeId);
+    if (cached !== undefined) return cached;
+
+    const graph = await this.codeGraphService.loadGraph(storeId);
+    const result = graph ?? null;
+    this.graphCache.set(storeId, result);
+    return result;
   }
 
   async search(query: SearchQuery): Promise<SearchResponse> {
@@ -214,11 +237,22 @@ export class SearchService {
 
     // Deduplicate by source file - keep best chunk per source (considers query relevance)
     const dedupedResults = this.deduplicateBySource(allResults, query.query);
+    const resultsToEnhance = dedupedResults.slice(0, limit);
+
+    // Load code graphs for stores in results (for contextual/full detail levels)
+    const graphs = new Map<string, CodeGraph | null>();
+    if (detail === 'contextual' || detail === 'full') {
+      const storeIds = new Set(resultsToEnhance.map(r => r.metadata.storeId));
+      for (const storeId of storeIds) {
+        graphs.set(storeId, await this.loadGraphForStore(storeId));
+      }
+    }
 
     // Enhance results with progressive context
-    const enhancedResults = dedupedResults.slice(0, limit).map(r =>
-      this.addProgressiveContext(r, query.query, detail)
-    );
+    const enhancedResults = resultsToEnhance.map(r => {
+      const graph = graphs.get(r.metadata.storeId) ?? null;
+      return this.addProgressiveContext(r, query.query, detail, graph);
+    });
 
     return {
       query: query.query,
@@ -523,7 +557,8 @@ export class SearchService {
   private addProgressiveContext(
     result: SearchResult,
     query: string,
-    detail: DetailLevel
+    detail: DetailLevel,
+    graph: CodeGraph | null
   ): SearchResult {
     const enhanced = { ...result };
 
@@ -534,10 +569,11 @@ export class SearchService {
 
     // Try to extract code unit
     const codeUnit = this.extractCodeUnitFromResult(result);
+    const symbolName = codeUnit?.name ?? this.extractSymbolName(result.content);
 
     enhanced.summary = {
       type: this.inferType(fileType, codeUnit),
-      name: codeUnit?.name ?? this.extractSymbolName(result.content),
+      name: symbolName,
       signature: codeUnit?.signature ?? '',
       purpose: this.generatePurpose(result.content, query),
       location: `${path}${codeUnit ? ':' + String(codeUnit.startLine) : ''}`,
@@ -546,22 +582,25 @@ export class SearchService {
 
     // Layer 2: Add context if requested
     if (detail === 'contextual' || detail === 'full') {
+      // Get usage stats from code graph if available
+      const usage = this.getUsageFromGraph(graph, path, symbolName);
+
       enhanced.context = {
         interfaces: this.extractInterfaces(result.content),
         keyImports: this.extractImports(result.content),
         relatedConcepts: this.extractConcepts(result.content, query),
-        usage: {
-          calledBy: 0, // TODO: Implement from code graph
-          calls: 0
-        }
+        usage
       };
     }
 
     // Layer 3: Add full context if requested
     if (detail === 'full') {
+      // Get related code from graph if available
+      const relatedCode = this.getRelatedCodeFromGraph(graph, path, symbolName);
+
       enhanced.full = {
         completeCode: codeUnit?.fullContent ?? result.content,
-        relatedCode: [], // TODO: Implement from code graph
+        relatedCode,
         documentation: this.extractDocumentation(result.content),
         tests: undefined
       };
@@ -770,5 +809,84 @@ export class SearchService {
         .join('\n');
     }
     return '';
+  }
+
+  /**
+   * Get usage stats from code graph.
+   * Returns default values if no graph is available.
+   */
+  private getUsageFromGraph(
+    graph: CodeGraph | null,
+    filePath: string,
+    symbolName: string
+  ): { calledBy: number; calls: number } {
+    if (!graph || symbolName === '' || symbolName === '(anonymous)') {
+      return { calledBy: 0, calls: 0 };
+    }
+
+    const nodeId = `${filePath}:${symbolName}`;
+    return {
+      calledBy: graph.getCalledByCount(nodeId),
+      calls: graph.getCallsCount(nodeId)
+    };
+  }
+
+  /**
+   * Get related code from graph.
+   * Returns callers and callees for the symbol.
+   */
+  private getRelatedCodeFromGraph(
+    graph: CodeGraph | null,
+    filePath: string,
+    symbolName: string
+  ): Array<{ file: string; summary: string; relationship: string }> {
+    if (!graph || symbolName === '' || symbolName === '(anonymous)') {
+      return [];
+    }
+
+    const nodeId = `${filePath}:${symbolName}`;
+    const related: Array<{ file: string; summary: string; relationship: string }> = [];
+
+    // Get callers (incoming edges)
+    const incoming = graph.getIncomingEdges(nodeId);
+    for (const edge of incoming) {
+      if (edge.type === 'calls') {
+        // Parse file:symbol from edge.from
+        const [file, symbol] = this.parseNodeId(edge.from);
+        related.push({
+          file,
+          summary: symbol ? `${symbol}()` : 'unknown',
+          relationship: 'calls this'
+        });
+      }
+    }
+
+    // Get callees (outgoing edges)
+    const outgoing = graph.getEdges(nodeId);
+    for (const edge of outgoing) {
+      if (edge.type === 'calls') {
+        // Parse file:symbol from edge.to
+        const [file, symbol] = this.parseNodeId(edge.to);
+        related.push({
+          file,
+          summary: symbol ? `${symbol}()` : 'unknown',
+          relationship: 'called by this'
+        });
+      }
+    }
+
+    // Limit to top 10 related items
+    return related.slice(0, 10);
+  }
+
+  /**
+   * Parse a node ID into file path and symbol name.
+   */
+  private parseNodeId(nodeId: string): [string, string] {
+    const lastColon = nodeId.lastIndexOf(':');
+    if (lastColon === -1) {
+      return [nodeId, ''];
+    }
+    return [nodeId.substring(0, lastColon), nodeId.substring(lastColon + 1)];
   }
 }
