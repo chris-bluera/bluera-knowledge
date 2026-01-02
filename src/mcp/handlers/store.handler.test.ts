@@ -24,6 +24,9 @@ vi.mock('../../workers/spawn-worker.js', () => ({
   spawnBackgroundWorker: vi.fn()
 }));
 
+import { spawnBackgroundWorker } from '../../workers/spawn-worker.js';
+const mockSpawnBackgroundWorker = spawnBackgroundWorker as ReturnType<typeof vi.fn>;
+
 describe('store.handler', () => {
   let tempDir: string;
   let mockContext: HandlerContext;
@@ -42,6 +45,8 @@ describe('store.handler', () => {
       } as any,
       options: { dataDir: tempDir }
     };
+
+    mockSpawnBackgroundWorker.mockClear();
   });
 
   afterEach(() => {
@@ -207,6 +212,27 @@ describe('store.handler', () => {
       rmSync(sourcePath, { recursive: true, force: true });
     });
 
+    it('should spawn background worker with jobId and dataDir', async () => {
+      const sourcePath = mkdtempSync(join(tmpdir(), 'source-'));
+      writeFileSync(join(sourcePath, 'test.txt'), 'test content');
+
+      const args: CreateStoreArgs = {
+        name: 'worker-test',
+        type: 'file',
+        source: sourcePath
+      };
+
+      const result = await handleCreateStore(args, mockContext);
+      const data = JSON.parse(result.content[0].text);
+
+      expect(mockSpawnBackgroundWorker).toHaveBeenCalledWith(
+        data.job.id,
+        tempDir
+      );
+
+      rmSync(sourcePath, { recursive: true, force: true });
+    });
+
     it('should create repo store from URL', async () => {
       const args: CreateStoreArgs = {
         name: 'repo-store',
@@ -273,6 +299,23 @@ describe('store.handler', () => {
       expect(data.job.id).toBeDefined();
       expect(data.job.status).toBe('pending');
       expect(data.message).toContain('Indexing started');
+    });
+
+    it('should spawn background worker with jobId and dataDir', async () => {
+      const createResult = await storeService.create({
+        name: 'index-worker-test',
+        type: 'file',
+        path: tempDir
+      });
+
+      const args: IndexStoreArgs = { store: createResult.data.id };
+      const result = await handleIndexStore(args, mockContext);
+      const data = JSON.parse(result.content[0].text);
+
+      expect(mockSpawnBackgroundWorker).toHaveBeenCalledWith(
+        data.job.id,
+        tempDir
+      );
     });
 
     it('should work with store name', async () => {

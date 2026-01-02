@@ -15,6 +15,7 @@ import { createServices } from '../services/index.js';
 
 async function main(): Promise<void> {
   const jobId = process.argv[2];
+  const dataDir = process.env['BLUERA_DATA_DIR'];
 
   if (jobId === undefined || jobId === '') {
     console.error('Error: Job ID required');
@@ -23,8 +24,8 @@ async function main(): Promise<void> {
   }
 
   // Initialize services
-  const jobService = new JobService();
-  const services = await createServices();
+  const jobService = new JobService(dataDir);
+  const services = await createServices(undefined, dataDir);
 
   // Write PID file for job cancellation
   const pidFile = path.join(

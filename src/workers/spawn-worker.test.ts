@@ -20,14 +20,14 @@ describe('spawnBackgroundWorker', () => {
   });
 
   it('should spawn a background worker process', () => {
-    spawnBackgroundWorker('test-job-id');
+    spawnBackgroundWorker('test-job-id', '/test/data/dir');
 
     expect(mockSpawn).toHaveBeenCalled();
     expect(mockUnref).toHaveBeenCalled();
   });
 
   it('should pass job ID as argument', () => {
-    spawnBackgroundWorker('my-job-123');
+    spawnBackgroundWorker('my-job-123', '/test/data/dir');
 
     const callArgs = mockSpawn.mock.calls[0];
     const args = callArgs?.[1];
@@ -36,7 +36,7 @@ describe('spawnBackgroundWorker', () => {
   });
 
   it('should spawn detached process with ignored stdio', () => {
-    spawnBackgroundWorker('test-job');
+    spawnBackgroundWorker('test-job', '/test/data/dir');
 
     const callArgs = mockSpawn.mock.calls[0];
     const options = callArgs?.[2];
@@ -47,12 +47,26 @@ describe('spawnBackgroundWorker', () => {
     });
   });
 
-  it('should pass environment variables', () => {
-    spawnBackgroundWorker('test-job');
+  it('should pass environment variables including BLUERA_DATA_DIR', () => {
+    const dataDir = '/custom/data/directory';
+    spawnBackgroundWorker('test-job', dataDir);
 
     const callArgs = mockSpawn.mock.calls[0];
     const options = callArgs?.[2];
 
-    expect(options?.env).toBe(process.env);
+    expect(options?.env).toMatchObject({
+      ...process.env,
+      BLUERA_DATA_DIR: dataDir
+    });
+  });
+
+  it('should pass dataDir via BLUERA_DATA_DIR environment variable', () => {
+    const testDataDir = '.bluera/bluera-knowledge/data';
+    spawnBackgroundWorker('job-456', testDataDir);
+
+    const callArgs = mockSpawn.mock.calls[0];
+    const options = callArgs?.[2];
+
+    expect(options?.env?.BLUERA_DATA_DIR).toBe(testDataDir);
   });
 });

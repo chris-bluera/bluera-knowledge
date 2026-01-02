@@ -10,7 +10,7 @@ import path from 'path';
  *
  * @param jobId - The ID of the job to execute
  */
-export function spawnBackgroundWorker(jobId: string): void {
+export function spawnBackgroundWorker(jobId: string, dataDir: string): void {
   // Determine the worker script path
   // In production, this will be the compiled dist file
   // In development, we need to use tsx to run TypeScript
@@ -38,7 +38,10 @@ export function spawnBackgroundWorker(jobId: string): void {
   const worker = spawn(command, args, {
     detached: true,      // Detach from parent process
     stdio: 'ignore',     // Don't pipe stdio (fully independent)
-    env: process.env     // Inherit environment variables
+    env: {
+      ...process.env,    // Inherit environment variables
+      BLUERA_DATA_DIR: dataDir  // Pass dataDir to worker
+    }
   });
 
   // Unref the worker so the parent can exit
