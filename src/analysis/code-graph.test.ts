@@ -380,6 +380,116 @@ describe('CodeGraph', () => {
     });
   });
 
+  describe('Incoming edges and call counts', () => {
+    it('returns incoming edges for a node', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        { type: 'function', name: 'caller1', exported: false, startLine: 1, endLine: 2 },
+        { type: 'function', name: 'caller2', exported: false, startLine: 3, endLine: 4 },
+        { type: 'function', name: 'target', exported: false, startLine: 5, endLine: 6 }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      // caller1 and caller2 both call target
+      graph.analyzeCallRelationships('target();', '/src/test.ts', 'caller1');
+      graph.analyzeCallRelationships('target();', '/src/test.ts', 'caller2');
+
+      const incoming = graph.getIncomingEdges('/src/test.ts:target');
+
+      expect(incoming).toHaveLength(2);
+      expect(incoming.every(e => e.to === '/src/test.ts:target')).toBe(true);
+      expect(incoming.every(e => e.type === 'calls')).toBe(true);
+    });
+
+    it('returns empty array for node with no incoming edges', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        { type: 'function', name: 'isolated', exported: false, startLine: 1, endLine: 2 }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+      const incoming = graph.getIncomingEdges('/src/test.ts:isolated');
+
+      expect(incoming).toEqual([]);
+    });
+
+    it('counts calledBy correctly', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        { type: 'function', name: 'fn1', exported: false, startLine: 1, endLine: 2 },
+        { type: 'function', name: 'fn2', exported: false, startLine: 3, endLine: 4 },
+        { type: 'function', name: 'fn3', exported: false, startLine: 5, endLine: 6 },
+        { type: 'function', name: 'utility', exported: false, startLine: 7, endLine: 8 }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      // fn1, fn2, fn3 all call utility
+      graph.analyzeCallRelationships('utility();', '/src/test.ts', 'fn1');
+      graph.analyzeCallRelationships('utility();', '/src/test.ts', 'fn2');
+      graph.analyzeCallRelationships('utility();', '/src/test.ts', 'fn3');
+
+      const count = graph.getCalledByCount('/src/test.ts:utility');
+      expect(count).toBe(3);
+    });
+
+    it('returns 0 for calledBy when no callers', () => {
+      const graph = new CodeGraph();
+      const count = graph.getCalledByCount('/src/test.ts:noCaller');
+      expect(count).toBe(0);
+    });
+
+    it('counts calls (outgoing) correctly', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        { type: 'function', name: 'main', exported: false, startLine: 1, endLine: 10 },
+        { type: 'function', name: 'helper1', exported: false, startLine: 11, endLine: 15 },
+        { type: 'function', name: 'helper2', exported: false, startLine: 16, endLine: 20 }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      // main calls both helpers
+      const code = 'helper1(); helper2();';
+      graph.analyzeCallRelationships(code, '/src/test.ts', 'main');
+
+      const count = graph.getCallsCount('/src/test.ts:main');
+      expect(count).toBe(2);
+    });
+
+    it('returns 0 for calls when function makes no calls', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        { type: 'function', name: 'leaf', exported: false, startLine: 1, endLine: 2 }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+      graph.analyzeCallRelationships('return 42;', '/src/test.ts', 'leaf');
+
+      const count = graph.getCallsCount('/src/test.ts:leaf');
+      expect(count).toBe(0);
+    });
+
+    it('distinguishes between call edges and import edges in calledBy count', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        { type: 'function', name: 'target', exported: true, startLine: 1, endLine: 2 }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      // Add import edge (should not count as calledBy)
+      graph.addImport('/src/other.ts', './test', ['target']);
+
+      // Add call edge (should count as calledBy)
+      graph.analyzeCallRelationships('target();', '/src/caller.ts', 'caller');
+
+      const calledByCount = graph.getCalledByCount('/src/test.ts:target');
+      expect(calledByCount).toBe(1); // Only the call edge, not the import
+    });
+  });
+
   describe('Complex graph scenarios', () => {
     it('builds graph from multiple files', () => {
       const graph = new CodeGraph();

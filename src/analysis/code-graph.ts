@@ -116,6 +116,39 @@ export class CodeGraph {
     return this.edges.get(nodeId) ?? [];
   }
 
+  /**
+   * Get edges where this node is the target (callers of this function)
+   */
+  getIncomingEdges(nodeId: string): GraphEdge[] {
+    const incoming: GraphEdge[] = [];
+    for (const edges of this.edges.values()) {
+      for (const edge of edges) {
+        if (edge.to === nodeId) {
+          incoming.push(edge);
+        }
+      }
+    }
+    return incoming;
+  }
+
+  /**
+   * Count how many nodes call this node
+   */
+  getCalledByCount(nodeId: string): number {
+    return this.getIncomingEdges(nodeId)
+      .filter(e => e.type === 'calls')
+      .length;
+  }
+
+  /**
+   * Count how many nodes this node calls
+   */
+  getCallsCount(nodeId: string): number {
+    return this.getEdges(nodeId)
+      .filter(e => e.type === 'calls')
+      .length;
+  }
+
   getAllNodes(): GraphNode[] {
     return Array.from(this.nodes.values());
   }
