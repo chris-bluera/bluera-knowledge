@@ -1,55 +1,69 @@
-# Bluera Knowledge
+# 🧠 Bluera Knowledge
 
 ![Version](https://img.shields.io/badge/version-0.7.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue)
 
-A Claude Code plugin for providing canonical, definitive source information to AI coding agents.
+> 🚀 **A Claude Code plugin for providing canonical, definitive source information to AI coding agents.**
 
-## Overview
+Give your AI coding assistant instant access to authoritative library source code, documentation, and reference materials—all searchable locally with semantic understanding.
 
-Bluera Knowledge creates local, searchable knowledge stores from any authoritative source - library source code, project documentation, coding standards, reference materials, or any other content you need.
+---
 
-Instead of relying on:
-- **Outdated training data** - Claude's knowledge cutoff may be months or years old
-- **Web search** - Slow, rate-limited, and incomplete
-- **Web fetch** - Slow, rate-limited, and often blocked or paywalled
+## ✨ Why Bluera Knowledge?
 
-This plugin provides:
-- **Instant local access** - All content indexed and ready
-- **Complete source code** - Full repository clones, not just documentation
-- **Web crawling** - Crawl and index web documentation automatically
-- **Fast vector search** - Semantic search with relevance ranking
-- **Direct file access** - Grep/Glob operations on complete source trees
+Stop relying on outdated or incomplete information. Instead of:
 
-### How It Works
+- ❌ **Outdated training data** - Claude's knowledge cutoff may be months or years old
+- ❌ **Web search** - Slow, rate-limited, and incomplete
+- ❌ **Web fetch** - Slow, rate-limited, often blocked or paywalled
 
-The plugin provides AI agents with three complementary search capabilities:
+Get instant, authoritative answers with:
 
-**1. Semantic Vector Search** - AI-powered search across all indexed content:
+- ✅ **Instant local access** - All content indexed and ready
+- ✅ **Complete source code** - Full repository clones, not just documentation
+- ✅ **Web crawling** - Crawl and index web documentation automatically
+- ✅ **Fast vector search** - Semantic search with relevance ranking
+- ✅ **Direct file access** - Grep/Glob operations on complete source trees
+
+---
+
+## 🎯 How It Works
+
+The plugin provides AI agents with **four complementary search capabilities**:
+
+### 🔍 1. Semantic Vector Search
+**AI-powered search across all indexed content**
+
 - Searches by meaning and intent, not just keywords
 - Uses embeddings to find conceptually similar content
 - Ideal for discovering patterns and related concepts
 
-**2. Full-Text Search (FTS)** - Fast keyword and pattern matching:
+### 📝 2. Full-Text Search (FTS)
+**Fast keyword and pattern matching**
+
 - Traditional text search with exact matching
 - Supports regex patterns and boolean operators
 - Best for finding specific terms or identifiers
 
-**3. Hybrid Mode (Recommended)** - Combines vector and FTS search:
+### ⚡ 3. Hybrid Mode (Recommended)
+**Combines vector and FTS search**
+
 - Merges results from both search modes with weighted ranking
 - Balances semantic understanding with exact matching
 - Provides best overall results for most queries
 
-**4. Direct File Access** - Traditional file operations on cloned sources:
+### 📂 4. Direct File Access
+**Traditional file operations on cloned sources**
+
 - Provides file paths to cloned repositories
 - Enables Grep, Glob, and Read operations on source files
 - Supports precise pattern matching and code navigation
 - Full access to complete file trees
 
 <details>
-<summary><b>How Commands Work</b></summary>
+<summary>💡 <b>How Commands Work</b></summary>
 
 When you use `/bluera-knowledge:` commands, here's what happens:
 
@@ -76,40 +90,51 @@ This architecture means commands provide a clean user interface while MCP tools 
 
 ---
 
-**User Commands** - You manage knowledge stores through `/bluera-knowledge:` commands:
-- Analyze your project to find important dependencies
-- Add Git repositories (library source code)
-- Add local folders (documentation, standards, etc.)
-- Crawl web pages and documentation
-- Search across all indexed content
-- Manage and re-index stores
+## 🎨 User Interface
 
-**MCP Tools** - AI agents access knowledge through Model Context Protocol:
-- `search` - Semantic vector search across all stores
-- `get_store_info` - Get file paths for direct Grep/Glob access
-- `list_stores` - View available knowledge stores
-- `create_store` - Add new knowledge sources
-- `index_store` - Re-index existing stores
-- `delete_store` - Delete a store and all associated data
-- `get_full_context` - Retrieve complete code context
-- `check_job_status` - Check background job progress
-- `list_jobs` - List all background jobs
-- `cancel_job` - Cancel running operations
+### 👤 User Commands
+**You manage knowledge stores through `/bluera-knowledge:` commands:**
 
-## Background Jobs
+- 🔬 Analyze your project to find important dependencies
+- 📦 Add Git repositories (library source code)
+- 📁 Add local folders (documentation, standards, etc.)
+- 🌐 Crawl web pages and documentation
+- 🔍 Search across all indexed content
+- 🔄 Manage and re-index stores
 
-Long-running operations (git clone, indexing) run in the background, allowing you to continue working while they complete.
+### 🤖 MCP Tools
+**AI agents access knowledge through Model Context Protocol:**
 
-### How It Works
+| Tool | Purpose |
+|------|---------|
+| `search` | 🔍 Semantic vector search across all stores |
+| `get_store_info` | 📂 Get file paths for direct Grep/Glob access |
+| `list_stores` | 📋 View available knowledge stores |
+| `create_store` | ➕ Add new knowledge sources |
+| `index_store` | 🔄 Re-index existing stores |
+| `delete_store` | 🗑️ Delete a store and all associated data |
+| `get_full_context` | 📖 Retrieve complete code context |
+| `check_job_status` | ⏱️ Check background job progress |
+| `list_jobs` | 📊 List all background jobs |
+| `cancel_job` | ⛔ Cancel running operations |
+
+---
+
+## ⚙️ Background Jobs
+
+> [!TIP]
+> Long-running operations (git clone, indexing) run in the background, allowing you to continue working while they complete.
+
+### 🔄 How It Works
 
 When you add a repository or index content:
 
-1. **Instant Response** - Operation starts immediately and returns a job ID
-2. **Background Processing** - Indexing runs in a separate process
-3. **Progress Updates** - Check status anytime with `/bluera-knowledge:check-status`
-4. **Auto-Notifications** - Active jobs appear automatically in context
+1. **⚡ Instant Response** - Operation starts immediately and returns a job ID
+2. **🔄 Background Processing** - Indexing runs in a separate process
+3. **📊 Progress Updates** - Check status anytime with `/bluera-knowledge:check-status`
+4. **🔔 Auto-Notifications** - Active jobs appear automatically in context
 
-### Example Workflow
+### 📝 Example Workflow
 
 ```bash
 # Add a large repository (returns immediately with job ID)
@@ -138,125 +163,134 @@ When you add a repository or index content:
 /bluera-knowledge:cancel job_abc123def456
 ```
 
-### Performance
+### 🚀 Performance
 
 Background jobs include significant performance optimizations:
 
-- **Parallel Embedding** - Processes 32 chunks simultaneously (30x faster than sequential)
-- **Non-Blocking** - Continue working while indexing completes
-- **Progress Tracking** - Real-time updates on files processed and progress percentage
-- **Auto-Cleanup** - Completed jobs are cleaned up after 24 hours
+- **⚡ Parallel Embedding** - Processes 32 chunks simultaneously (30x faster than sequential)
+- **🔓 Non-Blocking** - Continue working while indexing completes
+- **📊 Progress Tracking** - Real-time updates on files processed and progress percentage
+- **🧹 Auto-Cleanup** - Completed jobs are cleaned up after 24 hours
 
-**Typical Indexing Times:**
+**⏱️ Typical Indexing Times:**
 - Small library (100-200 files): ~30 seconds
 - Medium library (500-800 files): ~1-2 minutes
 - Large library (1,000+ files): ~2-5 minutes
 
-**Example:** The React repository (1,247 files) now indexes in ~2-3 minutes instead of 60+ minutes.
+> [!NOTE]
+> **Example:** The React repository (1,247 files) now indexes in ~2-3 minutes instead of 60+ minutes.
 
-## Features
+---
 
-- **Smart Dependency Analysis**: Automatically scans your project to identify which libraries are most heavily used by counting import statements across all source files
-- **Usage-Based Suggestions**: Ranks dependencies by actual usage frequency, showing you the top 5 most-imported packages with import counts and file counts
-- **Automatic Repository Discovery**: Queries NPM and PyPI package registries to automatically find GitHub repository URLs for any package
-- **Git Repository Indexing**: Clones and indexes library source code for both semantic search and direct file access
-- **Local Folder Indexing**: Indexes any local content - documentation, standards, reference materials, or custom content
-- **Web Crawling**: Crawl and index web pages using `crawl4ai` - convert documentation sites to searchable markdown
-- **Dual Search Modes**:
-  - **Vector Search**: AI-powered semantic search with relevance ranking
-  - **File Access**: Direct Grep/Glob operations on cloned source files
-- **Code Graph Analysis**: During indexing, builds a graph of code relationships (calls, imports, extends) to provide usage context in search results - shows how many callers/callees each function has
-- **Multi-Language Support**: Analyzes JavaScript, TypeScript, and Python imports; indexes code in any language
-- **MCP Integration**: Exposes all functionality as Model Context Protocol tools for AI coding agents
+## ✨ Features
 
-### Language-Specific Features
+### 🎯 Core Features
+
+- **🔬 Smart Dependency Analysis** - Automatically scans your project to identify which libraries are most heavily used by counting import statements across all source files
+- **📊 Usage-Based Suggestions** - Ranks dependencies by actual usage frequency, showing you the top 5 most-imported packages with import counts and file counts
+- **🔍 Automatic Repository Discovery** - Queries NPM and PyPI package registries to automatically find GitHub repository URLs for any package
+- **📦 Git Repository Indexing** - Clones and indexes library source code for both semantic search and direct file access
+- **📁 Local Folder Indexing** - Indexes any local content - documentation, standards, reference materials, or custom content
+- **🌐 Web Crawling** - Crawl and index web pages using `crawl4ai` - convert documentation sites to searchable markdown
+
+### 🔍 Search Modes
+
+- **🧠 Vector Search** - AI-powered semantic search with relevance ranking
+- **📂 File Access** - Direct Grep/Glob operations on cloned source files
+
+### 🗺️ Code Graph Analysis
+
+- **📊 Code Graph Analysis** - During indexing, builds a graph of code relationships (calls, imports, extends) to provide usage context in search results - shows how many callers/callees each function has
+- **🌐 Multi-Language Support** - Analyzes JavaScript, TypeScript, and Python imports; indexes code in any language
+- **🔌 MCP Integration** - Exposes all functionality as Model Context Protocol tools for AI coding agents
+
+### 🌍 Language-Specific Features
 
 While bluera-knowledge indexes and searches code in any language, certain advanced features are language-specific:
 
-**TypeScript/JavaScript** (Full Support):
-- ✅ Code graph analysis with method-level tracking
-- ✅ Call relationship analysis (shows calledBy/calls counts for functions and class methods)
-- ✅ Import/export tracking
-- ✅ Class and method node creation in code graph
+| Language | Code Graph | Call Analysis | Import Tracking | Method Tracking |
+|----------|------------|---------------|-----------------|-----------------|
+| **TypeScript/JavaScript** | ✅ Full Support | ✅ Functions & Methods | ✅ Full | ✅ Class Methods |
+| **Python** | ✅ Full Support | ✅ Functions & Methods | ✅ Full | ✅ Class Methods |
+| **Other Languages** | ⚠️ Basic Support | ❌ | ❌ | ❌ |
 
-**Python** (Full Support):
-- ✅ Code graph analysis with method-level tracking
-- ✅ Function and class analysis with AST parsing
-- ✅ Import tracking (import and from...import)
-- ✅ Call relationship analysis
-- ✅ Method node creation in code graph
+> [!NOTE]
+> Code graph features enhance search results by showing usage context (e.g., "this function is called by 15 other functions"), but all languages benefit from vector search and full-text search capabilities.
 
-**Other Languages** (Basic Support):
-- ✅ Full-text and semantic search
-- ✅ Document chunking and indexing
-- ⚠️ No code graph analysis or relationship tracking
+---
 
-**Note**: Code graph features enhance search results by showing usage context (e.g., "this function is called by 15 other functions"), but all languages benefit from vector search and full-text search capabilities.
-
-## Installation
+## 📦 Installation
 
 Install the plugin directly from GitHub in Claude Code:
 
-```
+```bash
 /plugin install https://github.com/bluera/bluera-knowledge
 ```
 
 The plugin is immediately available with the `/bluera-knowledge:` command prefix.
 
-### Dependencies
+### 🔧 Dependencies
 
 The plugin automatically checks for and attempts to install Python dependencies on first use:
 
 **Required:**
-- **Python 3.8+** - Required for all functionality
-- **crawl4ai** - Required for web crawling features (auto-installed via SessionStart hook)
-- **playwright** - Required for headless browser crawling (manual install needed for browser binaries)
+- **🐍 Python 3.8+** - Required for all functionality
+- **🕷️ crawl4ai** - Required for web crawling features (auto-installed via SessionStart hook)
+- **🎭 playwright** - Required for headless browser crawling (manual install needed for browser binaries)
 
 If auto-installation fails, you can install manually:
+
 ```bash
 pip install crawl4ai playwright
 playwright install  # Install browser binaries for headless mode
 ```
 
-**Note:** The plugin will work without crawl4ai/playwright, but web crawling features (`/bluera-knowledge:crawl`) will be unavailable. For JavaScript-rendered sites (Next.js, React, Vue), use the `--headless` flag which requires playwright browser binaries.
+> [!WARNING]
+> The plugin will work without crawl4ai/playwright, but web crawling features (`/bluera-knowledge:crawl`) will be unavailable. For JavaScript-rendered sites (Next.js, React, Vue), use the `--headless` flag which requires playwright browser binaries.
 
-### Update Plugin
+### 🔄 Update Plugin
 
-```
+```bash
 /plugin update bluera-knowledge
 ```
 
-## Quick Start
+---
+
+## 🚀 Quick Start
 
 Follow these steps to set up knowledge stores for your project:
 
-- [ ] **Analyze dependencies**: `/bluera-knowledge:suggest`
-- [ ] **Add a library**: `/bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query`
-- [ ] **Index your docs**: `/bluera-knowledge:add-folder ./docs --name=project-docs`
-- [ ] **Test search**: `/bluera-knowledge:search "how to invalidate queries"`
-- [ ] **View stores**: `/bluera-knowledge:stores`
+- [ ] **🔬 Analyze dependencies**: `/bluera-knowledge:suggest`
+- [ ] **📦 Add a library**: `/bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query`
+- [ ] **📁 Index your docs**: `/bluera-knowledge:add-folder ./docs --name=project-docs`
+- [ ] **🔍 Test search**: `/bluera-knowledge:search "how to invalidate queries"`
+- [ ] **📋 View stores**: `/bluera-knowledge:stores`
 
 > [!TIP]
 > Start with `/bluera-knowledge:suggest` to automatically discover which libraries your project uses most.
 
-## Quick Reference
+---
+
+## 📖 Quick Reference
 
 | Command | Purpose | Arguments |
 |---------|---------|-----------|
-| `/bluera-knowledge:suggest` | Analyze project dependencies | None |
-| `/bluera-knowledge:add-repo` | Clone and index Git repository | `<url> [--name=<name>] [--branch=<branch>]` |
-| `/bluera-knowledge:add-folder` | Index local folder | `<path> --name=<name>` |
-| `/bluera-knowledge:search` | Search knowledge stores | `"<query>" [--stores=<names>] [--limit=<N>]` |
-| `/bluera-knowledge:stores` | List all stores | None |
-| `/bluera-knowledge:index` | Re-index a store | `<store-name-or-id>` |
-| `/bluera-knowledge:remove-store` | Delete a store and all data | `<store-name-or-id>` |
-| `/bluera-knowledge:crawl` | Crawl web pages | `<url> <store-name> [--crawl "<instruction>"]` |
+| 🔬 `/bluera-knowledge:suggest` | Analyze project dependencies | None |
+| 📦 `/bluera-knowledge:add-repo` | Clone and index Git repository | `<url> [--name=<name>] [--branch=<branch>]` |
+| 📁 `/bluera-knowledge:add-folder` | Index local folder | `<path> --name=<name>` |
+| 🔍 `/bluera-knowledge:search` | Search knowledge stores | `"<query>" [--stores=<names>] [--limit=<N>]` |
+| 📋 `/bluera-knowledge:stores` | List all stores | None |
+| 🔄 `/bluera-knowledge:index` | Re-index a store | `<store-name-or-id>` |
+| 🗑️ `/bluera-knowledge:remove-store` | Delete a store and all data | `<store-name-or-id>` |
+| 🌐 `/bluera-knowledge:crawl` | Crawl web pages | `<url> <store-name> [--crawl "<instruction>"]` |
 
-## Commands
+---
 
-### `/bluera-knowledge:suggest`
+## 💻 Commands
 
-Analyze your project to suggest libraries worth indexing as knowledge stores:
+### 🔬 `/bluera-knowledge:suggest`
+
+**Analyze your project to suggest libraries worth indexing as knowledge stores**
 
 ```bash
 /bluera-knowledge:suggest
@@ -265,7 +299,7 @@ Analyze your project to suggest libraries worth indexing as knowledge stores:
 Scans all source files, counts import statements, and suggests the top 5 most-used dependencies as indexing targets with their GitHub URLs.
 
 <details>
-<summary><b>Expected Output</b></summary>
+<summary><b>📊 Expected Output</b></summary>
 
 ```
 ## Dependency Analysis
@@ -304,9 +338,11 @@ Already indexed: typescript, express
 ```
 </details>
 
-### `/bluera-knowledge:add-repo`
+---
 
-Clone and index a Git repository:
+### 📦 `/bluera-knowledge:add-repo`
+
+**Clone and index a Git repository**
 
 ```bash
 /bluera-knowledge:add-repo <url> [--name=<name>] [--branch=<branch>]
@@ -319,7 +355,7 @@ Clone and index a Git repository:
 ```
 
 <details>
-<summary><b>Expected Output</b></summary>
+<summary><b>✅ Expected Output</b></summary>
 
 ```
 ✓ Cloning https://github.com/facebook/react...
@@ -333,21 +369,23 @@ Store is ready for searching!
 ```
 </details>
 
-### `/bluera-knowledge:add-folder`
+---
 
-Index a local folder:
+### 📁 `/bluera-knowledge:add-folder`
+
+**Index a local folder**
 
 ```bash
 /bluera-knowledge:add-folder <path> --name=<name>
 ```
 
-**Use cases:**
-- Project documentation
-- Coding standards
-- Design documents
-- API specifications
-- Reference materials
-- Any other content
+**📚 Use cases:**
+- 📖 Project documentation
+- 📏 Coding standards
+- 🎨 Design documents
+- 🔌 API specifications
+- 📚 Reference materials
+- 📄 Any other content
 
 **Examples:**
 ```bash
@@ -356,7 +394,7 @@ Index a local folder:
 ```
 
 <details>
-<summary><b>Expected Output</b></summary>
+<summary><b>✅ Expected Output</b></summary>
 
 ```
 ✓ Adding folder: ~/my-project/docs...
@@ -370,9 +408,11 @@ Store is ready for searching!
 ```
 </details>
 
-### `/bluera-knowledge:search`
+---
 
-Search across indexed knowledge stores:
+### 🔍 `/bluera-knowledge:search`
+
+**Search across indexed knowledge stores**
 
 ```bash
 /bluera-knowledge:search "<query>" [--stores=<names>] [--limit=<number>]
@@ -394,7 +434,7 @@ Search across indexed knowledge stores:
 ```
 
 <details>
-<summary><b>Expected Output</b></summary>
+<summary><b>📊 Expected Output</b></summary>
 
 ```
 ## Search Results: "button component"
@@ -426,9 +466,11 @@ Search across indexed knowledge stores:
 ```
 </details>
 
-### `/bluera-knowledge:stores`
+---
 
-List all indexed knowledge stores:
+### 📋 `/bluera-knowledge:stores`
+
+**List all indexed knowledge stores**
 
 ```bash
 /bluera-knowledge:stores
@@ -437,7 +479,7 @@ List all indexed knowledge stores:
 Shows store name, type, ID, and source location in a clean table format.
 
 <details>
-<summary><b>Expected Output</b></summary>
+<summary><b>📊 Expected Output</b></summary>
 
 ```
 | Name | Type | ID | Source |
@@ -451,15 +493,17 @@ Shows store name, type, ID, and source location in a clean table format.
 ```
 </details>
 
-### `/bluera-knowledge:index`
+---
 
-Re-index an existing store to update the search index:
+### 🔄 `/bluera-knowledge:index`
+
+**Re-index an existing store to update the search index**
 
 ```bash
 /bluera-knowledge:index <store-name-or-id>
 ```
 
-**When to re-index:**
+**🔄 When to re-index:**
 - The source repository has been updated (for repo stores)
 - Files have been added or modified (for file stores)
 - Search results seem out of date
@@ -470,7 +514,7 @@ Re-index an existing store to update the search index:
 ```
 
 <details>
-<summary><b>Expected Output</b></summary>
+<summary><b>✅ Expected Output</b></summary>
 
 ```
 ✓ Indexing store: react...
@@ -480,15 +524,17 @@ Store search index is up to date!
 ```
 </details>
 
-### `/bluera-knowledge:remove-store`
+---
 
-Delete a knowledge store and all associated data:
+### 🗑️ `/bluera-knowledge:remove-store`
+
+**Delete a knowledge store and all associated data**
 
 ```bash
 /bluera-knowledge:remove-store <store-name-or-id>
 ```
 
-**What gets deleted:**
+**🗑️ What gets deleted:**
 - Store registry entry
 - LanceDB search index (vector embeddings)
 - Cloned repository files (for repo stores created from URLs)
@@ -499,7 +545,7 @@ Delete a knowledge store and all associated data:
 ```
 
 <details>
-<summary><b>Expected Output</b></summary>
+<summary><b>✅ Expected Output</b></summary>
 
 ```
 Store "react" deleted successfully.
@@ -511,17 +557,19 @@ Removed:
 ```
 </details>
 
-### `/bluera-knowledge:crawl`
+---
 
-Crawl web pages and add content to a web store:
+### 🌐 `/bluera-knowledge:crawl`
+
+**Crawl web pages and add content to a web store**
 
 ```bash
 /bluera-knowledge:crawl <url> <store-name>
 ```
 
-**Requirements:**
-- Python 3 with `crawl4ai` package installed
-- A web store must be created first
+**⚙️ Requirements:**
+- 🐍 Python 3 with `crawl4ai` package installed
+- 📦 A web store must be created first
 
 **Examples:**
 ```bash
@@ -532,11 +580,13 @@ Crawl web pages and add content to a web store:
 
 The web page will be crawled, converted to markdown, and indexed for semantic search.
 
-## Crawler Architecture
+---
+
+## 🕷️ Crawler Architecture
 
 The crawler supports two modes: **standard mode** for static sites (fast) and **headless mode** for JavaScript-rendered sites (powerful).
 
-### Standard Mode (Static Sites)
+### ⚡ Standard Mode (Static Sites)
 
 For static HTML sites, the crawler uses axios for fast HTTP requests:
 
@@ -561,7 +611,7 @@ sequenceDiagram
     end
 ```
 
-### Headless Mode (JavaScript-Rendered Sites)
+### 🎭 Headless Mode (JavaScript-Rendered Sites)
 
 For JavaScript-rendered sites (Next.js, React, Vue), use `--headless` to render content with Playwright:
 
@@ -595,17 +645,19 @@ sequenceDiagram
     end
 ```
 
-### Key Points
+### 🔑 Key Points
 
-- **Intelligent crawling preserved**: Claude CLI analyzes pages and selects URLs based on natural language instructions in both modes
-- **crawl4ai role**: ONLY renders JavaScript to get HTML - doesn't replace Claude's intelligent URL selection
-- **Hybrid approach**: Fast axios for static sites, Playwright for JS-rendered sites
-- **Automatic fallback**: If headless fetch fails, automatically falls back to axios
+- **🧠 Intelligent crawling preserved** - Claude CLI analyzes pages and selects URLs based on natural language instructions in both modes
+- **🎭 crawl4ai role** - ONLY renders JavaScript to get HTML - doesn't replace Claude's intelligent URL selection
+- **⚡ Hybrid approach** - Fast axios for static sites, Playwright for JS-rendered sites
+- **🔄 Automatic fallback** - If headless fetch fails, automatically falls back to axios
 
-## Troubleshooting
+---
+
+## 🔧 Troubleshooting
 
 <details>
-<summary><b>Command not found or not recognized</b></summary>
+<summary><b>❌ Command not found or not recognized</b></summary>
 
 Ensure the plugin is installed and enabled:
 
@@ -622,7 +674,7 @@ If the plugin isn't listed, install it:
 </details>
 
 <details>
-<summary><b>Web crawling fails</b></summary>
+<summary><b>🌐 Web crawling fails</b></summary>
 
 Check Python dependencies:
 
@@ -635,7 +687,7 @@ The plugin attempts to auto-install `crawl4ai` on first use, but manual installa
 </details>
 
 <details>
-<summary><b>Search returns no results</b></summary>
+<summary><b>🔍 Search returns no results</b></summary>
 
 1. Verify store exists: `/bluera-knowledge:stores`
 2. Check store is indexed: `/bluera-knowledge:index <store-name>`
@@ -644,7 +696,7 @@ The plugin attempts to auto-install `crawl4ai` on first use, but manual installa
 </details>
 
 <details>
-<summary><b>"Store not found" error</b></summary>
+<summary><b>❓ "Store not found" error</b></summary>
 
 List all stores to see available names and IDs:
 
@@ -656,7 +708,7 @@ Use the exact store name or ID shown in the table.
 </details>
 
 <details>
-<summary><b>Indexing is slow or fails</b></summary>
+<summary><b>⏱️ Indexing is slow or fails</b></summary>
 
 Large repositories (10,000+ files) may take several minutes to index. If indexing fails:
 
@@ -666,9 +718,11 @@ Large repositories (10,000+ files) may take several minutes to index. If indexin
 4. Check for network connectivity (for repo stores)
 </details>
 
-## Use Cases
+---
 
-### Library Source Code
+## 🎯 Use Cases
+
+### 📦 Library Source Code
 
 Provide AI agents with canonical library implementation details:
 
@@ -681,7 +735,7 @@ Provide AI agents with canonical library implementation details:
 # - Direct access: Grep/Glob through the cloned tanstack/query repo
 ```
 
-### Project Documentation
+### 📚 Project Documentation
 
 Make project-specific documentation available:
 
@@ -692,7 +746,7 @@ Make project-specific documentation available:
 # AI agents can search across all documentation or access specific files
 ```
 
-### Coding Standards
+### 📏 Coding Standards
 
 Provide definitive coding standards and best practices:
 
@@ -703,7 +757,7 @@ Provide definitive coding standards and best practices:
 # AI agents reference actual company standards, not generic advice
 ```
 
-### Mixed Sources
+### 🔀 Mixed Sources
 
 Combine canonical library code with project-specific patterns:
 
@@ -714,11 +768,13 @@ Combine canonical library code with project-specific patterns:
 # Search across both library source and team patterns
 ```
 
-## MCP Integration
+---
+
+## 🔌 MCP Integration
 
 The plugin includes a Model Context Protocol server that exposes search tools. This is configured in `.mcp.json`:
 
-> [!NOTE]
+> [!IMPORTANT]
 > **Commands vs MCP Tools**: You interact with the plugin using `/bluera-knowledge:` slash commands. Behind the scenes, these commands instruct Claude to use MCP tools (`mcp__bluera-knowledge__*`) which handle the actual operations. Commands provide the user interface, while MCP tools are the backend that AI agents use to access your knowledge stores.
 
 ```json
@@ -737,10 +793,10 @@ The plugin includes a Model Context Protocol server that exposes search tools. T
 }
 ```
 
-### Available MCP Tools
+### 🛠️ Available MCP Tools
 
 #### `search`
-Semantic vector search across all indexed stores. Returns structured code units with relevance ranking.
+🔍 Semantic vector search across all indexed stores. Returns structured code units with relevance ranking.
 
 **Parameters:**
 - `query` - Search query (natural language, patterns, or type signatures)
@@ -750,7 +806,7 @@ Semantic vector search across all indexed stores. Returns structured code units 
 - `stores` - Array of specific store IDs to search (optional, searches all stores if not specified)
 
 #### `get_store_info`
-Get detailed information about a store including its file path for direct Grep/Glob access.
+📂 Get detailed information about a store including its file path for direct Grep/Glob access.
 
 **Returns:**
 - Store metadata
@@ -758,21 +814,23 @@ Get detailed information about a store including its file path for direct Grep/G
 - Enables direct file operations on source
 
 #### `list_stores`
-List all indexed knowledge stores.
+📋 List all indexed knowledge stores.
 
 **Parameters:**
 - `type` - Filter by type: file, repo, or web (optional)
 
 #### `create_store`
-Create a new knowledge store from Git URL or local path.
+➕ Create a new knowledge store from Git URL or local path.
 
 #### `index_store`
-Index or re-index a knowledge store to make it searchable.
+🔄 Index or re-index a knowledge store to make it searchable.
 
 #### `get_full_context`
-Retrieve complete code and context for a specific search result.
+📖 Retrieve complete code and context for a specific search result.
 
-## Data Storage
+---
+
+## 💾 Data Storage
 
 Knowledge stores are stored in your project root:
 
@@ -785,11 +843,14 @@ Knowledge stores are stored in your project root:
 └── config.json                 # Configuration
 ```
 
-**Important**: Add `.bluera/` to your `.gitignore` to avoid committing large repositories and vector indices to version control.
+> [!CAUTION]
+> **Important**: Add `.bluera/` to your `.gitignore` to avoid committing large repositories and vector indices to version control.
 
-## Development
+---
 
-### Setup
+## 🛠️ Development
+
+### 🚀 Setup
 
 ```bash
 git clone https://github.com/bluera/bluera-knowledge.git
@@ -799,9 +860,10 @@ npm run build
 npm test
 ```
 
-### MCP Server for Development
+### 🔌 MCP Server for Development
 
-When developing locally in this repository, you need to create a symlink for the MCP server configuration. The `.mcp.json` file lives inside `.claude-plugin/` (to avoid duplication when the plugin is installed from marketplace), but Claude Code looks for it at the project root.
+> [!NOTE]
+> When developing locally in this repository, you need to create a symlink for the MCP server configuration. The `.mcp.json` file lives inside `.claude-plugin/` (to avoid duplication when the plugin is installed from marketplace), but Claude Code looks for it at the project root.
 
 ```bash
 # Create symlink (required for MCP tools to work during development)
@@ -810,30 +872,30 @@ ln -s .claude-plugin/.mcp.json .mcp.json
 
 This symlink is gitignored - each developer needs to create it locally. After creating the symlink, restart Claude Code to load the MCP server.
 
-### NPM Commands
+### 📜 NPM Commands
 
 | Command | Description | When to Use |
 |---------|-------------|-------------|
-| `npm run build` | Compile TypeScript to dist/ | Before testing CLI, after code changes |
-| `npm run dev` | Watch mode compilation | During active development |
-| `npm start` | Run the CLI | Execute CLI commands directly |
-| `npm test` | Run tests in watch mode | During TDD/active development |
-| `npm run test:run` | Run tests once | Quick verification |
-| `npm run test:coverage` | Run tests with coverage | Before committing, CI checks |
-| `npm run lint` | Run ESLint | Check code style issues |
-| `npm run typecheck` | Run TypeScript type checking | Verify type safety |
-| `npm run precommit` | Full validation suite | Before committing (runs automatically via husky) |
-| `npm run version:patch` | Bump patch version (0.0.x) | Bug fixes, minor updates |
-| `npm run version:minor` | Bump minor version (0.x.0) | New features, backwards compatible |
-| `npm run version:major` | Bump major version (x.0.0) | Breaking changes |
+| `npm run build` | 🏗️ Compile TypeScript to dist/ | Before testing CLI, after code changes |
+| `npm run dev` | 👀 Watch mode compilation | During active development |
+| `npm start` | ▶️ Run the CLI | Execute CLI commands directly |
+| `npm test` | 🧪 Run tests in watch mode | During TDD/active development |
+| `npm run test:run` | ✅ Run tests once | Quick verification |
+| `npm run test:coverage` | 📊 Run tests with coverage | Before committing, CI checks |
+| `npm run lint` | 🔍 Run ESLint | Check code style issues |
+| `npm run typecheck` | 🔒 Run TypeScript type checking | Verify type safety |
+| `npm run precommit` | ✨ Full validation suite | Before committing (runs automatically via husky) |
+| `npm run version:patch` | 🔢 Bump patch version (0.0.x) | Bug fixes, minor updates |
+| `npm run version:minor` | 🔢 Bump minor version (0.x.0) | New features, backwards compatible |
+| `npm run version:major` | 🔢 Bump major version (x.0.0) | Breaking changes |
 
-### Testing Locally
+### 🧪 Testing Locally
 
 ```bash
 /plugin install /path/to/bluera-knowledge
 ```
 
-### Project Structure
+### 📂 Project Structure
 
 ```
 .claude-plugin/          # Plugin configuration
@@ -857,32 +919,40 @@ tests/
 └── ...                 # Unit tests
 ```
 
-## Technologies
+---
 
-- **Claude Code Plugin System** with MCP server
-- **Runtime Validation**: Zod schemas for Python-TypeScript boundary
-- **AST Parsing**: @babel/parser, @babel/traverse for code analysis
-- **Code Graph**: Static analysis of function calls, imports, and class relationships
-- **Semantic Search**: AI-powered vector embeddings
-- **Git Operations**: Native git clone
-- **CLI**: Commander.js
-- **Web Crawling**: crawl4ai with Playwright (headless browser)
+## 🔬 Technologies
 
-## Contributing
+- **🔌 Claude Code Plugin System** with MCP server
+- **✅ Runtime Validation** - Zod schemas for Python-TypeScript boundary
+- **🌳 AST Parsing** - @babel/parser, @babel/traverse for code analysis
+- **🗺️ Code Graph** - Static analysis of function calls, imports, and class relationships
+- **🧠 Semantic Search** - AI-powered vector embeddings
+- **📦 Git Operations** - Native git clone
+- **💻 CLI** - Commander.js
+- **🕷️ Web Crawling** - crawl4ai with Playwright (headless browser)
+
+---
+
+## 🤝 Contributing
 
 Contributions welcome! Please:
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests
-4. Submit a pull request
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch
+3. ✅ Add tests
+4. 📬 Submit a pull request
 
-## License
+---
+
+## 📄 License
 
 MIT
 
-## Support
+---
 
-- **Issues**: [GitHub Issues](https://github.com/bluera/bluera-knowledge/issues)
-- **Documentation**: [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
-- **Changelog**: [CHANGELOG.md](./CHANGELOG.md)
+## 💬 Support
+
+- **🐛 Issues**: [GitHub Issues](https://github.com/bluera/bluera-knowledge/issues)
+- **📚 Documentation**: [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
+- **📝 Changelog**: [CHANGELOG.md](./CHANGELOG.md)
