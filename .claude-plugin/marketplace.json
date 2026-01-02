@@ -12,7 +12,7 @@
       "name": "bluera-knowledge",
       "source": "./",
       "description": "Project-specific knowledge stores for definitive library sources. Clone and index important dependencies for authoritative reference.",
-      "version": "0.6.3"
+      "version": "0.6.4"
     }
   ]
 }
