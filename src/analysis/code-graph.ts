@@ -117,6 +117,15 @@ export class CodeGraph {
   }
 
   /**
+   * Add an edge to the graph (used when restoring from serialized data)
+   */
+  addEdge(edge: GraphEdge): void {
+    const edges = this.edges.get(edge.from) ?? [];
+    edges.push(edge);
+    this.edges.set(edge.from, edges);
+  }
+
+  /**
    * Get edges where this node is the target (callers of this function)
    */
   getIncomingEdges(nodeId: string): GraphEdge[] {

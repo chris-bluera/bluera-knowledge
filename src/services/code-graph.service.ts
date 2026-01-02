@@ -136,8 +136,18 @@ export class CodeGraphService {
         graph.addNodes([codeNode], node.file);
       }
 
-      // Note: Edges are already in the graph from addNodes/analyzeCallRelationships
-      // For now we rebuild from nodes; full edge restoration would need graph enhancement
+      // Restore edges
+      for (const edge of serialized.edges) {
+        const edgeType = this.validateEdgeType(edge.type);
+        if (!edgeType) continue;
+
+        graph.addEdge({
+          from: edge.from,
+          to: edge.to,
+          type: edgeType,
+          confidence: edge.confidence
+        });
+      }
 
       this.graphCache.set(storeId, graph);
       return graph;
@@ -218,6 +228,23 @@ export class CodeGraphService {
    */
   private validateNodeType(type: string): 'function' | 'class' | 'interface' | 'type' | 'const' | undefined {
     if (this.isValidNodeType(type)) {
+      return type;
+    }
+    return undefined;
+  }
+
+  /**
+   * Type guard for valid edge types.
+   */
+  private isValidEdgeType(type: string): type is 'calls' | 'imports' | 'extends' | 'implements' {
+    return ['calls', 'imports', 'extends', 'implements'].includes(type);
+  }
+
+  /**
+   * Validate and return an edge type, or undefined if invalid.
+   */
+  private validateEdgeType(type: string): 'calls' | 'imports' | 'extends' | 'implements' | undefined {
+    if (this.isValidEdgeType(type)) {
       return type;
     }
     return undefined;
