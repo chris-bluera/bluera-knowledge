@@ -3,7 +3,7 @@ import type { CodeNode } from './ast-parser.js';
 export interface GraphNode {
   id: string;
   file: string;
-  type: 'function' | 'class' | 'interface' | 'type' | 'const';
+  type: 'function' | 'class' | 'interface' | 'type' | 'const' | 'method';
   name: string;
   exported: boolean;
   startLine: number;
@@ -45,6 +45,31 @@ export class CodeGraph {
       // Initialize edges array for this node
       if (!this.edges.has(id)) {
         this.edges.set(id, []);
+      }
+
+      // If this is a class with methods, create separate nodes for each method
+      if (node.type === 'class' && node.methods !== undefined) {
+        for (const method of node.methods) {
+          const methodId = `${file}:${node.name}.${method.name}`;
+
+          const methodNode: GraphNode = {
+            id: methodId,
+            file,
+            type: 'method',
+            name: method.name,
+            exported: node.exported, // Methods inherit export status from class
+            startLine: method.startLine,
+            endLine: method.endLine,
+            signature: method.signature
+          };
+
+          this.nodes.set(methodId, methodNode);
+
+          // Initialize edges array for this method
+          if (!this.edges.has(methodId)) {
+            this.edges.set(methodId, []);
+          }
+        }
       }
     }
   }
@@ -123,6 +148,18 @@ export class CodeGraph {
     const edges = this.edges.get(edge.from) ?? [];
     edges.push(edge);
     this.edges.set(edge.from, edges);
+  }
+
+  /**
+   * Add a graph node directly (used when restoring from serialized data)
+   */
+  addGraphNode(node: GraphNode): void {
+    this.nodes.set(node.id, node);
+
+    // Initialize edges array for this node if it doesn't exist
+    if (!this.edges.has(node.id)) {
+      this.edges.set(node.id, []);
+    }
   }
 
   /**

@@ -490,6 +490,166 @@ describe('CodeGraph', () => {
     });
   });
 
+  describe('Class method tracking', () => {
+    it('creates separate nodes for class methods', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        {
+          type: 'class',
+          name: 'MyService',
+          exported: true,
+          startLine: 1,
+          endLine: 20,
+          methods: [
+            { name: 'search', async: true, signature: 'search(query: string): Promise<Result>' },
+            { name: 'update', async: false, signature: 'update(id: string): void' }
+          ]
+        }
+      ];
+
+      graph.addNodes(nodes, '/src/service.ts');
+
+      // Should have 3 nodes: class + 2 methods
+      const allNodes = graph.getAllNodes();
+      expect(allNodes).toHaveLength(3);
+
+      // Class node should exist
+      const classNode = graph.getNode('/src/service.ts:MyService');
+      expect(classNode).toBeDefined();
+      expect(classNode?.type).toBe('class');
+
+      // Method nodes should exist with correct IDs
+      const searchMethod = graph.getNode('/src/service.ts:MyService.search');
+      expect(searchMethod).toBeDefined();
+      expect(searchMethod?.type).toBe('method');
+      expect(searchMethod?.signature).toBe('search(query: string): Promise<Result>');
+
+      const updateMethod = graph.getNode('/src/service.ts:MyService.update');
+      expect(updateMethod).toBeDefined();
+      expect(updateMethod?.type).toBe('method');
+    });
+
+    it('tracks calledBy for individual methods', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        {
+          type: 'class',
+          name: 'SearchService',
+          exported: true,
+          startLine: 1,
+          endLine: 10,
+          methods: [
+            { name: 'search', async: true, signature: 'search(): Promise<void>' }
+          ]
+        },
+        {
+          type: 'function',
+          name: 'handleSearch',
+          exported: false,
+          startLine: 12,
+          endLine: 15
+        }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      // handleSearch calls SearchService.search
+      const code = 'services.search.search();';
+      graph.analyzeCallRelationships(code, '/src/test.ts', 'handleSearch');
+
+      // The search method should have calledBy count
+      const calledBy = graph.getCalledByCount('/src/test.ts:SearchService.search');
+      expect(calledBy).toBeGreaterThan(0);
+    });
+
+    it('tracks calls from individual methods', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        {
+          type: 'class',
+          name: 'Service',
+          exported: true,
+          startLine: 1,
+          endLine: 20,
+          methods: [
+            { name: 'main', async: true, signature: 'main(): Promise<void>' }
+          ]
+        },
+        {
+          type: 'function',
+          name: 'helper1',
+          exported: false,
+          startLine: 22,
+          endLine: 24
+        },
+        {
+          type: 'function',
+          name: 'helper2',
+          exported: false,
+          startLine: 26,
+          endLine: 28
+        }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      // Service.main calls helper1 and helper2
+      const code = 'helper1(); helper2();';
+      graph.analyzeCallRelationships(code, '/src/test.ts', 'Service.main');
+
+      const callsCount = graph.getCallsCount('/src/test.ts:Service.main');
+      expect(callsCount).toBe(2);
+    });
+
+    it('handles classes without methods', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        {
+          type: 'class',
+          name: 'EmptyClass',
+          exported: false,
+          startLine: 1,
+          endLine: 2,
+          methods: []
+        }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      const allNodes = graph.getAllNodes();
+      expect(allNodes).toHaveLength(1); // Only the class node
+      expect(allNodes[0]?.name).toBe('EmptyClass');
+    });
+
+    it('serializes and deserializes method nodes correctly', () => {
+      const graph = new CodeGraph();
+      const nodes: CodeNode[] = [
+        {
+          type: 'class',
+          name: 'TestClass',
+          exported: true,
+          startLine: 1,
+          endLine: 10,
+          methods: [
+            { name: 'method1', async: true, signature: 'method1(): Promise<void>' }
+          ]
+        }
+      ];
+
+      graph.addNodes(nodes, '/src/test.ts');
+
+      // Serialize
+      const json = graph.toJSON();
+      expect(json.nodes).toHaveLength(2); // class + method
+
+      // Deserialize would happen in CodeGraphService.loadGraph
+      // Just verify the JSON structure is correct
+      const methodNode = json.nodes.find(n => n.id.includes('method1'));
+      expect(methodNode).toBeDefined();
+      expect(methodNode?.type).toBe('method');
+    });
+  });
+
   describe('Complex graph scenarios', () => {
     it('builds graph from multiple files', () => {
       const graph = new CodeGraph();

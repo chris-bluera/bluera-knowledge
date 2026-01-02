@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { CodeGraph } from '../analysis/code-graph.js';
+import { CodeGraph, type GraphNode } from '../analysis/code-graph.js';
 import { ASTParser } from '../analysis/ast-parser.js';
 import type { StoreId } from '../types/brands.js';
 
@@ -65,11 +65,18 @@ export class CodeGraphService {
 
       // Analyze call relationships for each function/method
       for (const node of nodes) {
-        if (node.type === 'function' || node.type === 'class') {
+        const lines = file.content.split('\n');
+
+        if (node.type === 'function') {
           // Extract the function body for call analysis
-          const lines = file.content.split('\n');
           const functionCode = lines.slice(node.startLine - 1, node.endLine).join('\n');
           graph.analyzeCallRelationships(functionCode, file.path, node.name);
+        } else if (node.type === 'class' && node.methods !== undefined) {
+          // For classes, analyze each method separately
+          for (const method of node.methods) {
+            const methodCode = lines.slice(method.startLine - 1, method.endLine).join('\n');
+            graph.analyzeCallRelationships(methodCode, file.path, `${node.name}.${method.name}`);
+          }
         }
       }
     }
@@ -115,6 +122,24 @@ export class CodeGraphService {
       for (const node of serialized.nodes) {
         const nodeType = this.validateNodeType(node.type);
         if (!nodeType) continue;
+
+        // Method nodes are added directly to the graph since they're already separate nodes
+        if (nodeType === 'method') {
+          const graphNode: GraphNode = {
+            id: node.id,
+            file: node.file,
+            type: 'method',
+            name: node.name,
+            exported: node.exported,
+            startLine: node.startLine,
+            endLine: node.endLine
+          };
+          if (node.signature !== undefined) {
+            graphNode.signature = node.signature;
+          }
+          graph.addGraphNode(graphNode);
+          continue;
+        }
 
         const codeNode: {
           type: 'function' | 'class' | 'interface' | 'type' | 'const';
@@ -219,14 +244,14 @@ export class CodeGraphService {
   /**
    * Type guard for valid node types.
    */
-  private isValidNodeType(type: string): type is 'function' | 'class' | 'interface' | 'type' | 'const' {
-    return ['function', 'class', 'interface', 'type', 'const'].includes(type);
+  private isValidNodeType(type: string): type is 'function' | 'class' | 'interface' | 'type' | 'const' | 'method' {
+    return ['function', 'class', 'interface', 'type', 'const', 'method'].includes(type);
   }
 
   /**
    * Validate and return a node type, or undefined if invalid.
    */
-  private validateNodeType(type: string): 'function' | 'class' | 'interface' | 'type' | 'const' | undefined {
+  private validateNodeType(type: string): 'function' | 'class' | 'interface' | 'type' | 'const' | 'method' | undefined {
     if (this.isValidNodeType(type)) {
       return type;
     }

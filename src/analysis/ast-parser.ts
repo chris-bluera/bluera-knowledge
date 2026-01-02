@@ -34,6 +34,8 @@ export interface CodeNode {
     name: string;
     async: boolean;
     signature: string;
+    startLine: number;
+    endLine: number;
   }>;
 }
 
@@ -91,7 +93,9 @@ export class ASTParser {
               methods.push({
                 name: member.key.name,
                 async: member.async,
-                signature: this.extractMethodSignature(member)
+                signature: this.extractMethodSignature(member),
+                startLine: member.loc?.start.line ?? 0,
+                endLine: member.loc?.end.line ?? 0
               });
             }
           }

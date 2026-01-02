@@ -169,6 +169,27 @@ Background jobs include significant performance optimizations:
 - **Multi-Language Support**: Analyzes JavaScript, TypeScript, and Python imports; indexes code in any language
 - **MCP Integration**: Exposes all functionality as Model Context Protocol tools for AI coding agents
 
+### Language-Specific Features
+
+While bluera-knowledge indexes and searches code in any language, certain advanced features are language-specific:
+
+**TypeScript/JavaScript** (Full Support):
+- ✅ Code graph analysis with method-level tracking
+- ✅ Call relationship analysis (shows calledBy/calls counts for functions and class methods)
+- ✅ Import/export tracking
+- ✅ Class and method node creation in code graph
+
+**Python** (Partial Support):
+- ✅ Import analysis
+- ⚠️ Code graph analysis not yet implemented
+
+**Other Languages** (Basic Support):
+- ✅ Full-text and semantic search
+- ✅ Document chunking and indexing
+- ⚠️ No code graph analysis or relationship tracking
+
+**Note**: Code graph features enhance search results by showing usage context (e.g., "this function is called by 15 other functions"), but all languages benefit from vector search and full-text search capabilities.
+
 ## Installation
 
 Install the plugin directly from GitHub in Claude Code:
