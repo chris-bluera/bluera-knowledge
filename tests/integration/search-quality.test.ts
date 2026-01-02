@@ -27,7 +27,20 @@ import {
   CommonKeywords,
 } from '../helpers/search-relevance';
 
-describe('Search Quality Tests', () => {
+/**
+ * SKIPPED: This entire test suite is currently skipped to avoid 120s overhead.
+ *
+ * Why skipped:
+ * - beforeAll() hook takes 120s (creates temp dirs, writes fixtures, creates store, indexes)
+ * - All 29 tests are already individually skipped (never run)
+ * - Total waste: 120s of beforeAll setup with 0s of actual test execution
+ *
+ * To re-enable:
+ * 1. Remove .skip from describe.skip below
+ * 2. Remove .skip from individual it.skip() tests you want to run
+ * 3. Ensure fixtures are properly set up
+ */
+describe.skip('Search Quality Tests', () => {
   let tempDir: string;
   let fixturesDir: string;
 
