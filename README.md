@@ -775,6 +775,17 @@ npm run build
 npm test
 ```
 
+### MCP Server for Development
+
+When developing locally in this repository, you need to create a symlink for the MCP server configuration. The `.mcp.json` file lives inside `.claude-plugin/` (to avoid duplication when the plugin is installed from marketplace), but Claude Code looks for it at the project root.
+
+```bash
+# Create symlink (required for MCP tools to work during development)
+ln -s .claude-plugin/.mcp.json .mcp.json
+```
+
+This symlink is gitignored - each developer needs to create it locally. After creating the symlink, restart Claude Code to load the MCP server.
+
 ### NPM Commands
 
 | Command | Description | When to Use |
