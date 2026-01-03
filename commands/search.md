@@ -22,38 +22,26 @@ Search indexed library sources for: **$ARGUMENTS**
    - detail: "contextual"
    - intent: "find-implementation"
 
-3. Format and display results with rich context using ANSI colors:
+3. Format and display results with rich context:
 
-   **Color codes:**
-   - Header: `\x1b[1m\x1b[96m` (bold cyan)
-   - High scores (≥0.7): `\x1b[92m` (bright green)
-   - Medium scores (0.3-0.7): `\x1b[93m` (bright yellow)
-   - Low scores (<0.3): default
-   - Method badges: `\x1b[93m` (bright yellow)
-   - Store names: `\x1b[35m` (magenta)
-   - File paths: `\x1b[36m` (cyan)
-   - Keywords/terms: `\x1b[93m` (bright yellow)
-   - Reset: `\x1b[0m` (after each colored section)
-
-   Example output:
    ```
-   \x1b[1m\x1b[96m## Search Results: "query" (hybrid search)\x1b[0m
+   ## Search Results: "query" (hybrid search)
 
-   **1. [Score: \x1b[92m0.95\x1b[0m] [\x1b[93mVector+FTS\x1b[0m]**
-   Store: \x1b[35mclaude-code\x1b[0m
-   File: 📄 \x1b[36mpath/to/file.ts\x1b[0m
+   **1. [Score: 0.95] [Vector+FTS]**
+   Store: claude-code
+   File: 📄 path/to/file.ts
    Purpose: → Purpose description here
-   Top Terms: 🔑 (in this chunk): \x1b[93mconcept1, concept2, concept3\x1b[0m
+   Top Terms: 🔑 (in this chunk): concept1, concept2, concept3
    Imports: 📦 (in this chunk): package1, package2
 
-   **2. [Score: \x1b[92m0.87\x1b[0m] [\x1b[93mVector\x1b[0m]**
-   Store: \x1b[35manother-store\x1b[0m
-   File: 📄 \x1b[36mpath/to/file.js\x1b[0m
+   **2. [Score: 0.87] [Vector]**
+   Store: another-store
+   File: 📄 path/to/file.js
    Purpose: → Another purpose here
-   Top Terms: 🔑 (in this chunk): \x1b[93mother-concept\x1b[0m
+   Top Terms: 🔑 (in this chunk): other-concept
 
    ---
-   \x1b[96m**Found 10 results in 45ms**\x1b[0m
+   **Found 10 results in 45ms**
 
    💡 **Next Steps:**
    - Read file: `Read /path/to/file.ts`
@@ -62,19 +50,19 @@ Search indexed library sources for: **$ARGUMENTS**
    ```
 
    **Formatting rules:**
-   - Header: `\x1b[1m\x1b[96m## Search Results: "query" (mode search)\x1b[0m` - Extract mode from response (vector/fts/hybrid)
+   - Header: `## Search Results: "query" (mode search)` - Extract mode from response (vector/fts/hybrid)
    - Each result on its own block with blank line between
-   - Result header: `**N. [Score: {{colorized_score}}] [{{colorized_method}}]**` where:
-     - Score color: bright green (≥0.7), bright yellow (0.3-0.7), or default (<0.3)
-     - Method badges in bright yellow
-     - Method is `[Vector+FTS]`, `[Vector]`, or `[Keyword]` based on rankingMetadata
-   - Store: `Store: \x1b[35m{{storeName}}\x1b[0m`
-   - File: `File: 📄 \x1b[36m{{filename}}\x1b[0m` (strip repoRoot prefix from location)
-   - Purpose: `Purpose: → {{purpose text}}` (no color, keep concise)
-   - Top Terms: `Top Terms: 🔑 (in this chunk): \x1b[93m{{terms}}\x1b[0m` (top 5 most frequent)
-   - Imports: `Imports: 📦 (in this chunk): {{imports}}` (first 3-4, no color)
+   - Result header: `**N. [Score: X.XX] {{method}}**` where method is:
+     - `[Vector+FTS]` if result.rankingMetadata has both vectorRank AND ftsRank (found by both methods)
+     - `[Vector]` if result.rankingMetadata has only vectorRank (semantic match only)
+     - `[Keyword]` if result.rankingMetadata has only ftsRank (keyword match only)
+   - Store: `Store: storeName` (on new line after header)
+   - File: `File: 📄 filename` (strip repoRoot prefix from location)
+   - Purpose: `Purpose: → purpose text` (keep concise)
+   - Top Terms: `Top Terms: 🔑 (in this chunk): ...` (top 5 most frequent words from this chunk, comma-separated)
+   - Imports: `Imports: 📦 (in this chunk): ...` (import statements from this chunk, first 3-4, comma-separated)
    - Skip Top Terms/Imports lines if arrays are empty
-   - Footer: `\x1b[96m**Found {{totalResults}} results in {{timeMs}}ms**\x1b[0m` with separator line above
+   - Footer: `**Found {{totalResults}} results in {{timeMs}}ms**` with separator line above
 
 4. For the footer next steps, include:
    - First result's ID in the get_full_context example
