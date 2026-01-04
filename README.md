@@ -181,18 +181,10 @@ When you add a repository or index content:
 
 Background jobs include significant performance optimizations:
 
-- **⚡ Parallel Embedding** - Processes 32 chunks simultaneously (30x faster than sequential)
+- **⚡ Parallel Embedding** - Processes 32 chunks simultaneously (~30x faster than sequential)
 - **🔓 Non-Blocking** - Continue working while indexing completes
 - **📊 Progress Tracking** - Real-time updates on files processed and progress percentage
 - **🧹 Auto-Cleanup** - Completed jobs are cleaned up after 24 hours
-
-**⏱️ Typical Indexing Times:**
-- Small library (100-200 files): ~30 seconds
-- Medium library (500-800 files): ~1-2 minutes
-- Large library (1,000+ files): ~2-5 minutes
-
-> [!NOTE]
-> **Example:** The React repository (1,247 files) now indexes in ~2-3 minutes instead of 60+ minutes.
 
 ---
 
@@ -716,7 +708,7 @@ Use the exact store name or ID shown in the table.
 <details>
 <summary><b>⏱️ Indexing is slow or fails</b></summary>
 
-Large repositories (10,000+ files) may take several minutes to index. If indexing fails:
+Large repositories (10,000+ files) take longer to index. If indexing fails:
 
 1. Check available disk space
 2. Ensure the source repository/folder is accessible
