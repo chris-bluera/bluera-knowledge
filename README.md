@@ -870,15 +870,7 @@ npm test
 
 ### 🔌 MCP Server for Development
 
-> [!NOTE]
-> When developing locally in this repository, you need to create a symlink for the MCP server configuration. The `.mcp.json` file lives inside `.claude-plugin/` (to avoid duplication when the plugin is installed from marketplace), but Claude Code looks for it at the project root.
-
-```bash
-# Create symlink (required for MCP tools to work during development)
-ln -s .claude-plugin/.mcp.json .mcp.json
-```
-
-This symlink is gitignored - each developer needs to create it locally. After creating the symlink, restart Claude Code to load the MCP server.
+The `.mcp.json` file at the repository root configures the MCP server. After cloning, restart Claude Code to load the MCP server and enable the `mcp__bluera-knowledge__*` tools.
 
 ### 📜 NPM Commands
 
@@ -907,25 +899,24 @@ This symlink is gitignored - each developer needs to create it locally. After cr
 ### 📂 Project Structure
 
 ```
-.claude-plugin/          # Plugin configuration
-├── plugin.json
-├── .mcp.json
-└── commands/
+.claude-plugin/
+└── plugin.json          # Plugin metadata
 
-.mcp.json               # MCP server configuration
+.mcp.json                # MCP server configuration (auto-discovered)
+commands/                # Slash commands (auto-discovered)
+skills/                  # Agent skills (auto-discovered)
+dist/                    # Built MCP server (committed for distribution)
 
 src/
-├── analysis/           # Dependency analysis & URL resolution
-├── crawl/              # Web crawling with Python bridge
-├── services/           # Index, store, and search services
-├── plugin/             # Plugin commands
-├── mcp/                # MCP server
-└── cli/                # CLI entry point
+├── analysis/            # Dependency analysis & URL resolution
+├── crawl/               # Web crawling with Python bridge
+├── services/            # Index, store, and search services
+├── mcp/                 # MCP server source
+└── cli/                 # CLI entry point
 
 tests/
-├── integration/        # Integration tests with real Python execution
-├── fixtures/           # Test infrastructure (HTTP server, mocks)
-└── ...                 # Unit tests
+├── integration/         # Integration tests
+└── fixtures/            # Test infrastructure
 ```
 
 ---
