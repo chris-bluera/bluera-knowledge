@@ -16,6 +16,14 @@
 - `npm run release:major` - Same for major version
 - `npm run release:current` - Tag + push current version (if version already bumped)
 
+**CRITICAL: When using `release:current`:**
+1. Version must be bumped and committed FIRST
+2. Commits MUST be pushed to `main` BEFORE tagging
+3. Wait for CI to pass on GitHub Actions
+4. THEN run `npm run release:current`
+
+**Why**: The Update Marketplace workflow waits for the `test` check to pass on the tagged commit. This check only runs when commits are pushed to `main`, NOT when tags are pushed. If you tag before pushing to main, the marketplace update will fail with "The requested check was never run against this ref".
+
 **After releasing this repo:**
 - Marketplace update is **fully automated** via GitHub Actions
 - The `update-marketplace` workflow triggers after the Release workflow completes
