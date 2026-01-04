@@ -20,6 +20,8 @@ Give your AI coding assistant **instant access** to **authoritative library sour
 /plugin install bluera-knowledge@bluera
 ```
 
+Or use `/plugin` to open the Claude Code plugin UI and browse/install from there.
+
 ---
 
 ## ✨ Why Bluera Knowledge?
