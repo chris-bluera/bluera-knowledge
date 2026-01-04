@@ -8,7 +8,7 @@
 
 > 🚀 **Build a local knowledge base for your AI coding agent—library source code, crawled docs, and your own files, all instantly searchable.**
 
-When Claude helps you code, it needs context: how does this library work? What does that API do? Instead of slow web searches or outdated training data, Bluera Knowledge gives your agent instant local access to:
+When Claude Code helps you code, it needs context: how does this library work? What does that API do? Instead of slow web searches or outdated training data, Bluera Knowledge gives your agent instant local access to:
 
 - **Library source code** — Clone and search the repos of dependencies you actually use
 - **Documentation** — Crawl, index, and search any docs site
@@ -56,7 +56,7 @@ All searchable in milliseconds, no rate limits, fully offline.
 
 ## ✨ Why Clone Your Dependencies?
 
-When you ask Claude "how do I handle errors in Express middleware?", it can:
+When you ask Claude Code "how do I handle errors in Express middleware?", it can:
 
 1. **Guess from training data** — might be outdated or wrong
 2. **Search the web** — slow, rate-limited, often returns blog posts instead of source
@@ -167,19 +167,19 @@ The plugin provides AI agents with **four complementary search capabilities**:
 When you use `/bluera-knowledge:` commands, here's what happens:
 
 1. **You issue a command** - Type `/bluera-knowledge:stores` or similar in Claude Code
-2. **Claude receives instructions** - The command provides step-by-step instructions for Claude
-3. **Claude executes MCP tools** - Behind the scenes, Claude uses `mcp__bluera-knowledge__*` tools
-4. **Results are formatted** - Claude formats and displays the output directly to you
+2. **Claude Code receives instructions** - The command provides step-by-step instructions for Claude Code
+3. **Claude Code executes MCP tools** - Behind the scenes, Claude Code uses `mcp__bluera-knowledge__*` tools
+4. **Results are formatted** - Claude Code formats and displays the output directly to you
 
 **Example Flow:**
 ```
 You: /bluera-knowledge:stores
   ↓
-Command file instructs Claude to use list_stores tool
+Command file instructs Claude Code to use list_stores tool
   ↓
 MCP tool queries LanceDB for store metadata
   ↓
-Claude formats results as a table
+Claude Code formats results as a table
   ↓
 You see: Beautiful table of all your knowledge stores
 ```
@@ -447,17 +447,35 @@ Store is ready for searching!
 <summary><b>📊 Expected Output</b></summary>
 
 ```
-## Search Results for "button component"
+## Search Results: "button component" (hybrid search)
 
-**Searched**: react (using hybrid search: vector + full-text)
+**1. [Score: 0.95] [Vector+FTS]**
+Store: react
+File: 📄 src/components/Button.tsx
+Purpose: → Reusable button component with variants
+Top Terms: 🔑 (in this chunk): button, variant, size, color, onClick
+Imports: 📦 (in this chunk): React, clsx
 
-| Score | Store        | File                                          | Purpose                                            |
-|------:|--------------|-----------------------------------------------|---------------------------------------------------|
-|  0.95 | react        | src/components/Button.tsx                     | Reusable button component with variants           |
-|  0.87 | react        | src/hooks/useButton.ts                        | Custom hook for button state management           |
-|  0.81 | react        | src/components/IconButton.tsx                 | Button component with icon support                |
+**2. [Score: 0.87] [Vector]**
+Store: react
+File: 📄 src/hooks/useButton.ts
+Purpose: → Custom hook for button state management
+Top Terms: 🔑 (in this chunk): hook, state, pressed, disabled
+Imports: 📦 (in this chunk): useState, useCallback
 
-**Found**: 3 results
+**3. [Score: 0.81] [Vector+FTS]**
+Store: react
+File: 📄 src/components/IconButton.tsx
+Purpose: → Button component with icon support
+Top Terms: 🔑 (in this chunk): icon, button, aria-label, accessible
+
+---
+**Found 3 results in 45ms**
+
+💡 **Next Steps:**
+- Read file: `Read src/components/Button.tsx`
+- Get full code: `mcp__bluera-knowledge__get_full_context("result-id")`
+- Refine search: Use keywords above
 ```
 </details>
 
@@ -665,7 +683,7 @@ sequenceDiagram
 
 ### 🔑 Key Points
 
-- **🧠 Intelligent crawling preserved** - Claude CLI analyzes pages and selects URLs based on natural language instructions in both modes
+- **🧠 Intelligent crawling preserved** - Claude Code CLI analyzes pages and selects URLs based on natural language instructions in both modes
 - **🎭 crawl4ai role** - ONLY renders JavaScript to get HTML - doesn't replace Claude's intelligent URL selection
 - **⚡ Hybrid approach** - Fast axios for static sites, Playwright for JS-rendered sites
 - **🔄 Automatic fallback** - If headless fetch fails, automatically falls back to axios
@@ -885,7 +903,7 @@ playwright install  # Install browser binaries for headless mode
 The plugin includes a Model Context Protocol server that exposes search tools. This is configured in `.mcp.json`:
 
 > [!IMPORTANT]
-> **Commands vs MCP Tools**: You interact with the plugin using `/bluera-knowledge:` slash commands. Behind the scenes, these commands instruct Claude to use MCP tools (`mcp__bluera-knowledge__*`) which handle the actual operations. Commands provide the user interface, while MCP tools are the backend that AI agents use to access your knowledge stores.
+> **Commands vs MCP Tools**: You interact with the plugin using `/bluera-knowledge:` slash commands. Behind the scenes, these commands instruct Claude Code to use MCP tools (`mcp__bluera-knowledge__*`) which handle the actual operations. Commands provide the user interface, while MCP tools are the backend that AI agents use to access your knowledge stores.
 
 ```json
 {
@@ -1081,7 +1099,7 @@ mv .mcp.json.plugin-dist .mcp.json
 
 This is necessary because of known limitations in Claude Code:
 - **[Issue #9354](https://github.com/anthropics/claude-code/issues/9354)**: `${CLAUDE_PLUGIN_ROOT}` expansion fails in project-scoped configs
-- **[Issue #14689](https://github.com/anthropics/claude-code/issues/14689)**: `--plugin-dir` flag has visibility bugs - plugins visible in `/plugins` list but not available to Claude
+- **[Issue #14689](https://github.com/anthropics/claude-code/issues/14689)**: `--plugin-dir` flag has visibility bugs - plugins visible in `/plugins` list but not available to Claude Code
 - **[Issue #12541](https://github.com/anthropics/claude-code/issues/12541)**: Feature request for plugin environment variables (not yet implemented)
 
 **Alternative - Testing with `--plugin-dir`**: Not recommended due to the above issues:
