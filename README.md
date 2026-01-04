@@ -137,7 +137,7 @@ This architecture means commands provide a clean user interface while MCP tools 
 | `index_store` | 🔄 Re-index existing stores |
 | `delete_store` | 🗑️ Delete a store and all associated data |
 | `get_full_context` | 📖 Retrieve complete code context |
-| `check_job_status` | ⏱️ Check background job progress |
+| `check_job_status` | ⏱️ Check background vector indexing job progress |
 | `list_jobs` | 📊 List all background jobs |
 | `cancel_job` | ⛔ Cancel running operations |
 
