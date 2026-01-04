@@ -292,7 +292,15 @@ Follow these steps to set up knowledge stores for your project:
 /bluera-knowledge:suggest
 ```
 
-Scans all source files, counts import statements, and suggests the top 5 most-used dependencies as indexing targets with their GitHub URLs.
+Scans source files, counts import statements, and suggests the top 5 most-used dependencies with their repository URLs.
+
+**Supported languages:**
+| Language | Manifest File | Registry |
+|----------|---------------|----------|
+| JavaScript/TypeScript | `package.json` | NPM |
+| Python | `requirements.txt`, `pyproject.toml` | PyPI |
+| Rust | `Cargo.toml` | crates.io |
+| Go | `go.mod` | Go modules |
 
 <details>
 <summary><b>📊 Expected Output</b></summary>
