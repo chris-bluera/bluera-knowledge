@@ -1,6 +1,6 @@
 # 🧠 Bluera Knowledge
 
-[![CI](https://github.com/chris-bluera/bluera-knowledge/actions/workflows/ci.yml/badge.svg)](https://github.com/chris-bluera/bluera-knowledge/actions/workflows/ci.yml)
+[![CI](https://github.com/blueraai/bluera-knowledge/actions/workflows/ci.yml/badge.svg)](https://github.com/blueraai/bluera-knowledge/actions/workflows/ci.yml)
 ![Version](https://img.shields.io/badge/version-0.9.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
@@ -227,7 +227,7 @@ While bluera-knowledge indexes and searches code in any language, certain advanc
 Install the plugin directly from GitHub in Claude Code:
 
 ```bash
-/plugin install https://github.com/bluera/bluera-knowledge
+/plugin install https://github.com/blueraai/bluera-knowledge
 ```
 
 The plugin is immediately available with the `/bluera-knowledge:` command prefix.
@@ -672,7 +672,7 @@ Ensure the plugin is installed and enabled:
 If the plugin isn't listed, install it:
 
 ```bash
-/plugin install https://github.com/bluera/bluera-knowledge
+/plugin install https://github.com/blueraai/bluera-knowledge
 ```
 </details>
 
@@ -856,7 +856,7 @@ Knowledge stores are stored in your project root:
 ### 🚀 Setup
 
 ```bash
-git clone https://github.com/bluera/bluera-knowledge.git
+git clone https://github.com/blueraai/bluera-knowledge.git
 cd bluera-knowledge
 npm install
 npm run build
@@ -956,6 +956,6 @@ MIT
 
 ## 💬 Support
 
-- **🐛 Issues**: [GitHub Issues](https://github.com/bluera/bluera-knowledge/issues)
+- **🐛 Issues**: [GitHub Issues](https://github.com/blueraai/bluera-knowledge/issues)
 - **📚 Documentation**: [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
 - **📝 Changelog**: [CHANGELOG.md](./CHANGELOG.md)
