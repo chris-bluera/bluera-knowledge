@@ -22,6 +22,9 @@ Give your AI coding assistant **instant access** to **authoritative library sour
 
 Or use `/plugin` to open the Claude Code plugin UI and browse/install from there.
 
+> [!NOTE]
+> **First launch may take 30+ seconds** while the plugin checks and installs Python dependencies (crawl4ai). This is normal—subsequent launches are instant.
+
 ---
 
 ## ✨ Why Bluera Knowledge?
