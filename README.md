@@ -1037,17 +1037,24 @@ npm run release:current
 
 ### 🧪 Testing Locally
 
-For local plugin development, use the `--plugin-dir` flag to load the plugin directly. This sets `${CLAUDE_PLUGIN_ROOT}` correctly so the `.mcp.json` MCP server configuration works:
+**Recommended approach**: Install from the marketplace to test the full plugin functionality including MCP servers:
 
 ```bash
-# From the plugin directory
-claude --plugin-dir .
+# Install from the bluera marketplace
+claude plugin install bluera-knowledge@bluera
 
-# Or from anywhere
-claude --plugin-dir /path/to/bluera-knowledge
+# After making changes, bump version and update
+npm run version:patch
+claude plugin update bluera-knowledge
 ```
 
-This loads the plugin without requiring installation from a marketplace, and allows you to test changes immediately by restarting Claude Code.
+**Known limitation**: The `--plugin-dir` flag has [known issues](https://github.com/anthropics/claude-code/issues/9354) with `${CLAUDE_PLUGIN_ROOT}` environment variable expansion in MCP configs. While it works for testing commands and agents, MCP servers may fail to start when using `--plugin-dir` for local development.
+
+**For testing commands/agents only** (without MCP server):
+
+```bash
+claude --plugin-dir /path/to/bluera-knowledge
+```
 
 ### 📂 Project Structure
 
