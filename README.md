@@ -541,11 +541,18 @@ Removed:
 
 ### 🌐 `/bluera-knowledge:crawl`
 
-**Crawl web pages and add content to a web store**
+**Crawl web pages with natural language control**
 
 ```bash
-/bluera-knowledge:crawl <url> <store-name>
+/bluera-knowledge:crawl <url> <store-name> [options]
 ```
+
+**Options:**
+- `--crawl "<instruction>"` - Natural language instruction for which pages to crawl
+- `--extract "<instruction>"` - Natural language instruction for what content to extract
+- `--simple` - Use simple BFS mode instead of intelligent crawling
+- `--max-pages <n>` - Maximum pages to crawl (default: 50)
+- `--headless` - Use headless browser for JavaScript-rendered sites (Next.js, React, Vue)
 
 **⚙️ Requirements:**
 - 🐍 Python 3 with `crawl4ai` package installed
@@ -553,12 +560,28 @@ Removed:
 
 **Examples:**
 ```bash
-# Create a web store (via MCP)
-# Then crawl pages into it
-/bluera-knowledge:crawl https://docs.example.com/guide my-docs-store
+# Basic crawl
+/bluera-knowledge:crawl https://docs.example.com/guide my-docs
+
+# Intelligent crawl with custom strategy
+/bluera-knowledge:crawl https://react.dev react-docs --crawl "all API reference pages"
+
+# Extract specific content from pages
+/bluera-knowledge:crawl https://example.com/pricing pricing --extract "pricing tiers and features"
+
+# Combine crawl strategy + extraction
+/bluera-knowledge:crawl https://docs.python.org python-docs \
+  --crawl "standard library modules" \
+  --extract "function signatures and examples"
+
+# JavaScript-rendered sites (Next.js, React, etc.)
+/bluera-knowledge:crawl https://nextjs.org/docs nextjs-docs --headless --max-pages 30
+
+# Simple BFS mode (no AI guidance)
+/bluera-knowledge:crawl https://example.com/docs docs --simple --max-pages 100
 ```
 
-The web page will be crawled, converted to markdown, and indexed for semantic search.
+The crawler converts pages to markdown and indexes them for semantic search.
 
 ---
 
