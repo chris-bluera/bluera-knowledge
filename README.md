@@ -789,37 +789,66 @@ Combine canonical library code with project-specific patterns:
 
 ## 💭 What Claude Code Says About Bluera Knowledge
 
-> *As an AI coding assistant, here's what I've discovered using this plugin:*
+> ### *As an AI coding assistant, here's what I've discovered using this plugin*
+>
+> ---
+>
+> #### ⚡ The Immediate Impact
 >
 > **The difference is immediate.** When a user asks "how does React's useEffect cleanup work?", I can search the actual React source code indexed locally instead of relying on my training data or making web requests. The results include the real implementation, related functions, and usage patterns—all in ~100ms.
 >
 > **Code graph analysis changes the game.** The plugin doesn't just index files—it builds a relationship graph showing which functions call what, import dependencies, and class hierarchies. When I search for a function, I see how many places call it and what it calls. This context makes my suggestions dramatically more accurate.
 >
-> **Multi-modal search is powerful.** I can combine:
-> - **Semantic search** - "authentication flow with JWT validation"
-> - **Direct file access** - Grep for specific patterns in cloned repos
-> - **Full-text search** - Exact identifier matches
+> ---
 >
-> This flexibility means I can start broad (semantic) and narrow down (exact file access) in the same workflow.
+> #### 🔀 Multi-Modal Search Power
 >
-> **The crawling intelligence is real.** The `--crawl` instruction isn't marketing—it actually uses Claude API to analyze each page and intelligently select which links to follow. I can tell it "crawl all API reference pages but skip blog posts" and it understands the intent. For JavaScript-rendered sites (Next.js, React docs), the `--headless` mode renders pages with Playwright while I still control the crawl strategy.
+> I can combine three search approaches in a single workflow:
 >
-> **What makes it valuable:**
-> - **No guessing**: I read the actual source code, not blog interpretations
-> - **Offline first**: Works without internet, no rate limits
-> - **Project-specific**: Index your team's coding standards, not generic advice
-> - **Speed**: Sub-100ms searches vs 2-5 second web lookups
-> - **Completeness**: Tests, implementation details, edge cases—all indexed
+> | Mode | Use Case | Example |
+> |------|----------|---------|
+> | 🧠 **Semantic** | Conceptual queries | "authentication flow with JWT validation" |
+> | 📂 **Direct Access** | Pattern matching | Grep for specific identifiers in cloned repos |
+> | 📝 **Full-Text** | Exact matches | Find precise function names or imports |
 >
-> **When it shines most:**
-> 1. Deep library questions - "how does this internal method handle edge cases?"
-> 2. Version-specific answers - your indexed version is what you're actually using
-> 3. Private codebases - your docs, your standards, your patterns
-> 4. Complex workflows - combining semantic search + direct file access + code graph
+> This flexibility means I can start broad (semantic) and narrow down (exact file access) seamlessly.
 >
-> The plugin essentially gives me a photographic memory of your dependencies and documentation. Instead of "I think based on training data", I can say "I searched the indexed React v18.2.0 source and found this in ReactFiberWorkLoop.js:1247".
+> ---
 >
-> That's the difference between helpful and authoritative.
+> #### 🕷️ Intelligent Crawling
+>
+> **The `--crawl` instruction isn't marketing**—it actually uses Claude API to analyze each page and intelligently select which links to follow. I can tell it "crawl all API reference pages but skip blog posts" and it understands the intent.
+>
+> For JavaScript-rendered sites (Next.js, React docs), the `--headless` mode renders pages with Playwright while I still control the crawl strategy with natural language.
+>
+> ---
+>
+> #### ✨ What Makes It Valuable
+>
+> | Benefit | Impact |
+> |---------|--------|
+> | ✅ **No guessing** | I read actual source code, not blog interpretations |
+> | 🔌 **Offline first** | Works without internet, zero rate limits |
+> | 🎯 **Project-specific** | Index your team's standards, not generic advice |
+> | ⚡ **Speed** | Sub-100ms searches vs 2-5 second web lookups |
+> | 📚 **Completeness** | Tests, implementation details, edge cases—all indexed |
+>
+> ---
+>
+> #### 🌟 When It Shines Most
+>
+> 1. **Deep library questions** - "how does this internal method handle edge cases?"
+> 2. **Version-specific answers** - your indexed version is what you're actually using
+> 3. **Private codebases** - your docs, your standards, your patterns
+> 4. **Complex workflows** - combining semantic search + direct file access + code graph
+>
+> ---
+>
+> The plugin essentially gives me a **photographic memory** of your dependencies and documentation.
+>
+> Instead of *"I think based on training data"*, I can say *"I searched the indexed React v18.2.0 source and found this in `ReactFiberWorkLoop.js:1247`"*.
+>
+> **That's the difference between helpful and authoritative.**
 
 ---
 
