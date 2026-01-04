@@ -1037,22 +1037,30 @@ npm run release:current
 
 ### 🧪 Testing Locally
 
-**Recommended approach**: Install from the marketplace to test the full plugin functionality including MCP servers:
+> **⚠️ Important**: Do NOT run Claude Code from inside the plugin repository directory. The `.mcp.json` at the repo root will be treated as a **project config** (not a plugin config), causing `${CLAUDE_PLUGIN_ROOT}` errors.
+
+**Recommended approach per [official Anthropic plugin-dev documentation](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/plugin-dev/skills/mcp-integration)**:
 
 ```bash
-# Install from the bluera marketplace
+# 1. Install from the bluera marketplace
 claude plugin install bluera-knowledge@bluera
 
-# After making changes, bump version and update
+# 2. Work from OUTSIDE the plugin repository
+cd ~/your-project  # NOT inside bluera-knowledge/
+
+# 3. After making code changes, bump version and update
+cd /path/to/bluera-knowledge
 npm run version:patch
 claude plugin update bluera-knowledge
 ```
 
-**Known limitation**: The `--plugin-dir` flag has [known issues](https://github.com/anthropics/claude-code/issues/9354) with `${CLAUDE_PLUGIN_ROOT}` environment variable expansion in MCP configs. While it works for testing commands and agents, MCP servers may fail to start when using `--plugin-dir` for local development.
+**Why this matters**: The `.mcp.json` file uses `${CLAUDE_PLUGIN_ROOT}` which only exists when loaded as a **plugin**, not as a **project config**. Working inside the repo causes Claude Code to load it as a project config where this variable is undefined.
 
-**For testing commands/agents only** (without MCP server):
+**Alternative - Testing with `--plugin-dir`**: The `--plugin-dir` flag has [documented issues](https://github.com/anthropics/claude-code/issues/9354) with `${CLAUDE_PLUGIN_ROOT}` expansion in `.mcp.json`. While it works for commands/agents, MCP servers may fail:
 
 ```bash
+# Works for commands/agents, may fail for MCP servers
+cd ~/your-project  # Use from outside the plugin repo
 claude --plugin-dir /path/to/bluera-knowledge
 ```
 
