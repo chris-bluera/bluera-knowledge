@@ -1029,23 +1029,19 @@ npm run release:major   # Breaking changes (x.0.0)
 npm run release:current
 ```
 
-**Workflow:**
+**Workflow (Fully Automated):**
 
-**Option A - Automatic version bump + release:**
-1. Make changes and commit normally
-2. When ready to release: `npm run release:patch` (or minor/major)
-3. GitHub Actions creates the release **and automatically updates the marketplace**
-4. Verify in Actions tab: CI passes → Release created → Marketplace updated
-
-**Option B - Manual version bump (recommended for complex changes):**
 1. Make changes and commit
 2. Bump version: `npm run version:patch` (updates package.json, plugin.json, README)
-3. Commit version bump: `git add -A && git commit -m "chore: bump version to X.Y.Z"`
-4. **Push to main and wait for CI**: `git push` → verify CI passes on GitHub
-5. Create release: `npm run release:current` (tags current version)
-6. Verify in Actions tab: Release created → Marketplace updated
+3. Commit version bump: `git commit -am "chore: bump version to X.Y.Z"`
+4. Push to main: `git push`
+5. **GitHub Actions automatically:**
+   - ✅ Runs CI (lint, typecheck, tests, build)
+   - ✅ Creates release tag when CI passes
+   - ✅ Creates GitHub release
+   - ✅ Updates marketplace
 
-> ⚠️ **Important**: The Update Marketplace workflow waits for CI to pass. If you use `release:current`, commits MUST be pushed to `main` with passing CI before creating the tag, otherwise the marketplace update will fail.
+> 💡 **That's it!** No manual tagging needed. Just push to `main` and the release happens automatically when CI passes.
 
 ### 🧪 Testing Locally
 

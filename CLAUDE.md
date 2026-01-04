@@ -10,34 +10,37 @@
 - `npm run version:minor` - Bump minor version
 - `npm run version:major` - Bump major version
 
-**Releasing:**
-- `npm run release:patch` - Bump + commit + tag + push (triggers GitHub Actions release)
+**Releasing (Fully Automated):**
+1. Bump version: `npm run version:patch` (or minor/major)
+2. Commit: `git commit -am "chore: bump version to X.Y.Z"`
+3. Push: `git push`
+4. **Done!** GitHub Actions handles the rest automatically
+
+**What happens automatically:**
+- `CI` workflow runs (lint, typecheck, tests, build)
+- `Auto Release` workflow waits for CI, then creates & pushes tag
+- `Release` workflow creates GitHub release
+- `Update Marketplace` workflow updates `blueraai/bluera-marketplace`
+
+**Manual release scripts (legacy, not needed):**
+- `npm run release:patch` - Bump + commit + tag + push
 - `npm run release:minor` - Same for minor version
 - `npm run release:major` - Same for major version
-- `npm run release:current` - Tag + push current version (if version already bumped)
-
-**CRITICAL: When using `release:current`:**
-1. Version must be bumped and committed FIRST
-2. Commits MUST be pushed to `main` BEFORE tagging
-3. Wait for CI to pass on GitHub Actions
-4. THEN run `npm run release:current`
-
-**Why**: The Update Marketplace workflow waits for the `test` check to pass on the tagged commit. This check only runs when commits are pushed to `main`, NOT when tags are pushed. If you tag before pushing to main, the marketplace update will fail with "The requested check was never run against this ref".
-
-**After releasing this repo:**
-- Marketplace update is **fully automated** via GitHub Actions
-- The `update-marketplace` workflow triggers after the Release workflow completes
-- It waits for CI to pass, then updates `blueraai/bluera-marketplace`
-- Check the Actions tab to verify: CI passes → Release created → Marketplace updated
-- No manual steps required (marketplace version bump is not needed per official docs)
-- If automation fails, manually update `blueraai/bluera-marketplace/.claude-plugin/marketplace.json`
+- `npm run release:current` - Tag + push current version (deprecated, use auto-release instead)
 
 ## GitHub Actions Workflows
 
 **CI Workflow** (`.github/workflows/ci.yml`)
-- Triggers: Push to main, pull requests
+- Triggers: Push to main, pull requests, tag pushes
 - Runs: Lint, typecheck, tests, build
-- Required to pass before marketplace updates
+- Required to pass before auto-release creates tag
+
+**Auto Release Workflow** (`.github/workflows/auto-release.yml`) **← NEW!**
+- Triggers: Push to main
+- Waits for: CI workflow to pass
+- Checks: If version in package.json has no matching tag
+- Creates: Tag and pushes it (triggers Release workflow)
+- **This is what makes releases fully automated**
 
 **Release Workflow** (`.github/workflows/release.yml`)
 - Triggers: Tag push (v*)
@@ -54,7 +57,7 @@
 
 * use the `npm run version:*` commands after changes
     * without this, the changes would not be detected by Claude Code
-* use `npm run release:*` to create releases (not manual git tag commands)
+* push to main after version bump - releases happen automatically (no manual tagging needed)
 * fail early and fast
   * our code is expected to *work* as-designed
     * use "throw" when state is unexpected or for any error condition
