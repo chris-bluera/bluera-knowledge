@@ -799,15 +799,13 @@ The plugin includes a Model Context Protocol server that exposes search tools. T
 
 ```json
 {
-  "mcpServers": {
-    "bluera-knowledge": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT:-./dist}/mcp/server.js"],
-      "env": {
-        "PWD": "${PWD}",
-        "DATA_DIR": "${PWD}/.bluera/bluera-knowledge/data",
-        "CONFIG_PATH": "${PWD}/.bluera/bluera-knowledge/config.json"
-      }
+  "bluera-knowledge": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server.js"],
+    "env": {
+      "PWD": "${PWD}",
+      "DATA_DIR": "${PWD}/.bluera/bluera-knowledge/data",
+      "CONFIG_PATH": "${PWD}/.bluera/bluera-knowledge/config.json"
     }
   }
 }
@@ -882,7 +880,14 @@ npm test
 
 ### 🔌 MCP Server for Development
 
-The `.mcp.json` file at the repository root configures the MCP server. After cloning, restart Claude Code to load the MCP server and enable the `mcp__bluera-knowledge__*` tools.
+The MCP configuration lives in `.claude-plugin/.mcp.json` (for distribution via marketplace). For local development, a symlink at the repo root allows dogfooding:
+
+```bash
+# Already set up in this repo:
+ln -s .claude-plugin/.mcp.json .mcp.json
+```
+
+After cloning, restart Claude Code to load the MCP server and enable the `mcp__bluera-knowledge__*` tools.
 
 ### 📜 NPM Commands
 
