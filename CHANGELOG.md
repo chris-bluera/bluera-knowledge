@@ -2,6 +2,97 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.11] - 2026-01-04
+
+### Fixed
+- CI automation: Use `workflow_run` trigger for marketplace updates (GitHub security prevents `GITHUB_TOKEN` workflows from triggering other workflows)
+
+## [0.9.10] - 2026-01-04
+
+### Added
+- Automated marketplace updates via GitHub Actions workflow
+- Update Marketplace workflow waits for CI to pass before updating `blueraai/bluera-marketplace`
+
+### Changed
+- Release workflow now automatically triggers marketplace update (no manual steps required)
+
+## [0.9.9] - 2026-01-04
+
+### Fixed
+- MCP server auto-discovery: moved `.mcp.json` to plugin root (was incorrectly in `.claude-plugin/`)
+
+## [0.9.8] - 2026-01-04
+
+### Fixed
+- Plugin installation failures caused by root `.mcp.json` conflicting with plugin structure
+
+## [0.9.7] - 2026-01-03
+
+### Added
+- Claude Code perspective documentation explaining how to use bluera-knowledge effectively
+
+### Changed
+- Enhanced README with blockquote formatting, tables, and improved section organization
+- Added table of contents for better navigation
+
+## [0.9.6] - 2026-01-03
+
+### Changed
+- Clarified MCP configuration for local development vs distribution
+- Documentation improvements for job status and search capabilities
+
+## [0.9.5] - 2026-01-03
+
+### Fixed
+- SessionStart hook now installs node_modules on first session
+
+### Added
+- Marketplace update reminder in release workflow
+- Version script improvements
+
+## [0.9.4] - 2026-01-02
+
+### Added
+- MCP symlink setup documentation for local development
+- `.mcp.json` in `.claude-plugin/` for marketplace installs
+- `release:current` script for tagging existing versions
+
+### Changed
+- Improved CLAUDE.md with npm scripts reference
+
+## [0.9.3] - 2026-01-02
+
+### Added
+- Multi-language support for dependency detection (Python, Go, Rust, Java)
+- crates.io and Go module registry support for URL resolution
+
+### Changed
+- Expanded crawl command examples with natural language options
+- Streamlined installation section in README
+
+## [0.9.0-0.9.2] - 2026-01-02
+
+### Added
+- Automatic GitHub release workflow on tag push
+- Release scripts (`npm run release:patch/minor/major`)
+
+### Changed
+- Plugin restructured for correct Claude Code plugin layout
+- Repository moved to blueraai organization
+
+### Fixed
+- IndexService tests skipped in CI environment (coverage threshold adjusted)
+
+## [0.7.0-0.8.0] - 2026-01-01
+
+### Added
+- LICENSE, NOTICE, and acknowledgments
+- Plugin UI documentation for browsing/installing
+
+### Changed
+- Marketplace moved to dedicated repository
+- Installation section moved to top of README
+
 ## [0.6.0] - 2026-01-01
 
 ### Added

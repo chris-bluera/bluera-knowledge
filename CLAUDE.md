@@ -17,14 +17,12 @@
 - `npm run release:current` - Tag + push current version (if version already bumped)
 
 **After releasing this repo:**
-- Marketplace update is **automated** via GitHub Actions
-- The `update-marketplace` workflow triggers when a release is published
+- Marketplace update is **fully automated** via GitHub Actions
+- The `update-marketplace` workflow triggers after the Release workflow completes
 - It waits for CI to pass, then updates `blueraai/bluera-marketplace`
-- Check the Actions tab to verify marketplace was updated successfully
-- If automation fails, manually update as fallback:
-  1. Update version in `blueraai/bluera-marketplace` → `.claude-plugin/marketplace.json`
-  2. Run `npm run release:patch` in the marketplace repo
-     (https://github.com/blueraai/bluera-marketplace)
+- Check the Actions tab to verify: CI passes → Release created → Marketplace updated
+- No manual steps required (marketplace version bump is not needed per official docs)
+- If automation fails, manually update `blueraai/bluera-marketplace/.claude-plugin/marketplace.json`
 
 ## GitHub Actions Workflows
 
@@ -38,10 +36,11 @@
 - Creates: GitHub release with auto-generated notes
 
 **Update Marketplace Workflow** (`.github/workflows/update-marketplace.yml`)
-- Triggers: Release published
-- Waits for: CI workflow success
-- Updates: `blueraai/bluera-marketplace` version automatically
-- Requires: `MARKETPLACE_PAT` secret configured
+- Triggers: After Release workflow completes (via `workflow_run`)
+- Waits for: CI workflow success (via `wait-on-check-action`)
+- Updates: `blueraai/bluera-marketplace` plugin version automatically
+- Requires: `MARKETPLACE_PAT` secret (repo-scoped PAT with write access to marketplace repo)
+- Note: Uses `workflow_run` trigger because GitHub prevents `GITHUB_TOKEN` workflows from triggering other workflows
 
 ## ALWAYS
 
