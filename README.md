@@ -224,10 +224,14 @@ While bluera-knowledge indexes and searches code in any language, certain advanc
 
 ## 📦 Installation
 
-Install the plugin directly from GitHub in Claude Code:
+Install the plugin from the Bluera marketplace in Claude Code:
 
 ```bash
-/plugin install https://github.com/blueraai/bluera-knowledge
+# Add the Bluera marketplace (one-time setup)
+/plugin marketplace add blueraai/bluera-marketplace
+
+# Install the plugin
+/plugin install bluera-knowledge@bluera
 ```
 
 The plugin is immediately available with the `/bluera-knowledge:` command prefix.
@@ -672,7 +676,8 @@ Ensure the plugin is installed and enabled:
 If the plugin isn't listed, install it:
 
 ```bash
-/plugin install https://github.com/blueraai/bluera-knowledge
+/plugin marketplace add blueraai/bluera-marketplace
+/plugin install bluera-knowledge@bluera
 ```
 </details>
 
@@ -895,7 +900,8 @@ This symlink is gitignored - each developer needs to create it locally. After cr
 ### 🧪 Testing Locally
 
 ```bash
-/plugin install /path/to/bluera-knowledge
+/plugin marketplace add /path/to/bluera-knowledge
+/plugin install bluera-knowledge@bluera-knowledge
 ```
 
 ### 📂 Project Structure
@@ -903,7 +909,7 @@ This symlink is gitignored - each developer needs to create it locally. After cr
 ```
 .claude-plugin/          # Plugin configuration
 ├── plugin.json
-├── marketplace.json
+├── .mcp.json
 └── commands/
 
 .mcp.json               # MCP server configuration
