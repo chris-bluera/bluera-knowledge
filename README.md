@@ -837,7 +837,7 @@ Combine canonical library code with project-specific patterns:
 >
 > #### 🕷️ Intelligent Crawling
 >
-> **The `--crawl` instruction isn't marketing**—it actually uses Claude API to analyze each page and intelligently select which links to follow. I can tell it "crawl all API reference pages but skip blog posts" and it understands the intent.
+> **The `--crawl` instruction isn't marketing**—it actually uses Claude Code CLI to analyze each page and intelligently select which links to follow. I can tell it "crawl all API reference pages but skip blog posts" and it understands the intent.
 >
 > For JavaScript-rendered sites (Next.js, React docs), the `--headless` mode renders pages with Playwright while I still control the crawl strategy with natural language.
 >
