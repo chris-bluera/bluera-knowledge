@@ -6,9 +6,9 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue)
 
-> 🚀 **A Claude Code plugin for providing canonical, definitive source information to AI coding agents.**
+> 🚀 **Clone repos, crawl docs, search locally—give your AI coding agent fast, authoritative answers without web lookups.**
 
-Give your AI coding assistant **instant access** to **authoritative library source code** (full Git repos), **documentation** (local folders/web crawl), and **reference materials** (files/folders)—all searchable locally with **semantic understanding**.
+Index **full Git repositories**, **crawled documentation**, and **local files** into searchable knowledge stores. Your AI coding agent gets **instant semantic search** over authoritative sources—no rate limits, no network delays.
 
 ## 📦 Installation
 
