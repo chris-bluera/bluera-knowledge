@@ -11,25 +11,36 @@ function isObject(value: unknown): value is Record<PropertyKey, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+export type SupportedLanguage = 'javascript' | 'python' | 'rust' | 'go';
+
 export class RepoUrlResolver {
   /**
    * Find the GitHub repository URL for a package
    */
   async findRepoUrl(
     packageName: string,
-    language: 'javascript' | 'python' = 'javascript'
+    language: SupportedLanguage = 'javascript'
   ): Promise<RepoSearchResult> {
     // Strategy 1: Try package registry API (fast, accurate)
-    if (language === 'javascript') {
-      const npmUrl = await this.tryNpmRegistry(packageName);
-      if (npmUrl !== null) {
-        return { url: npmUrl, confidence: 'high', source: 'registry' };
-      }
-    } else {
-      const pypiUrl = await this.tryPyPiRegistry(packageName);
-      if (pypiUrl !== null) {
-        return { url: pypiUrl, confidence: 'high', source: 'registry' };
-      }
+    let registryUrl: string | null = null;
+
+    switch (language) {
+      case 'javascript':
+        registryUrl = await this.tryNpmRegistry(packageName);
+        break;
+      case 'python':
+        registryUrl = await this.tryPyPiRegistry(packageName);
+        break;
+      case 'rust':
+        registryUrl = await this.tryCratesRegistry(packageName);
+        break;
+      case 'go':
+        registryUrl = await this.tryGoModule(packageName);
+        break;
+    }
+
+    if (registryUrl !== null) {
+      return { url: registryUrl, confidence: 'high', source: 'registry' };
     }
 
     // Strategy 2: No URL found
@@ -111,6 +122,82 @@ export class RepoUrlResolver {
         }
       }
 
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Query crates.io registry for Rust crate metadata
+   */
+  private async tryCratesRegistry(crateName: string): Promise<string | null> {
+    try {
+      const response = await fetch(`https://crates.io/api/v1/crates/${crateName}`, {
+        headers: {
+          // crates.io requires a User-Agent header
+          'User-Agent': 'bluera-knowledge (https://github.com/blueraai/bluera-knowledge)',
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data: unknown = await response.json();
+      if (!isObject(data)) {
+        return null;
+      }
+
+      // Extract repository URL from crate metadata
+      if ('crate' in data) {
+        const crate = data['crate'];
+        if (isObject(crate) && 'repository' in crate) {
+          const repo = crate['repository'];
+          if (typeof repo === 'string') {
+            return this.normalizeRepoUrl(repo);
+          }
+        }
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Resolve Go module to GitHub repository
+   * Go modules often use GitHub URLs directly (e.g., github.com/gorilla/mux)
+   */
+  private async tryGoModule(moduleName: string): Promise<string | null> {
+    try {
+      // Go modules that start with github.com are already GitHub URLs
+      if (moduleName.startsWith('github.com/')) {
+        // Extract owner/repo from module path (e.g., github.com/gorilla/mux/v2 -> github.com/gorilla/mux)
+        const parts = moduleName.split('/');
+        const owner = parts[1];
+        const repo = parts[2];
+        if (owner !== undefined && repo !== undefined) {
+          return `https://github.com/${owner}/${repo}`;
+        }
+      }
+
+      // For other modules, try pkg.go.dev API
+      // The pkg.go.dev API returns module info including repository URL
+      const response = await fetch(`https://proxy.golang.org/${moduleName}/@latest`, {
+        headers: {
+          'User-Agent': 'bluera-knowledge (https://github.com/blueraai/bluera-knowledge)',
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      // The Go proxy returns module info, but repository URL needs to be inferred
+      // from the module path or VCS info. For now, we only support direct GitHub modules.
+      // Most popular Go packages use github.com paths anyway.
       return null;
     } catch {
       return null;

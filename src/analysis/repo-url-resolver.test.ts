@@ -303,6 +303,135 @@ describe('RepoUrlResolver', () => {
     });
   });
 
+  describe('crates.io registry lookup', () => {
+    it('finds repo URL from crates.io registry', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          crate: {
+            repository: 'https://github.com/serde-rs/serde'
+          }
+        })
+      } as Response);
+
+      const result = await resolver.findRepoUrl('serde', 'rust');
+
+      expect(result.url).toBe('https://github.com/serde-rs/serde');
+      expect(result.confidence).toBe('high');
+      expect(result.source).toBe('registry');
+    });
+
+    it('includes User-Agent header for crates.io', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          crate: {
+            repository: 'https://github.com/user/repo'
+          }
+        })
+      } as Response);
+
+      await resolver.findRepoUrl('tokio', 'rust');
+
+      expect(fetch).toHaveBeenCalledWith(
+        'https://crates.io/api/v1/crates/tokio',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'User-Agent': expect.stringContaining('bluera-knowledge')
+          })
+        })
+      );
+    });
+
+    it('handles 404 from crates.io', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: false,
+        status: 404
+      } as Response);
+
+      const result = await resolver.findRepoUrl('nonexistent-crate', 'rust');
+
+      expect(result.url).toBeNull();
+      expect(result.confidence).toBe('low');
+    });
+
+    it('handles missing repository field in crate', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          crate: {
+            name: 'some-crate',
+            version: '1.0.0'
+          }
+        })
+      } as Response);
+
+      const result = await resolver.findRepoUrl('some-crate', 'rust');
+
+      expect(result.url).toBeNull();
+    });
+
+    it('normalizes crates.io URLs', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          crate: {
+            repository: 'git+https://github.com/user/repo.git'
+          }
+        })
+      } as Response);
+
+      const result = await resolver.findRepoUrl('crate', 'rust');
+
+      expect(result.url).toBe('https://github.com/user/repo');
+    });
+  });
+
+  describe('Go module lookup', () => {
+    it('resolves github.com module paths directly', async () => {
+      const result = await resolver.findRepoUrl('github.com/gorilla/mux', 'go');
+
+      expect(result.url).toBe('https://github.com/gorilla/mux');
+      expect(result.confidence).toBe('high');
+      expect(result.source).toBe('registry');
+      // Should not make any fetch calls for direct GitHub modules
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('handles versioned github.com module paths', async () => {
+      const result = await resolver.findRepoUrl('github.com/go-chi/chi/v5', 'go');
+
+      expect(result.url).toBe('https://github.com/go-chi/chi');
+      expect(result.confidence).toBe('high');
+    });
+
+    it('handles deeply nested github.com module paths', async () => {
+      const result = await resolver.findRepoUrl('github.com/aws/aws-sdk-go/service/s3', 'go');
+
+      expect(result.url).toBe('https://github.com/aws/aws-sdk-go');
+      expect(result.confidence).toBe('high');
+    });
+
+    it('returns null for non-github modules when proxy fails', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: false,
+        status: 404
+      } as Response);
+
+      const result = await resolver.findRepoUrl('golang.org/x/net', 'go');
+
+      expect(result.url).toBeNull();
+      expect(result.confidence).toBe('low');
+    });
+
+    it('handles invalid github.com paths', async () => {
+      // Only one path component after github.com
+      const result = await resolver.findRepoUrl('github.com/incomplete', 'go');
+
+      expect(result.url).toBeNull();
+    });
+  });
+
   describe('Edge cases', () => {
     it('handles scoped npm packages', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({

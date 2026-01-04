@@ -1086,16 +1086,23 @@ var RepoUrlResolver = class {
    * Find the GitHub repository URL for a package
    */
   async findRepoUrl(packageName, language = "javascript") {
-    if (language === "javascript") {
-      const npmUrl = await this.tryNpmRegistry(packageName);
-      if (npmUrl !== null) {
-        return { url: npmUrl, confidence: "high", source: "registry" };
-      }
-    } else {
-      const pypiUrl = await this.tryPyPiRegistry(packageName);
-      if (pypiUrl !== null) {
-        return { url: pypiUrl, confidence: "high", source: "registry" };
-      }
+    let registryUrl = null;
+    switch (language) {
+      case "javascript":
+        registryUrl = await this.tryNpmRegistry(packageName);
+        break;
+      case "python":
+        registryUrl = await this.tryPyPiRegistry(packageName);
+        break;
+      case "rust":
+        registryUrl = await this.tryCratesRegistry(packageName);
+        break;
+      case "go":
+        registryUrl = await this.tryGoModule(packageName);
+        break;
+    }
+    if (registryUrl !== null) {
+      return { url: registryUrl, confidence: "high", source: "registry" };
     }
     return { url: null, confidence: "low", source: "fallback" };
   }
@@ -1158,6 +1165,65 @@ var RepoUrlResolver = class {
             }
           }
         }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  /**
+   * Query crates.io registry for Rust crate metadata
+   */
+  async tryCratesRegistry(crateName) {
+    try {
+      const response = await fetch(`https://crates.io/api/v1/crates/${crateName}`, {
+        headers: {
+          // crates.io requires a User-Agent header
+          "User-Agent": "bluera-knowledge (https://github.com/blueraai/bluera-knowledge)"
+        }
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const data = await response.json();
+      if (!isObject(data)) {
+        return null;
+      }
+      if ("crate" in data) {
+        const crate = data["crate"];
+        if (isObject(crate) && "repository" in crate) {
+          const repo = crate["repository"];
+          if (typeof repo === "string") {
+            return this.normalizeRepoUrl(repo);
+          }
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  /**
+   * Resolve Go module to GitHub repository
+   * Go modules often use GitHub URLs directly (e.g., github.com/gorilla/mux)
+   */
+  async tryGoModule(moduleName) {
+    try {
+      if (moduleName.startsWith("github.com/")) {
+        const parts = moduleName.split("/");
+        const owner = parts[1];
+        const repo = parts[2];
+        if (owner !== void 0 && repo !== void 0) {
+          return `https://github.com/${owner}/${repo}`;
+        }
+      }
+      const response = await fetch(`https://proxy.golang.org/${moduleName}/@latest`, {
+        headers: {
+          "User-Agent": "bluera-knowledge (https://github.com/blueraai/bluera-knowledge)"
+        }
+      });
+      if (!response.ok) {
+        return null;
       }
       return null;
     } catch {

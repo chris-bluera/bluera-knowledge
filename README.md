@@ -194,7 +194,7 @@ Background jobs include significant performance optimizations:
 
 - **🔬 Smart Dependency Analysis** - Automatically scans your project to identify which libraries are most heavily used by counting import statements across all source files
 - **📊 Usage-Based Suggestions** - Ranks dependencies by actual usage frequency, showing you the top 5 most-imported packages with import counts and file counts
-- **🔍 Automatic Repository Discovery** - Queries NPM and PyPI package registries to automatically find GitHub repository URLs for any package
+- **🔍 Automatic Repository Discovery** - Queries package registries (NPM, PyPI, crates.io, Go modules) to automatically find GitHub repository URLs
 - **📦 Git Repository Indexing** - Clones and indexes library source code for both semantic search and direct file access
 - **📁 Local Folder Indexing** - Indexes any local content - documentation, standards, reference materials, or custom content
 - **🌐 Web Crawling** - Crawl and index web pages using `crawl4ai` - convert documentation sites to searchable markdown
@@ -258,9 +258,9 @@ playwright install  # Install browser binaries for headless mode
 Follow these steps to set up knowledge stores for your project:
 
 - [ ] **🔬 Analyze dependencies**: `/bluera-knowledge:suggest`
-- [ ] **📦 Add a library**: `/bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query`
+- [ ] **📦 Add a library**: `/bluera-knowledge:add-repo https://github.com/lodash/lodash`
 - [ ] **📁 Index your docs**: `/bluera-knowledge:add-folder ./docs --name=project-docs`
-- [ ] **🔍 Test search**: `/bluera-knowledge:search "how to invalidate queries"`
+- [ ] **🔍 Test search**: `/bluera-knowledge:search "deep clone object"`
 - [ ] **📋 View stores**: `/bluera-knowledge:stores`
 
 > [!TIP]
@@ -347,7 +347,7 @@ Already indexed: typescript, express
 
 **Examples:**
 ```bash
-/bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query
+/bluera-knowledge:add-repo https://github.com/lodash/lodash
 /bluera-knowledge:add-repo https://github.com/facebook/react --branch=main --name=react
 ```
 
@@ -424,7 +424,7 @@ Store is ready for searching!
 /bluera-knowledge:search "useState implementation" --stores=react
 
 # Search multiple stores (comma-separated)
-/bluera-knowledge:search "authentication" --stores=react,tanstack-query
+/bluera-knowledge:search "deep clone" --stores=react,lodash
 
 # Limit results
 /bluera-knowledge:search "testing patterns" --limit=5
@@ -434,32 +434,15 @@ Store is ready for searching!
 <summary><b>📊 Expected Output</b></summary>
 
 ```
-## Search Results: "button component"
+## Search Results for "button component"
 
-**1. [Score: 0.95] react**
-📄 src/components/Button.tsx
-→ Reusable button component with variants
-🔑 Keywords: component, button, variant, style, props
-📦 Imports: react, styled-components, prop-types
+| Score | Store        | File                                          | Purpose                                            |
+|------:|--------------|-----------------------------------------------|---------------------------------------------------|
+|  0.95 | react        | src/components/Button.tsx                     | Reusable button component with variants           |
+|  0.87 | react        | src/hooks/useButton.ts                        | Custom hook for button state management           |
+|  0.81 | react        | src/components/IconButton.tsx                 | Button component with icon support                |
 
-**2. [Score: 0.87] react**
-📄 src/hooks/useButton.ts
-→ Custom hook for button state management
-🔑 Keywords: hook, state, button, handler, event
-📦 Imports: react, react-dom
-
-**3. [Score: 0.81] react**
-📄 src/components/IconButton.tsx
-→ Button component with icon support
-🔑 Keywords: icon, button, component, render
-
----
-**Found 3 results**
-
-💡 **Next Steps:**
-- Read file: `Read src/components/Button.tsx`
-- Get full code: `mcp__bluera-knowledge__get_full_context("doc_abc123")`
-- Refine search: Use keywords above
+**Found**: 3 results
 ```
 </details>
 
@@ -726,11 +709,11 @@ Provide AI agents with canonical library implementation details:
 
 ```bash
 /bluera-knowledge:suggest
-/bluera-knowledge:add-repo https://github.com/tanstack/query --name=tanstack-query
+/bluera-knowledge:add-repo https://github.com/expressjs/express
 
 # AI agents can now:
-# - Semantic search: "query invalidation implementation"
-# - Direct access: Grep/Glob through the cloned tanstack/query repo
+# - Semantic search: "middleware error handling"
+# - Direct access: Grep/Glob through the cloned express repo
 ```
 
 ### 📚 Project Documentation
