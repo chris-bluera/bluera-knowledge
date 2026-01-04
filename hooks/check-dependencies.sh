@@ -1,14 +1,43 @@
 #!/bin/bash
 # Bluera Knowledge Plugin - Dependency Checker
-# Automatically checks and installs crawl4ai for web crawling functionality
+# Automatically checks and installs dependencies for the plugin
 
 set -e
+
+# Get the plugin root directory
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$0")")}"
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# =====================
+# Node.js Dependencies
+# =====================
+
+# Check if node_modules exists
+if [ ! -d "$PLUGIN_ROOT/node_modules" ]; then
+    echo -e "${YELLOW}[bluera-knowledge] Installing Node.js dependencies...${NC}"
+
+    # Try bun first (faster), fall back to npm
+    if command -v bun &> /dev/null; then
+        (cd "$PLUGIN_ROOT" && bun install --frozen-lockfile 2>/dev/null) && \
+            echo -e "${GREEN}[bluera-knowledge] Node.js dependencies installed ✓${NC}" || \
+            echo -e "${RED}[bluera-knowledge] Failed to install Node.js dependencies${NC}"
+    elif command -v npm &> /dev/null; then
+        (cd "$PLUGIN_ROOT" && npm ci --silent 2>/dev/null) && \
+            echo -e "${GREEN}[bluera-knowledge] Node.js dependencies installed ✓${NC}" || \
+            echo -e "${RED}[bluera-knowledge] Failed to install Node.js dependencies${NC}"
+    else
+        echo -e "${RED}[bluera-knowledge] Neither bun nor npm found. Please install Node.js dependencies manually.${NC}"
+    fi
+fi
+
+# =====================
+# Python Dependencies
+# =====================
 
 # Check if Python3 is installed
 if ! command -v python3 &> /dev/null; then
