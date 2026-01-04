@@ -257,14 +257,13 @@ playwright install  # Install browser binaries for headless mode
 
 Follow these steps to set up knowledge stores for your project:
 
-- [ ] **🔬 Analyze dependencies**: `/bluera-knowledge:suggest`
 - [ ] **📦 Add a library**: `/bluera-knowledge:add-repo https://github.com/lodash/lodash`
 - [ ] **📁 Index your docs**: `/bluera-knowledge:add-folder ./docs --name=project-docs`
 - [ ] **🔍 Test search**: `/bluera-knowledge:search "deep clone object"`
 - [ ] **📋 View stores**: `/bluera-knowledge:stores`
 
 > [!TIP]
-> Start with `/bluera-knowledge:suggest` to automatically discover which libraries your project uses most.
+> Not sure which libraries to index? Use `/bluera-knowledge:suggest` to analyze your project's dependencies.
 
 ---
 
