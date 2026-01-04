@@ -7,6 +7,8 @@ on:
 jobs:
   auto-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to push tags
     # Only run after CI completes successfully
     needs: []
 
