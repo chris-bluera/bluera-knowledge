@@ -10,9 +10,9 @@
 
 When Claude helps you code, it needs context: how does this library work? What does that API do? Instead of slow web searches or outdated training data, Bluera Knowledge gives your agent instant local access to:
 
-- **Library source code** — Clone the repos of dependencies you actually use
-- **Documentation** — Crawl and index any docs site
-- **Your files** — Index local folders for project-specific knowledge
+- **Library source code** — Clone and search the repos of dependencies you actually use
+- **Documentation** — Crawl, index, and search any docs site
+- **Your files** — Index and search local folders for project-specific knowledge
 
 All searchable in milliseconds, no rate limits, fully offline.
 
