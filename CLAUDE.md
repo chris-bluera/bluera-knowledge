@@ -1,17 +1,17 @@
-## NPM Scripts
+## Scripts
 
 **Development:**
-- `npm run build` - Compile TypeScript
-- `npm run test:run` - Run tests once
-- `npm run precommit` - Full validation (lint, typecheck, tests, build)
+- `bun run build` - Compile TypeScript
+- `bun run test:run` - Run tests once
+- `bun run precommit` - Full validation (lint, typecheck, tests, build)
 
 **Versioning (after code changes):**
-- `npm run version:patch` - Bump patch version (updates package.json, plugin.json, README badge)
-- `npm run version:minor` - Bump minor version
-- `npm run version:major` - Bump major version
+- `bun run version:patch` - Bump patch version (updates package.json, plugin.json, README badge)
+- `bun run version:minor` - Bump minor version
+- `bun run version:major` - Bump major version
 
 **Releasing (Fully Automated):**
-1. Bump version: `npm run version:patch` (or minor/major)
+1. Bump version: `bun run version:patch` (or minor/major)
 2. Commit: `git commit -am "chore: bump version to X.Y.Z"`
 3. Push: `git push`
 4. **Done!** GitHub Actions handles the rest automatically
@@ -23,10 +23,10 @@
 - `Update Marketplace` workflow updates `blueraai/bluera-marketplace`
 
 **Manual release scripts (legacy, not needed):**
-- `npm run release:patch` - Bump + commit + tag + push
-- `npm run release:minor` - Same for minor version
-- `npm run release:major` - Same for major version
-- `npm run release:current` - Tag + push current version (deprecated, use auto-release instead)
+- `bun run release:patch` - Bump + commit + tag + push
+- `bun run release:minor` - Same for minor version
+- `bun run release:major` - Same for major version
+- `bun run release:current` - Tag + push current version (deprecated, use auto-release instead)
 
 ## GitHub Actions Workflows
 
@@ -66,12 +66,12 @@
 2. **npm publishing also uses committed dist/** - No `files` array in package.json, so npm includes whatever isn't in `.gitignore`
 
 **After any code change:**
-1. Run `npm run build` (or `npm run precommit` which includes build)
+1. Run `bun run build` (or `bun run precommit` which includes build)
 2. Commit both source AND dist/ changes together
 
 ## ALWAYS
 
-* use the `npm run version:*` commands after changes
+* use the `bun run version:*` commands after changes
     * without this, the changes would not be detected by Claude Code
 * push to main after version bump - releases happen automatically (no manual tagging needed)
 * fail early and fast

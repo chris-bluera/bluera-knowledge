@@ -1219,10 +1219,12 @@ Knowledge stores are stored in your project root:
 ```bash
 git clone https://github.com/blueraai/bluera-knowledge.git
 cd bluera-knowledge
-npm install
-npm run build
-npm test
+bun install
+bun run build
+bun test
 ```
+
+> **Note:** This project uses [Bun](https://bun.sh) for development. Install it via `curl -fsSL https://bun.sh/install | bash`
 
 ### 🔌 MCP Server
 
@@ -1256,42 +1258,40 @@ Replace the path with your actual repo location. This creates a separate `bluera
 - Updates immediately when you modify MCP server code
 - Doesn't interfere with the production plugin version
 
-### 📜 NPM Commands
+### 📜 Commands
 
 | Command | Description | When to Use |
 |---------|-------------|-------------|
-| `npm run build` | 🏗️ Compile TypeScript to dist/ | Before testing CLI, after code changes |
-| `npm run dev` | 👀 Watch mode compilation | During active development |
-| `npm start` | ▶️ Run the CLI | Execute CLI commands directly |
-| `npm test` | 🧪 Run tests in watch mode | During TDD/active development |
-| `npm run test:run` | ✅ Run tests once | Quick verification |
-| `npm run test:coverage` | 📊 Run tests with coverage | Before committing, CI checks |
-| `npm run lint` | 🔍 Run ESLint | Check code style issues |
-| `npm run typecheck` | 🔒 Run TypeScript type checking | Verify type safety |
-| `npm run precommit` | ✨ Full validation suite | Before committing (runs automatically via husky) |
-| `npm run prepush` | 📊 Run coverage tests | Runs automatically before `git push` (via husky) |
-| `npm run version:patch` | 🔢 Bump patch version (0.0.x) | Bug fixes, minor updates |
-| `npm run version:minor` | 🔢 Bump minor version (0.x.0) | New features, backwards compatible |
-| `npm run version:major` | 🔢 Bump major version (x.0.0) | Breaking changes |
+| `bun run build` | 🏗️ Compile TypeScript to dist/ | Before testing CLI, after code changes |
+| `bun run dev` | 👀 Watch mode compilation | During active development |
+| `bun start` | ▶️ Run the CLI | Execute CLI commands directly |
+| `bun test` | 🧪 Run tests in watch mode | During TDD/active development |
+| `bun run test:run` | ✅ Run tests once | Quick verification |
+| `bun run test:coverage` | 📊 Run tests with coverage | Before committing, CI checks |
+| `bun run lint` | 🔍 Run ESLint | Check code style issues |
+| `bun run typecheck` | 🔒 Run TypeScript type checking | Verify type safety |
+| `bun run precommit` | ✨ Full validation suite | Before committing (runs automatically via husky) |
+| `bun run prepush` | 📊 Run coverage tests | Runs automatically before `git push` (via husky) |
+| `bun run version:patch` | 🔢 Bump patch version (0.0.x) | Bug fixes, minor updates |
+| `bun run version:minor` | 🔢 Bump minor version (0.x.0) | New features, backwards compatible |
+| `bun run version:major` | 🔢 Bump major version (x.0.0) | Breaking changes |
 
 ### 🚀 Releasing
 
-Use npm scripts to create releases:
-
 ```bash
 # Bump version, commit, tag, and push (triggers GitHub Actions release)
-npm run release:patch   # Bug fixes (0.0.x)
-npm run release:minor   # New features (0.x.0)
-npm run release:major   # Breaking changes (x.0.0)
+bun run release:patch   # Bug fixes (0.0.x)
+bun run release:minor   # New features (0.x.0)
+bun run release:major   # Breaking changes (x.0.0)
 
 # If version already bumped but not tagged
-npm run release:current
+bun run release:current
 ```
 
 **Workflow (Fully Automated):**
 
 1. Make changes and commit
-2. Bump version: `npm run version:patch` (updates package.json, plugin.json, README)
+2. Bump version: `bun run version:patch` (updates package.json, plugin.json, README)
 3. Commit version bump: `git commit -am "chore: bump version to X.Y.Z"`
 4. Push to main: `git push`
 5. **GitHub Actions automatically:**
@@ -1321,8 +1321,8 @@ Use the local development MCP server (see "MCP Server" section above) which runs
 ```bash
 # Build and link
 cd /path/to/bluera-knowledge
-npm run build
-npm link
+bun run build
+bun link
 
 # Now 'bluera-knowledge' command is available globally
 cd ~/your-project

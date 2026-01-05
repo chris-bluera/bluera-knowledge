@@ -26,9 +26,9 @@
     "version:major": "node scripts/version.js major",
     "version:minor": "node scripts/version.js minor",
     "version:patch": "node scripts/version.js patch",
-    "release:patch": "npm run version:patch && npm run release:finish",
-    "release:minor": "npm run version:minor && npm run release:finish",
-    "release:major": "npm run version:major && npm run release:finish",
+    "release:patch": "bun run version:patch && bun run release:finish",
+    "release:minor": "bun run version:minor && bun run release:finish",
+    "release:major": "bun run version:major && bun run release:finish",
     "release:finish": "git commit -m \"chore: release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\") && git push && git push --tags",
     "release:current": "git tag v$(node -p \"require('./package.json').version\") && git push --tags"
   },

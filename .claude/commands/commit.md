@@ -54,7 +54,7 @@ For each group, execute:
 git add <file1> <file2> ...
 
 # 2. Run pre-commit validation (some checks only run on staged files)
-npm run precommit
+bun run precommit
 ```
 
 **If validation fails:**
@@ -62,7 +62,7 @@ npm run precommit
 1. Read the error output (ESLint, formatting, copyright headers, indentation, etc.)
 2. Fix the identified issues in the affected files
 3. Re-stage the fixed files: `git add <fixed-file>`
-4. Run `npm run precommit` again until it passes
+4. Run `bun run precommit` again until it passes
 
 **Only after validation passes:**
 
