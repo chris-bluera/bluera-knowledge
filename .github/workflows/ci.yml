@@ -62,6 +62,21 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Warm up embedding model
+        run: |
+          # Download embedding model before tests to prevent race conditions
+          # Multiple test files use embeddings - this ensures model is fully cached
+          node -e "
+            import('@huggingface/transformers').then(async ({ pipeline, env }) => {
+              const { homedir } = await import('node:os');
+              const { join } = await import('node:path');
+              env.cacheDir = join(homedir(), '.cache', 'huggingface-transformers');
+              console.log('Downloading embedding model to:', env.cacheDir);
+              await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { dtype: 'fp32' });
+              console.log('Model downloaded successfully');
+            });
+          "
+
       - name: Lint
         run: bun run lint
 
