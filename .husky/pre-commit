@@ -1,1 +1,4 @@
 bun run precommit
+
+# Auto-stage dist/ after build (required for Claude Code plugin distribution)
+git add dist/
