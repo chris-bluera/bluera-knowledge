@@ -2,10 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
     tags: ['v*']
   pull_request:
     branches: [main]
+
+# Prevent duplicate runs: cancel in-progress runs for same branch
+# When a PR is open, only run the pull_request event (skip the push)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
