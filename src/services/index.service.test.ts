@@ -8,8 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FileStore } from '../types/store.js';
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService', () => {
+describe('IndexService', () => {
   let indexService: IndexService;
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
@@ -80,8 +79,7 @@ describe.skipIf(process.env.CI)('IndexService', () => {
   });
 });
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService - File Type Classification', () => {
+describe('IndexService - File Type Classification', () => {
   let indexService: IndexService;
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
@@ -306,8 +304,7 @@ describe.skipIf(process.env.CI)('IndexService - File Type Classification', () =>
   });
 });
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService - Path Pattern Matching', () => {
+describe('IndexService - Path Pattern Matching', () => {
   let indexService: IndexService;
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
@@ -469,8 +466,7 @@ describe.skipIf(process.env.CI)('IndexService - Path Pattern Matching', () => {
   });
 });
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService - Internal Implementation Detection', () => {
+describe('IndexService - Internal Implementation Detection', () => {
   let indexService: IndexService;
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
@@ -587,8 +583,7 @@ describe.skipIf(process.env.CI)('IndexService - Internal Implementation Detectio
   });
 });
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService - Progress Callbacks', () => {
+describe('IndexService - Progress Callbacks', () => {
   let indexService: IndexService;
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
@@ -731,8 +726,7 @@ describe.skipIf(process.env.CI)('IndexService - Progress Callbacks', () => {
   });
 });
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService - Error Handling', () => {
+describe('IndexService - Error Handling', () => {
   let indexService: IndexService;
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
@@ -814,8 +808,7 @@ describe.skipIf(process.env.CI)('IndexService - Error Handling', () => {
   });
 });
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService - Hash and Metadata', () => {
+describe('IndexService - Hash and Metadata', () => {
   let indexService: IndexService;
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
@@ -934,8 +927,7 @@ describe.skipIf(process.env.CI)('IndexService - Hash and Metadata', () => {
   });
 });
 
-// Skip in CI - requires downloading ~90MB ONNX model for embeddings
-describe.skipIf(process.env.CI)('IndexService - Custom Chunk Configuration', () => {
+describe('IndexService - Custom Chunk Configuration', () => {
   let lanceStore: LanceStore;
   let embeddingEngine: EmbeddingEngine;
   let tempDir: string;

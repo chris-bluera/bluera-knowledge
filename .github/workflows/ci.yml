@@ -51,6 +51,14 @@ jobs:
           restore-keys: |
             bun-${{ runner.os }}-
 
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: huggingface-${{ runner.os }}-all-MiniLM-L6-v2
+          restore-keys: |
+            huggingface-${{ runner.os }}-
+
       - name: Install dependencies
         run: bun install
 

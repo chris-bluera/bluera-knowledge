@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { EmbeddingEngine } from './embeddings.js';
 
-// Skip in CI - requires downloading ~90MB ONNX model
-describe.skipIf(process.env.CI)('EmbeddingEngine', () => {
+describe('EmbeddingEngine', () => {
   let engine: EmbeddingEngine;
 
   beforeAll(async () => {

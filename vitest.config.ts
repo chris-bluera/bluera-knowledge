@@ -1,12 +1,6 @@
 import { defineConfig } from 'vitest/config';
 
-// Lower thresholds in CI where embedding-related tests are skipped
-// (IndexService, EmbeddingEngine, WatchService - require 90MB ONNX model download)
-// Still skipped (require CLI subprocess fix - see plan Phase 2):
-// - tests/integration/cli.test.ts (6 tests)
-// - tests/integration/cli-consistency.test.ts (8 tests)
-const isCI = process.env.CI === 'true';
-const coverageThreshold = isCI ? 80 : 81;
+const coverageThreshold = 81;
 
 export default defineConfig({
   test: {
