@@ -4,12 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- `destroyServices()` function for proper CLI resource cleanup
+- CLI tests now enabled (previously skipped due to hanging subprocess)
+- 26 re-enabled CLI integration tests verifying exit codes, JSON format, quiet mode
+
 ### Removed
 - Export/import CLI commands (`bkb export`, `bkb import`) - unused functionality
 
 ### Fixed
+- CLI commands now exit cleanly by calling `destroyServices()` after completion
+- PythonBridge subprocess properly terminated on CLI exit (no more hanging)
+- Suppressed noisy "Python bridge process killed" message on intentional stop
 - Flaky stress tests: removed relative timing comparisons, made thresholds generous (10-30s)
 - README rendering on GitHub: fixed nested code blocks breaking markdown parser
+- MCP server auto-start on import fixed with entry point guard
 
 ### Changed
 - Integration tests rewritten to use service APIs instead of CLI (60+ tests, 120s faster)

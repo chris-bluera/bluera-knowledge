@@ -6,7 +6,8 @@ import { DEFAULT_REPOS } from '../../defaults/repos.js';
 
 // Mock all dependencies
 vi.mock('../../services/index.js', () => ({
-  createServices: vi.fn()
+  createServices: vi.fn(),
+  destroyServices: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('node:child_process', () => ({

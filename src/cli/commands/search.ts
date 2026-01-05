@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createServices } from '../../services/index.js';
+import { createServices, destroyServices } from '../../services/index.js';
 import type { GlobalOptions } from '../program.js';
 import type { SearchMode, DetailLevel } from '../../types/search.js';
 
@@ -23,86 +23,89 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
     }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
+      try {
+        // Get store IDs
+        let storeIds = (await services.store.list()).map((s) => s.id);
 
-      // Get store IDs
-      let storeIds = (await services.store.list()).map((s) => s.id);
+        if (options.stores !== undefined) {
+          const requestedStores = options.stores.split(',').map((s) => s.trim());
+          const resolvedStores = [];
 
-      if (options.stores !== undefined) {
-        const requestedStores = options.stores.split(',').map((s) => s.trim());
-        const resolvedStores = [];
-
-        for (const requested of requestedStores) {
-          const store = await services.store.getByIdOrName(requested);
-          if (store !== undefined) {
-            resolvedStores.push(store.id);
-          } else {
-            console.error(`Error: Store not found: ${requested}`);
-            process.exit(3);
-          }
-        }
-
-        storeIds = resolvedStores;
-      }
-
-      if (storeIds.length === 0) {
-        console.error('No stores to search. Create a store first.');
-        process.exit(1);
-      }
-
-      // Initialize LanceDB for each store
-      for (const storeId of storeIds) {
-        await services.lance.initialize(storeId);
-      }
-
-      const results = await services.search.search({
-        query,
-        stores: storeIds,
-        mode: options.mode ?? 'hybrid',
-        limit: parseInt(options.limit ?? '10', 10),
-        threshold: options.threshold !== undefined ? parseFloat(options.threshold) : undefined,
-        includeContent: options.includeContent,
-        detail: options.detail ?? 'minimal',
-      });
-
-      if (globalOpts.format === 'json') {
-        console.log(JSON.stringify(results, null, 2));
-      } else if (globalOpts.quiet === true) {
-        // Quiet mode: just list matching paths/URLs, one per line
-        for (const r of results.results) {
-          const path = r.metadata.path ?? r.metadata.url ?? 'unknown';
-          console.log(path);
-        }
-      } else {
-        console.log(`\nSearch: "${query}"`);
-        console.log(`Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms\n`);
-
-        if (results.results.length === 0) {
-          console.log('No results found.\n');
-        } else {
-          for (let i = 0; i < results.results.length; i++) {
-            const r = results.results[i];
-            if (r === undefined) continue;
-
-            if (r.summary) {
-              console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${r.summary.type}: ${r.summary.name}`);
-              console.log(`   ${r.summary.location}`);
-              console.log(`   ${r.summary.purpose}`);
-
-              if (r.context && options.detail !== 'minimal') {
-                console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(', ')}`);
-                console.log(`   Related: ${r.context.relatedConcepts.slice(0, 3).join(', ')}`);
-              }
-
-              console.log();
+          for (const requested of requestedStores) {
+            const store = await services.store.getByIdOrName(requested);
+            if (store !== undefined) {
+              resolvedStores.push(store.id);
             } else {
-              // Fallback to old format
-              const path = r.metadata.path ?? r.metadata.url ?? 'unknown';
-              console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${path}`);
-              const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, ' ') + (r.content.length > 150 ? '...' : '');
-              console.log(`   ${preview}\n`);
+              console.error(`Error: Store not found: ${requested}`);
+              process.exit(3);
+            }
+          }
+
+          storeIds = resolvedStores;
+        }
+
+        if (storeIds.length === 0) {
+          console.error('No stores to search. Create a store first.');
+          process.exit(1);
+        }
+
+        // Initialize LanceDB for each store
+        for (const storeId of storeIds) {
+          await services.lance.initialize(storeId);
+        }
+
+        const results = await services.search.search({
+          query,
+          stores: storeIds,
+          mode: options.mode ?? 'hybrid',
+          limit: parseInt(options.limit ?? '10', 10),
+          threshold: options.threshold !== undefined ? parseFloat(options.threshold) : undefined,
+          includeContent: options.includeContent,
+          detail: options.detail ?? 'minimal',
+        });
+
+        if (globalOpts.format === 'json') {
+          console.log(JSON.stringify(results, null, 2));
+        } else if (globalOpts.quiet === true) {
+          // Quiet mode: just list matching paths/URLs, one per line
+          for (const r of results.results) {
+            const path = r.metadata.path ?? r.metadata.url ?? 'unknown';
+            console.log(path);
+          }
+        } else {
+          console.log(`\nSearch: "${query}"`);
+          console.log(`Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms\n`);
+
+          if (results.results.length === 0) {
+            console.log('No results found.\n');
+          } else {
+            for (let i = 0; i < results.results.length; i++) {
+              const r = results.results[i];
+              if (r === undefined) continue;
+
+              if (r.summary) {
+                console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${r.summary.type}: ${r.summary.name}`);
+                console.log(`   ${r.summary.location}`);
+                console.log(`   ${r.summary.purpose}`);
+
+                if (r.context && options.detail !== 'minimal') {
+                  console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(', ')}`);
+                  console.log(`   Related: ${r.context.relatedConcepts.slice(0, 3).join(', ')}`);
+                }
+
+                console.log();
+              } else {
+                // Fallback to old format
+                const path = r.metadata.path ?? r.metadata.url ?? 'unknown';
+                console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${path}`);
+                const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, ' ') + (r.content.length > 150 ? '...' : '');
+                console.log(`   ${preview}\n`);
+              }
             }
           }
         }
+      } finally {
+        await destroyServices(services);
       }
     });
 

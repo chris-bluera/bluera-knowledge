@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import ora, { type Ora } from 'ora';
-import { createServices } from '../../services/index.js';
+import { createServices, destroyServices } from '../../services/index.js';
 import type { GlobalOptions } from '../program.js';
 
 export function createIndexCommand(getOptions: () => GlobalOptions): Command {
@@ -11,53 +11,56 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
     .action(async (storeIdOrName: string, _options: { force?: boolean }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
+      try {
+        const store = await services.store.getByIdOrName(storeIdOrName);
 
-      const store = await services.store.getByIdOrName(storeIdOrName);
-
-      if (store === undefined) {
-        console.error(`Error: Store not found: ${storeIdOrName}`);
-        process.exit(3);
-      }
-
-      // Use spinner in interactive mode (not quiet, not json output)
-      const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== 'json';
-      let spinner: Ora | undefined;
-
-      if (isInteractive) {
-        spinner = ora(`Indexing store: ${store.name}`).start();
-      } else if (globalOpts.quiet !== true && globalOpts.format !== 'json') {
-        console.log(`Indexing store: ${store.name}`);
-      }
-
-      await services.lance.initialize(store.id);
-
-      const result = await services.index.indexStore(store, (event) => {
-        if (event.type === 'progress') {
-          if (spinner) {
-            spinner.text = `Indexing: ${String(event.current)}/${String(event.total)} files - ${event.message}`;
-          }
+        if (store === undefined) {
+          console.error(`Error: Store not found: ${storeIdOrName}`);
+          process.exit(3);
         }
-      });
 
-      if (result.success) {
-        if (globalOpts.format === 'json') {
-          console.log(JSON.stringify(result.data, null, 2));
+        // Use spinner in interactive mode (not quiet, not json output)
+        const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== 'json';
+        let spinner: Ora | undefined;
+
+        if (isInteractive) {
+          spinner = ora(`Indexing store: ${store.name}`).start();
+        } else if (globalOpts.quiet !== true && globalOpts.format !== 'json') {
+          console.log(`Indexing store: ${store.name}`);
+        }
+
+        await services.lance.initialize(store.id);
+
+        const result = await services.index.indexStore(store, (event) => {
+          if (event.type === 'progress') {
+            if (spinner) {
+              spinner.text = `Indexing: ${String(event.current)}/${String(event.total)} files - ${event.message}`;
+            }
+          }
+        });
+
+        if (result.success) {
+          if (globalOpts.format === 'json') {
+            console.log(JSON.stringify(result.data, null, 2));
+          } else {
+            const message = `Indexed ${String(result.data.documentsIndexed)} documents, ${String(result.data.chunksCreated)} chunks in ${String(result.data.timeMs)}ms`;
+            if (spinner !== undefined) {
+              spinner.succeed(message);
+            } else if (globalOpts.quiet !== true) {
+              console.log(message);
+            }
+          }
         } else {
-          const message = `Indexed ${String(result.data.documentsIndexed)} documents, ${String(result.data.chunksCreated)} chunks in ${String(result.data.timeMs)}ms`;
+          const message = `Error: ${result.error.message}`;
           if (spinner !== undefined) {
-            spinner.succeed(message);
-          } else if (globalOpts.quiet !== true) {
-            console.log(message);
+            spinner.fail(message);
+          } else {
+            console.error(message);
           }
+          process.exit(4);
         }
-      } else {
-        const message = `Error: ${result.error.message}`;
-        if (spinner !== undefined) {
-          spinner.fail(message);
-        } else {
-          console.error(message);
-        }
-        process.exit(4);
+      } finally {
+        await destroyServices(services);
       }
     });
 

@@ -2,7 +2,7 @@ import {
   JobService,
   createServices,
   createStoreId
-} from "./chunk-7RPY32NI.js";
+} from "./chunk-EUE4BKMA.js";
 
 // src/mcp/server.ts
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -850,17 +850,21 @@ async function runMCPServer(options) {
   await server.connect(transport);
   console.error("Bluera Knowledge MCP server running on stdio");
 }
-runMCPServer({
-  dataDir: process.env["DATA_DIR"],
-  config: process.env["CONFIG_PATH"],
-  projectRoot: process.env["PROJECT_ROOT"] ?? process.env["PWD"]
-}).catch((error) => {
-  console.error("Failed to start MCP server:", error);
-  process.exit(1);
-});
+var scriptPath = process.argv[1] ?? "";
+var isMCPServerEntry = scriptPath.endsWith("mcp/server.js") || scriptPath.endsWith("mcp/server");
+if (isMCPServerEntry) {
+  runMCPServer({
+    dataDir: process.env["DATA_DIR"],
+    config: process.env["CONFIG_PATH"],
+    projectRoot: process.env["PROJECT_ROOT"] ?? process.env["PWD"]
+  }).catch((error) => {
+    console.error("Failed to start MCP server:", error);
+    process.exit(1);
+  });
+}
 
 export {
   createMCPServer,
   runMCPServer
 };
-//# sourceMappingURL=chunk-KPRHQT42.js.map
+//# sourceMappingURL=chunk-7BI4JJML.js.map

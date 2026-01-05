@@ -249,12 +249,18 @@ export async function runMCPServer(options: MCPServerOptions): Promise<void> {
   console.error('Bluera Knowledge MCP server running on stdio');
 }
 
-// Run the server when this file is executed directly
-runMCPServer({
-  dataDir: process.env['DATA_DIR'],
-  config: process.env['CONFIG_PATH'],
-  projectRoot: process.env['PROJECT_ROOT'] ?? process.env['PWD']
-}).catch((error: unknown) => {
-  console.error('Failed to start MCP server:', error);
-  process.exit(1);
-});
+// Run the server only when this file is executed directly (not imported by CLI)
+// Check if we're running as the mcp/server entry point vs being imported by index.js
+const scriptPath = process.argv[1] ?? '';
+const isMCPServerEntry = scriptPath.endsWith('mcp/server.js') || scriptPath.endsWith('mcp/server');
+
+if (isMCPServerEntry) {
+  runMCPServer({
+    dataDir: process.env['DATA_DIR'],
+    config: process.env['CONFIG_PATH'],
+    projectRoot: process.env['PROJECT_ROOT'] ?? process.env['PWD']
+  }).catch((error: unknown) => {
+    console.error('Failed to start MCP server:', error);
+    process.exit(1);
+  });
+}

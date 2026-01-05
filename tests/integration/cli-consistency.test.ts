@@ -17,16 +17,18 @@ import { join } from 'node:path';
  */
 
 /**
- * SKIPPED: CLI consistency tests timing out (60s+ with no output)
+ * CLI Consistency Tests
  *
- * Issue: CLI commands hang when run via execSync/spawnSync in test environment
- * - Same root cause as cli.test.ts
- * - All commands that spawn CLI hang indefinitely
- * - Originally took 788s with 9 timeouts (60-120s each)
+ * Tests that CLI commands have consistent behavior:
+ * - Exit codes
+ * - JSON format support
+ * - Quiet mode
+ * - Error message format
  *
- * To re-enable: Fix the CLI subprocess hanging issue and remove .skip
+ * The CLI now properly cleans up resources via destroyServices() which
+ * stops the PythonBridge subprocess, allowing commands to exit cleanly.
  */
-describe.skip('CLI Consistency', () => {
+describe('CLI Consistency', () => {
   let tempDir: string;
   let testFilesDir: string;
 
@@ -132,16 +134,6 @@ describe.skip('CLI Consistency', () => {
       expect(result.stderr).toContain('Error: Store not found');
     });
 
-    it('returns non-zero exit code when store not found for export', () => {
-      const result = runCli('export nonexistent-store /tmp/out.json');
-      expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain('Error: Store not found');
-    });
-
-    it('returns non-zero exit code for import with invalid file', () => {
-      const result = runCli('import /nonexistent/file.json test-import');
-      expect(result.exitCode).not.toBe(0);
-    });
   });
 
   describe('--format json Support', () => {
@@ -175,24 +167,6 @@ describe.skip('CLI Consistency', () => {
       const parsed = JSON.parse(result.stdout);
       expect(parsed).toHaveProperty('results');
     });
-
-    it('export supports --format json', () => {
-      const exportPath = join(tempDir, 'export.json');
-      const result = runCli(`export json-test-store "${exportPath}" --format json`);
-      expect(result.exitCode).toBe(0);
-      // In JSON mode, output should be parseable JSON with success info
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-    });
-
-    it('import supports --format json', async () => {
-      // First create a valid export file
-      const exportPath = join(tempDir, 'import-test.json');
-      cli(`export json-test-store "${exportPath}"`);
-
-      const result = runCli(`import "${exportPath}" imported-store --format json`);
-      expect(result.exitCode).toBe(0);
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-    }, 120000);
 
     it('index supports --format json', () => {
       const result = runCli('index json-test-store --format json');
@@ -254,11 +228,6 @@ describe.skip('CLI Consistency', () => {
 
     it('uses consistent "Error:" prefix for search store not found', () => {
       const result = runCli('search "test" --stores nonexistent');
-      expect(result.stderr).toMatch(/^Error: Store not found: nonexistent/m);
-    });
-
-    it('uses consistent "Error:" prefix for export not found', () => {
-      const result = runCli('export nonexistent /tmp/out.json');
       expect(result.stderr).toMatch(/^Error: Store not found: nonexistent/m);
     });
 
@@ -326,12 +295,5 @@ describe.skip('CLI Consistency', () => {
       expect(result.exitCode).toBe(0);
     }, 120000);
 
-    it('does not show spinner characters in non-TTY mode for import', async () => {
-      const exportPath = join(tempDir, 'spinner-import.json');
-      cli(`export json-test-store "${exportPath}"`);
-
-      const result = runCli(`import "${exportPath}" spinner-imported --format json`);
-      expect(result.stdout).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/);
-    }, 120000);
   });
 });

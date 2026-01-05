@@ -65,3 +65,11 @@ export async function createServices(
     pythonBridge,
   };
 }
+
+/**
+ * Cleanly shut down all services, stopping background processes.
+ * Call this after CLI commands complete to allow the process to exit.
+ */
+export async function destroyServices(services: ServiceContainer): Promise<void> {
+  await services.pythonBridge.stop();
+}

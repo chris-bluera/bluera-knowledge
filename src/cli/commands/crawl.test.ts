@@ -6,7 +6,10 @@ import type { GlobalOptions } from '../program.js';
 import type { WebStore } from '../../types/store.js';
 import { createStoreId, createDocumentId } from '../../types/brands.js';
 
-vi.mock('../../services/index.js');
+vi.mock('../../services/index.js', () => ({
+  createServices: vi.fn(),
+  destroyServices: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../crawl/intelligent-crawler.js', () => ({
   IntelligentCrawler: vi.fn(),
 }));

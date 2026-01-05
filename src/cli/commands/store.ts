@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createServices } from '../../services/index.js';
+import { createServices, destroyServices } from '../../services/index.js';
 import type { GlobalOptions } from '../program.js';
 import type { StoreType } from '../../types/store.js';
 
@@ -13,25 +13,29 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     .action(async (options: { type?: StoreType }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
-      const stores = await services.store.list(options.type);
+      try {
+        const stores = await services.store.list(options.type);
 
-      if (globalOpts.format === 'json') {
-        console.log(JSON.stringify(stores, null, 2));
-      } else if (globalOpts.quiet === true) {
-        // Quiet mode: just list store names, one per line
-        for (const s of stores) {
-          console.log(s.name);
-        }
-      } else {
-        if (stores.length === 0) {
-          console.log('No stores found.');
-        } else {
-          console.log('\nStores:\n');
+        if (globalOpts.format === 'json') {
+          console.log(JSON.stringify(stores, null, 2));
+        } else if (globalOpts.quiet === true) {
+          // Quiet mode: just list store names, one per line
           for (const s of stores) {
-            console.log(`  ${s.name} (${s.type}) - ${s.id}`);
+            console.log(s.name);
           }
-          console.log('');
+        } else {
+          if (stores.length === 0) {
+            console.log('No stores found.');
+          } else {
+            console.log('\nStores:\n');
+            for (const s of stores) {
+              console.log(`  ${s.name} (${s.type}) - ${s.id}`);
+            }
+            console.log('');
+          }
         }
+      } finally {
+        await destroyServices(services);
       }
     });
 
@@ -50,25 +54,28 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
+      try {
+        const result = await services.store.create({
+          name,
+          type: options.type,
+          path: options.type !== 'web' ? options.source : undefined,
+          url: options.type === 'web' ? options.source : undefined,
+          description: options.description,
+          tags: options.tags?.split(',').map((t) => t.trim()),
+        });
 
-      const result = await services.store.create({
-        name,
-        type: options.type,
-        path: options.type !== 'web' ? options.source : undefined,
-        url: options.type === 'web' ? options.source : undefined,
-        description: options.description,
-        tags: options.tags?.split(',').map((t) => t.trim()),
-      });
-
-      if (result.success) {
-        if (globalOpts.format === 'json') {
-          console.log(JSON.stringify(result.data, null, 2));
+        if (result.success) {
+          if (globalOpts.format === 'json') {
+            console.log(JSON.stringify(result.data, null, 2));
+          } else {
+            console.log(`\nCreated store: ${result.data.name} (${result.data.id})\n`);
+          }
         } else {
-          console.log(`\nCreated store: ${result.data.name} (${result.data.id})\n`);
+          console.error(`Error: ${result.error.message}`);
+          process.exit(1);
         }
-      } else {
-        console.error(`Error: ${result.error.message}`);
-        process.exit(1);
+      } finally {
+        await destroyServices(services);
       }
     });
 
@@ -78,25 +85,29 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     .action(async (storeIdOrName: string) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
-      const s = await services.store.getByIdOrName(storeIdOrName);
+      try {
+        const s = await services.store.getByIdOrName(storeIdOrName);
 
-      if (s === undefined) {
-        console.error(`Error: Store not found: ${storeIdOrName}`);
-        process.exit(3);
-      }
+        if (s === undefined) {
+          console.error(`Error: Store not found: ${storeIdOrName}`);
+          process.exit(3);
+        }
 
-      if (globalOpts.format === 'json') {
-        console.log(JSON.stringify(s, null, 2));
-      } else {
-        console.log(`\nStore: ${s.name}`);
-        console.log(`  ID: ${s.id}`);
-        console.log(`  Type: ${s.type}`);
-        if ('path' in s) console.log(`  Path: ${s.path}`);
-        if ('url' in s && s.url !== undefined) console.log(`  URL: ${s.url}`);
-        if (s.description !== undefined) console.log(`  Description: ${s.description}`);
-        console.log(`  Created: ${s.createdAt.toISOString()}`);
-        console.log(`  Updated: ${s.updatedAt.toISOString()}`);
-        console.log('');
+        if (globalOpts.format === 'json') {
+          console.log(JSON.stringify(s, null, 2));
+        } else {
+          console.log(`\nStore: ${s.name}`);
+          console.log(`  ID: ${s.id}`);
+          console.log(`  Type: ${s.type}`);
+          if ('path' in s) console.log(`  Path: ${s.path}`);
+          if ('url' in s && s.url !== undefined) console.log(`  URL: ${s.url}`);
+          if (s.description !== undefined) console.log(`  Description: ${s.description}`);
+          console.log(`  Created: ${s.createdAt.toISOString()}`);
+          console.log(`  Updated: ${s.updatedAt.toISOString()}`);
+          console.log('');
+        }
+      } finally {
+        await destroyServices(services);
       }
     });
 
@@ -108,43 +119,47 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     .action(async (storeIdOrName: string, options: { force?: boolean; yes?: boolean }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
-      const s = await services.store.getByIdOrName(storeIdOrName);
+      try {
+        const s = await services.store.getByIdOrName(storeIdOrName);
 
-      if (s === undefined) {
-        console.error(`Error: Store not found: ${storeIdOrName}`);
-        process.exit(3);
-      }
+        if (s === undefined) {
+          console.error(`Error: Store not found: ${storeIdOrName}`);
+          process.exit(3);
+        }
 
-      // Require --force or -y in non-TTY mode, prompt in TTY mode
-      const skipConfirmation = options.force === true || options.yes === true;
-      if (!skipConfirmation) {
-        if (!process.stdin.isTTY) {
-          console.error('Error: Use --force or -y to delete without confirmation in non-interactive mode');
+        // Require --force or -y in non-TTY mode, prompt in TTY mode
+        const skipConfirmation = options.force === true || options.yes === true;
+        if (!skipConfirmation) {
+          if (!process.stdin.isTTY) {
+            console.error('Error: Use --force or -y to delete without confirmation in non-interactive mode');
+            process.exit(1);
+          }
+          // Interactive confirmation
+          const readline = await import('node:readline');
+          const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+          });
+          const answer = await new Promise<string>((resolve) => {
+            rl.question(`Delete store "${s.name}"? [y/N] `, resolve);
+          });
+          rl.close();
+          if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
+            console.log('Cancelled.');
+            process.exit(0);
+          }
+        }
+
+        const result = await services.store.delete(s.id);
+
+        if (result.success) {
+          console.log(`Deleted store: ${s.name}`);
+        } else {
+          console.error(`Error: ${result.error.message}`);
           process.exit(1);
         }
-        // Interactive confirmation
-        const readline = await import('node:readline');
-        const rl = readline.createInterface({
-          input: process.stdin,
-          output: process.stdout,
-        });
-        const answer = await new Promise<string>((resolve) => {
-          rl.question(`Delete store "${s.name}"? [y/N] `, resolve);
-        });
-        rl.close();
-        if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
-          console.log('Cancelled.');
-          process.exit(0);
-        }
-      }
-
-      const result = await services.store.delete(s.id);
-
-      if (result.success) {
-        console.log(`Deleted store: ${s.name}`);
-      } else {
-        console.error(`Error: ${result.error.message}`);
-        process.exit(1);
+      } finally {
+        await destroyServices(services);
       }
     });
 

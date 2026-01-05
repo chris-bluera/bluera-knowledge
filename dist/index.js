@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 import {
   runMCPServer
-} from "./chunk-KPRHQT42.js";
+} from "./chunk-7BI4JJML.js";
 import {
   IntelligentCrawler
-} from "./chunk-INRON5NQ.js";
+} from "./chunk-VUAK4ZM5.js";
 import {
   ASTParser,
   createDocumentId,
   createServices,
+  destroyServices,
   err,
   extractRepoName,
   ok
-} from "./chunk-7RPY32NI.js";
+} from "./chunk-EUE4BKMA.js";
 import "./chunk-L2YVNC63.js";
 
 // src/index.ts
@@ -57,106 +58,122 @@ function createStoreCommand(getOptions) {
   store.command("list").description("Show all stores with their type (file/repo/web) and ID").option("-t, --type <type>", "Filter by type: file, repo, or web").action(async (options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    const stores = await services.store.list(options.type);
-    if (globalOpts.format === "json") {
-      console.log(JSON.stringify(stores, null, 2));
-    } else if (globalOpts.quiet === true) {
-      for (const s of stores) {
-        console.log(s.name);
-      }
-    } else {
-      if (stores.length === 0) {
-        console.log("No stores found.");
-      } else {
-        console.log("\nStores:\n");
+    try {
+      const stores = await services.store.list(options.type);
+      if (globalOpts.format === "json") {
+        console.log(JSON.stringify(stores, null, 2));
+      } else if (globalOpts.quiet === true) {
         for (const s of stores) {
-          console.log(`  ${s.name} (${s.type}) - ${s.id}`);
+          console.log(s.name);
         }
-        console.log("");
+      } else {
+        if (stores.length === 0) {
+          console.log("No stores found.");
+        } else {
+          console.log("\nStores:\n");
+          for (const s of stores) {
+            console.log(`  ${s.name} (${s.type}) - ${s.id}`);
+          }
+          console.log("");
+        }
       }
+    } finally {
+      await destroyServices(services);
     }
   });
   store.command("create <name>").description("Create a new store pointing to a local path or URL").requiredOption("-t, --type <type>", "Store type: file (local dir), repo (git), web (crawled site)").requiredOption("-s, --source <path>", "Local path for file/repo stores, URL for web stores").option("-d, --description <desc>", "Optional description for the store").option("--tags <tags>", "Comma-separated tags for filtering").action(async (name, options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    const result = await services.store.create({
-      name,
-      type: options.type,
-      path: options.type !== "web" ? options.source : void 0,
-      url: options.type === "web" ? options.source : void 0,
-      description: options.description,
-      tags: options.tags?.split(",").map((t) => t.trim())
-    });
-    if (result.success) {
-      if (globalOpts.format === "json") {
-        console.log(JSON.stringify(result.data, null, 2));
-      } else {
-        console.log(`
+    try {
+      const result = await services.store.create({
+        name,
+        type: options.type,
+        path: options.type !== "web" ? options.source : void 0,
+        url: options.type === "web" ? options.source : void 0,
+        description: options.description,
+        tags: options.tags?.split(",").map((t) => t.trim())
+      });
+      if (result.success) {
+        if (globalOpts.format === "json") {
+          console.log(JSON.stringify(result.data, null, 2));
+        } else {
+          console.log(`
 Created store: ${result.data.name} (${result.data.id})
 `);
+        }
+      } else {
+        console.error(`Error: ${result.error.message}`);
+        process.exit(1);
       }
-    } else {
-      console.error(`Error: ${result.error.message}`);
-      process.exit(1);
+    } finally {
+      await destroyServices(services);
     }
   });
   store.command("info <store>").description("Show store details: ID, type, path/URL, timestamps").action(async (storeIdOrName) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    const s = await services.store.getByIdOrName(storeIdOrName);
-    if (s === void 0) {
-      console.error(`Error: Store not found: ${storeIdOrName}`);
-      process.exit(3);
-    }
-    if (globalOpts.format === "json") {
-      console.log(JSON.stringify(s, null, 2));
-    } else {
-      console.log(`
+    try {
+      const s = await services.store.getByIdOrName(storeIdOrName);
+      if (s === void 0) {
+        console.error(`Error: Store not found: ${storeIdOrName}`);
+        process.exit(3);
+      }
+      if (globalOpts.format === "json") {
+        console.log(JSON.stringify(s, null, 2));
+      } else {
+        console.log(`
 Store: ${s.name}`);
-      console.log(`  ID: ${s.id}`);
-      console.log(`  Type: ${s.type}`);
-      if ("path" in s) console.log(`  Path: ${s.path}`);
-      if ("url" in s && s.url !== void 0) console.log(`  URL: ${s.url}`);
-      if (s.description !== void 0) console.log(`  Description: ${s.description}`);
-      console.log(`  Created: ${s.createdAt.toISOString()}`);
-      console.log(`  Updated: ${s.updatedAt.toISOString()}`);
-      console.log("");
+        console.log(`  ID: ${s.id}`);
+        console.log(`  Type: ${s.type}`);
+        if ("path" in s) console.log(`  Path: ${s.path}`);
+        if ("url" in s && s.url !== void 0) console.log(`  URL: ${s.url}`);
+        if (s.description !== void 0) console.log(`  Description: ${s.description}`);
+        console.log(`  Created: ${s.createdAt.toISOString()}`);
+        console.log(`  Updated: ${s.updatedAt.toISOString()}`);
+        console.log("");
+      }
+    } finally {
+      await destroyServices(services);
     }
   });
   store.command("delete <store>").description("Remove store and its indexed documents from LanceDB").option("-f, --force", "Delete without confirmation prompt").option("-y, --yes", "Alias for --force").action(async (storeIdOrName, options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    const s = await services.store.getByIdOrName(storeIdOrName);
-    if (s === void 0) {
-      console.error(`Error: Store not found: ${storeIdOrName}`);
-      process.exit(3);
-    }
-    const skipConfirmation = options.force === true || options.yes === true;
-    if (!skipConfirmation) {
-      if (!process.stdin.isTTY) {
-        console.error("Error: Use --force or -y to delete without confirmation in non-interactive mode");
+    try {
+      const s = await services.store.getByIdOrName(storeIdOrName);
+      if (s === void 0) {
+        console.error(`Error: Store not found: ${storeIdOrName}`);
+        process.exit(3);
+      }
+      const skipConfirmation = options.force === true || options.yes === true;
+      if (!skipConfirmation) {
+        if (!process.stdin.isTTY) {
+          console.error("Error: Use --force or -y to delete without confirmation in non-interactive mode");
+          process.exit(1);
+        }
+        const readline = await import("readline");
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout
+        });
+        const answer = await new Promise((resolve) => {
+          rl.question(`Delete store "${s.name}"? [y/N] `, resolve);
+        });
+        rl.close();
+        if (answer.toLowerCase() !== "y" && answer.toLowerCase() !== "yes") {
+          console.log("Cancelled.");
+          process.exit(0);
+        }
+      }
+      const result = await services.store.delete(s.id);
+      if (result.success) {
+        console.log(`Deleted store: ${s.name}`);
+      } else {
+        console.error(`Error: ${result.error.message}`);
         process.exit(1);
       }
-      const readline = await import("readline");
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-      const answer = await new Promise((resolve) => {
-        rl.question(`Delete store "${s.name}"? [y/N] `, resolve);
-      });
-      rl.close();
-      if (answer.toLowerCase() !== "y" && answer.toLowerCase() !== "yes") {
-        console.log("Cancelled.");
-        process.exit(0);
-      }
-    }
-    const result = await services.store.delete(s.id);
-    if (result.success) {
-      console.log(`Deleted store: ${s.name}`);
-    } else {
-      console.error(`Error: ${result.error.message}`);
-      process.exit(1);
+    } finally {
+      await destroyServices(services);
     }
   });
   return store;
@@ -168,73 +185,77 @@ function createSearchCommand(getOptions) {
   const search = new Command3("search").description("Search indexed documents using vector similarity + full-text matching").argument("<query>", "Search query").option("-s, --stores <stores>", "Limit search to specific stores (comma-separated IDs or names)").option("-m, --mode <mode>", "vector (embeddings only), fts (text only), hybrid (both, default)", "hybrid").option("-n, --limit <count>", "Maximum results to return (default: 10)", "10").option("-t, --threshold <score>", "Minimum score 0-1; omit low-relevance results").option("--include-content", "Show full document content, not just preview snippet").option("--detail <level>", "Context detail: minimal, contextual, full (default: minimal)", "minimal").action(async (query, options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    let storeIds = (await services.store.list()).map((s) => s.id);
-    if (options.stores !== void 0) {
-      const requestedStores = options.stores.split(",").map((s) => s.trim());
-      const resolvedStores = [];
-      for (const requested of requestedStores) {
-        const store = await services.store.getByIdOrName(requested);
-        if (store !== void 0) {
-          resolvedStores.push(store.id);
-        } else {
-          console.error(`Error: Store not found: ${requested}`);
-          process.exit(3);
-        }
-      }
-      storeIds = resolvedStores;
-    }
-    if (storeIds.length === 0) {
-      console.error("No stores to search. Create a store first.");
-      process.exit(1);
-    }
-    for (const storeId of storeIds) {
-      await services.lance.initialize(storeId);
-    }
-    const results = await services.search.search({
-      query,
-      stores: storeIds,
-      mode: options.mode ?? "hybrid",
-      limit: parseInt(options.limit ?? "10", 10),
-      threshold: options.threshold !== void 0 ? parseFloat(options.threshold) : void 0,
-      includeContent: options.includeContent,
-      detail: options.detail ?? "minimal"
-    });
-    if (globalOpts.format === "json") {
-      console.log(JSON.stringify(results, null, 2));
-    } else if (globalOpts.quiet === true) {
-      for (const r of results.results) {
-        const path = r.metadata.path ?? r.metadata.url ?? "unknown";
-        console.log(path);
-      }
-    } else {
-      console.log(`
-Search: "${query}"`);
-      console.log(`Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms
-`);
-      if (results.results.length === 0) {
-        console.log("No results found.\n");
-      } else {
-        for (let i = 0; i < results.results.length; i++) {
-          const r = results.results[i];
-          if (r === void 0) continue;
-          if (r.summary) {
-            console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${r.summary.type}: ${r.summary.name}`);
-            console.log(`   ${r.summary.location}`);
-            console.log(`   ${r.summary.purpose}`);
-            if (r.context && options.detail !== "minimal") {
-              console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(", ")}`);
-              console.log(`   Related: ${r.context.relatedConcepts.slice(0, 3).join(", ")}`);
-            }
-            console.log();
+    try {
+      let storeIds = (await services.store.list()).map((s) => s.id);
+      if (options.stores !== void 0) {
+        const requestedStores = options.stores.split(",").map((s) => s.trim());
+        const resolvedStores = [];
+        for (const requested of requestedStores) {
+          const store = await services.store.getByIdOrName(requested);
+          if (store !== void 0) {
+            resolvedStores.push(store.id);
           } else {
-            const path = r.metadata.path ?? r.metadata.url ?? "unknown";
-            console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${path}`);
-            const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, " ") + (r.content.length > 150 ? "..." : "");
-            console.log(`   ${preview}
+            console.error(`Error: Store not found: ${requested}`);
+            process.exit(3);
+          }
+        }
+        storeIds = resolvedStores;
+      }
+      if (storeIds.length === 0) {
+        console.error("No stores to search. Create a store first.");
+        process.exit(1);
+      }
+      for (const storeId of storeIds) {
+        await services.lance.initialize(storeId);
+      }
+      const results = await services.search.search({
+        query,
+        stores: storeIds,
+        mode: options.mode ?? "hybrid",
+        limit: parseInt(options.limit ?? "10", 10),
+        threshold: options.threshold !== void 0 ? parseFloat(options.threshold) : void 0,
+        includeContent: options.includeContent,
+        detail: options.detail ?? "minimal"
+      });
+      if (globalOpts.format === "json") {
+        console.log(JSON.stringify(results, null, 2));
+      } else if (globalOpts.quiet === true) {
+        for (const r of results.results) {
+          const path = r.metadata.path ?? r.metadata.url ?? "unknown";
+          console.log(path);
+        }
+      } else {
+        console.log(`
+Search: "${query}"`);
+        console.log(`Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms
 `);
+        if (results.results.length === 0) {
+          console.log("No results found.\n");
+        } else {
+          for (let i = 0; i < results.results.length; i++) {
+            const r = results.results[i];
+            if (r === void 0) continue;
+            if (r.summary) {
+              console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${r.summary.type}: ${r.summary.name}`);
+              console.log(`   ${r.summary.location}`);
+              console.log(`   ${r.summary.purpose}`);
+              if (r.context && options.detail !== "minimal") {
+                console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(", ")}`);
+                console.log(`   Related: ${r.context.relatedConcepts.slice(0, 3).join(", ")}`);
+              }
+              console.log();
+            } else {
+              const path = r.metadata.path ?? r.metadata.url ?? "unknown";
+              console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${path}`);
+              const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, " ") + (r.content.length > 150 ? "..." : "");
+              console.log(`   ${preview}
+`);
+            }
           }
         }
       }
+    } finally {
+      await destroyServices(services);
     }
   });
   return search;
@@ -247,45 +268,49 @@ function createIndexCommand(getOptions) {
   const index = new Command4("index").description("Scan store files, chunk text, generate embeddings, save to LanceDB").argument("<store>", "Store ID or name").option("--force", "Re-index all files even if unchanged").action(async (storeIdOrName, _options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    const store = await services.store.getByIdOrName(storeIdOrName);
-    if (store === void 0) {
-      console.error(`Error: Store not found: ${storeIdOrName}`);
-      process.exit(3);
-    }
-    const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== "json";
-    let spinner;
-    if (isInteractive) {
-      spinner = ora(`Indexing store: ${store.name}`).start();
-    } else if (globalOpts.quiet !== true && globalOpts.format !== "json") {
-      console.log(`Indexing store: ${store.name}`);
-    }
-    await services.lance.initialize(store.id);
-    const result = await services.index.indexStore(store, (event) => {
-      if (event.type === "progress") {
-        if (spinner) {
-          spinner.text = `Indexing: ${String(event.current)}/${String(event.total)} files - ${event.message}`;
-        }
+    try {
+      const store = await services.store.getByIdOrName(storeIdOrName);
+      if (store === void 0) {
+        console.error(`Error: Store not found: ${storeIdOrName}`);
+        process.exit(3);
       }
-    });
-    if (result.success) {
-      if (globalOpts.format === "json") {
-        console.log(JSON.stringify(result.data, null, 2));
+      const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== "json";
+      let spinner;
+      if (isInteractive) {
+        spinner = ora(`Indexing store: ${store.name}`).start();
+      } else if (globalOpts.quiet !== true && globalOpts.format !== "json") {
+        console.log(`Indexing store: ${store.name}`);
+      }
+      await services.lance.initialize(store.id);
+      const result = await services.index.indexStore(store, (event) => {
+        if (event.type === "progress") {
+          if (spinner) {
+            spinner.text = `Indexing: ${String(event.current)}/${String(event.total)} files - ${event.message}`;
+          }
+        }
+      });
+      if (result.success) {
+        if (globalOpts.format === "json") {
+          console.log(JSON.stringify(result.data, null, 2));
+        } else {
+          const message = `Indexed ${String(result.data.documentsIndexed)} documents, ${String(result.data.chunksCreated)} chunks in ${String(result.data.timeMs)}ms`;
+          if (spinner !== void 0) {
+            spinner.succeed(message);
+          } else if (globalOpts.quiet !== true) {
+            console.log(message);
+          }
+        }
       } else {
-        const message = `Indexed ${String(result.data.documentsIndexed)} documents, ${String(result.data.chunksCreated)} chunks in ${String(result.data.timeMs)}ms`;
+        const message = `Error: ${result.error.message}`;
         if (spinner !== void 0) {
-          spinner.succeed(message);
-        } else if (globalOpts.quiet !== true) {
-          console.log(message);
+          spinner.fail(message);
+        } else {
+          console.error(message);
         }
+        process.exit(4);
       }
-    } else {
-      const message = `Error: ${result.error.message}`;
-      if (spinner !== void 0) {
-        spinner.fail(message);
-      } else {
-        console.error(message);
-      }
-      process.exit(4);
+    } finally {
+      await destroyServices(services);
     }
   });
   index.command("watch <store>").description("Watch store directory; re-index when files change").option("--debounce <ms>", "Wait N ms after last change before re-indexing (default: 1000)", "1000").action(async (storeIdOrName, options) => {
@@ -494,6 +519,7 @@ function createCrawlCommand(getOptions) {
       process.exit(6);
     } finally {
       await crawler.stop();
+      await destroyServices(services);
     }
   });
 }
@@ -577,84 +603,88 @@ function createSetupCommand(getOptions) {
       return;
     }
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    let repos = DEFAULT_REPOS;
-    if (options.only !== void 0 && options.only !== "") {
-      const onlyNames = options.only.split(",").map((n) => n.trim().toLowerCase());
-      repos = DEFAULT_REPOS.filter(
-        (r) => onlyNames.some((n) => r.name.toLowerCase().includes(n))
-      );
-      if (repos.length === 0) {
-        console.error(`No repos matched: ${options.only}`);
-        console.log("Available repos:", DEFAULT_REPOS.map((r) => r.name).join(", "));
-        process.exit(1);
+    try {
+      let repos = DEFAULT_REPOS;
+      if (options.only !== void 0 && options.only !== "") {
+        const onlyNames = options.only.split(",").map((n) => n.trim().toLowerCase());
+        repos = DEFAULT_REPOS.filter(
+          (r) => onlyNames.some((n) => r.name.toLowerCase().includes(n))
+        );
+        if (repos.length === 0) {
+          console.error(`No repos matched: ${options.only}`);
+          console.log("Available repos:", DEFAULT_REPOS.map((r) => r.name).join(", "));
+          process.exit(1);
+        }
       }
-    }
-    console.log(`
+      console.log(`
 Setting up ${String(repos.length)} repositories...
 `);
-    await mkdir(options.reposDir, { recursive: true });
-    for (const repo of repos) {
-      const repoPath = join2(options.reposDir, repo.name);
-      const spinner = ora3(`Processing ${repo.name}`).start();
-      try {
-        if (options.skipClone !== true) {
-          if (existsSync(repoPath)) {
-            spinner.text = `${repo.name}: Already cloned, pulling latest...`;
-            try {
-              execSync("git pull --ff-only", { cwd: repoPath, stdio: "pipe" });
-            } catch {
-              spinner.text = `${repo.name}: Pull skipped (local changes)`;
+      await mkdir(options.reposDir, { recursive: true });
+      for (const repo of repos) {
+        const repoPath = join2(options.reposDir, repo.name);
+        const spinner = ora3(`Processing ${repo.name}`).start();
+        try {
+          if (options.skipClone !== true) {
+            if (existsSync(repoPath)) {
+              spinner.text = `${repo.name}: Already cloned, pulling latest...`;
+              try {
+                execSync("git pull --ff-only", { cwd: repoPath, stdio: "pipe" });
+              } catch {
+                spinner.text = `${repo.name}: Pull skipped (local changes)`;
+              }
+            } else {
+              spinner.text = `${repo.name}: Cloning...`;
+              execSync(`git clone ${repo.url} "${repoPath}"`, { stdio: "pipe" });
+            }
+          }
+          spinner.text = `${repo.name}: Creating store...`;
+          const existingStore = await services.store.getByIdOrName(repo.name);
+          let storeId;
+          if (existingStore) {
+            storeId = existingStore.id;
+            spinner.text = `${repo.name}: Store already exists`;
+          } else {
+            const result = await services.store.create({
+              name: repo.name,
+              type: "repo",
+              path: repoPath,
+              description: repo.description,
+              tags: repo.tags
+            });
+            if (!result.success) {
+              throw new Error(result.error instanceof Error ? result.error.message : String(result.error));
+            }
+            storeId = result.data.id;
+          }
+          if (options.skipIndex !== true) {
+            spinner.text = `${repo.name}: Indexing...`;
+            const store = await services.store.getByIdOrName(storeId);
+            if (store) {
+              await services.lance.initialize(store.id);
+              const indexResult = await services.index.indexStore(store, (event) => {
+                if (event.type === "progress") {
+                  spinner.text = `${repo.name}: Indexing ${String(event.current)}/${String(event.total)} files`;
+                }
+              });
+              if (indexResult.success) {
+                spinner.succeed(
+                  `${repo.name}: ${String(indexResult.data.documentsIndexed)} docs, ${String(indexResult.data.chunksCreated)} chunks`
+                );
+              } else {
+                throw new Error(indexResult.error instanceof Error ? indexResult.error.message : String(indexResult.error));
+              }
             }
           } else {
-            spinner.text = `${repo.name}: Cloning...`;
-            execSync(`git clone ${repo.url} "${repoPath}"`, { stdio: "pipe" });
+            spinner.succeed(`${repo.name}: Ready (indexing skipped)`);
           }
+        } catch (error) {
+          spinner.fail(`${repo.name}: ${error instanceof Error ? error.message : String(error)}`);
         }
-        spinner.text = `${repo.name}: Creating store...`;
-        const existingStore = await services.store.getByIdOrName(repo.name);
-        let storeId;
-        if (existingStore) {
-          storeId = existingStore.id;
-          spinner.text = `${repo.name}: Store already exists`;
-        } else {
-          const result = await services.store.create({
-            name: repo.name,
-            type: "repo",
-            path: repoPath,
-            description: repo.description,
-            tags: repo.tags
-          });
-          if (!result.success) {
-            throw new Error(result.error instanceof Error ? result.error.message : String(result.error));
-          }
-          storeId = result.data.id;
-        }
-        if (options.skipIndex !== true) {
-          spinner.text = `${repo.name}: Indexing...`;
-          const store = await services.store.getByIdOrName(storeId);
-          if (store) {
-            await services.lance.initialize(store.id);
-            const indexResult = await services.index.indexStore(store, (event) => {
-              if (event.type === "progress") {
-                spinner.text = `${repo.name}: Indexing ${String(event.current)}/${String(event.total)} files`;
-              }
-            });
-            if (indexResult.success) {
-              spinner.succeed(
-                `${repo.name}: ${String(indexResult.data.documentsIndexed)} docs, ${String(indexResult.data.chunksCreated)} chunks`
-              );
-            } else {
-              throw new Error(indexResult.error instanceof Error ? indexResult.error.message : String(indexResult.error));
-            }
-          }
-        } else {
-          spinner.succeed(`${repo.name}: Ready (indexing skipped)`);
-        }
-      } catch (error) {
-        spinner.fail(`${repo.name}: ${error instanceof Error ? error.message : String(error)}`);
       }
+      console.log('\nSetup complete! Use "bluera-knowledge search <query>" to search.\n');
+    } finally {
+      await destroyServices(services);
     }
-    console.log('\nSetup complete! Use "bluera-knowledge search <query>" to search.\n');
   });
   return setup;
 }

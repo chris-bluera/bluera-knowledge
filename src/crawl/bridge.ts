@@ -27,6 +27,7 @@ interface PendingRequest {
 export class PythonBridge {
   private process: ChildProcess | null = null;
   private readonly pending: Map<string, PendingRequest> = new Map();
+  private stoppingIntentionally = false;
 
   start(): Promise<void> {
     if (this.process) return Promise.resolve();
@@ -46,11 +47,13 @@ export class PythonBridge {
       if (code !== 0 && code !== null) {
         console.error(`Python bridge process exited with code ${String(code)}`);
         this.rejectAllPending(new Error(`Process exited with code ${String(code)}`));
-      } else if (signal) {
+      } else if (signal && !this.stoppingIntentionally) {
+        // Only log if we didn't intentionally stop the process
         console.error(`Python bridge process killed with signal ${signal}`);
         this.rejectAllPending(new Error(`Process killed with signal ${signal}`));
       }
       this.process = null;
+      this.stoppingIntentionally = false;
     });
 
     // Add stderr logging
@@ -215,6 +218,7 @@ export class PythonBridge {
 
   stop(): Promise<void> {
     if (this.process) {
+      this.stoppingIntentionally = true;
       this.rejectAllPending(new Error('Python bridge stopped'));
       this.process.kill();
       this.process = null;

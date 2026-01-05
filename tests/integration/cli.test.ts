@@ -5,22 +5,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 /**
- * SKIPPED: CLI integration tests currently timing out at 120s
+ * CLI Integration Tests
  *
- * Issue: All CLI commands hang when run via execSync in test environment
- * - creates and lists stores: 120s timeout
- * - shows store info: 120s timeout
- * - indexes a store: 120s timeout
- * - searches indexed content: 120s timeout
- *
- * Potential causes:
- * - CLI waiting for stdin/user input
- * - Subprocess communication issues with vitest worker isolation
- * - Need to investigate why CLI hangs in test subprocess
- *
- * To re-enable: Fix the underlying CLI hanging issue and remove .skip
+ * Tests the CLI commands work correctly when run as subprocesses.
+ * The CLI now properly cleans up resources via destroyServices() which
+ * stops the PythonBridge subprocess, allowing commands to exit cleanly.
  */
-describe.skip('CLI Integration', () => {
+describe('CLI Integration', () => {
   let tempDir: string;
   let testFilesDir: string;
 

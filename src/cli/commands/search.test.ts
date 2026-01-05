@@ -5,7 +5,10 @@ import type { GlobalOptions } from '../program.js';
 import type { SearchResponse } from '../../types/search.js';
 import { createStoreId, createDocumentId } from '../../types/brands.js';
 
-vi.mock('../../services/index.js');
+vi.mock('../../services/index.js', () => ({
+  createServices: vi.fn(),
+  destroyServices: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe('search command execution', () => {
   let mockServices: any;

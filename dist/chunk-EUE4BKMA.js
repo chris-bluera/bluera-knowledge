@@ -3387,6 +3387,7 @@ function validateParsePythonResult(data) {
 var PythonBridge = class {
   process = null;
   pending = /* @__PURE__ */ new Map();
+  stoppingIntentionally = false;
   start() {
     if (this.process) return Promise.resolve();
     this.process = spawn2("python3", ["python/crawl_worker.py"], {
@@ -3400,11 +3401,12 @@ var PythonBridge = class {
       if (code !== 0 && code !== null) {
         console.error(`Python bridge process exited with code ${String(code)}`);
         this.rejectAllPending(new Error(`Process exited with code ${String(code)}`));
-      } else if (signal) {
+      } else if (signal && !this.stoppingIntentionally) {
         console.error(`Python bridge process killed with signal ${signal}`);
         this.rejectAllPending(new Error(`Process killed with signal ${signal}`));
       }
       this.process = null;
+      this.stoppingIntentionally = false;
     });
     if (this.process.stderr) {
       const stderrRl = createInterface({ input: this.process.stderr });
@@ -3537,6 +3539,7 @@ var PythonBridge = class {
   }
   stop() {
     if (this.process) {
+      this.stoppingIntentionally = true;
       this.rejectAllPending(new Error("Python bridge stopped"));
       this.process.kill();
       this.process = null;
@@ -3581,6 +3584,9 @@ async function createServices(configPath, dataDir, projectRoot) {
     pythonBridge
   };
 }
+async function destroyServices(services) {
+  await services.pythonBridge.stop();
+}
 
 export {
   createStoreId,
@@ -3591,6 +3597,7 @@ export {
   ASTParser,
   PythonBridge,
   JobService,
-  createServices
+  createServices,
+  destroyServices
 };
-//# sourceMappingURL=chunk-7RPY32NI.js.map
+//# sourceMappingURL=chunk-EUE4BKMA.js.map

@@ -7,7 +7,8 @@ import type { IndexEvent } from '../../services/index.service.js';
 
 // Mock dependencies
 vi.mock('../../services/index.js', () => ({
-  createServices: vi.fn()
+  createServices: vi.fn(),
+  destroyServices: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('ora', () => ({

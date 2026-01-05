@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { createHash } from 'node:crypto';
 import ora, { type Ora } from 'ora';
-import { createServices } from '../../services/index.js';
+import { createServices, destroyServices } from '../../services/index.js';
 import { IntelligentCrawler, type CrawlProgress } from '../../crawl/intelligent-crawler.js';
 import { createDocumentId } from '../../types/brands.js';
 import type { GlobalOptions } from '../program.js';
@@ -135,6 +135,7 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
         process.exit(6);
       } finally {
         await crawler.stop();
+        await destroyServices(services);
       }
     });
 }

@@ -5,7 +5,10 @@ import type { GlobalOptions } from '../program.js';
 import type { FileStore, RepoStore, WebStore } from '../../types/store.js';
 import { createStoreId } from '../../types/brands.js';
 
-vi.mock('../../services/index.js');
+vi.mock('../../services/index.js', () => ({
+  createServices: vi.fn(),
+  destroyServices: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe('store command execution', () => {
   let mockServices: any;
