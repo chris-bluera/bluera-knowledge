@@ -5,6 +5,7 @@ import type { LanceStore } from '../db/lance.js';
 
 export class WatchService {
   private readonly watchers: Map<string, FSWatcher> = new Map();
+  private readonly pendingTimeouts: Map<string, NodeJS.Timeout> = new Map();
   private readonly indexService: IndexService;
   private readonly lanceStore: LanceStore;
 
@@ -33,6 +34,7 @@ export class WatchService {
     const reindexHandler = (): void => {
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => {
+        this.pendingTimeouts.delete(store.id);
         void (async (): Promise<void> => {
           try {
             await this.lanceStore.initialize(store.id);
@@ -43,6 +45,7 @@ export class WatchService {
           }
         })();
       }, debounceMs);
+      this.pendingTimeouts.set(store.id, timeout);
     };
 
     watcher.on('all', reindexHandler);
@@ -56,6 +59,13 @@ export class WatchService {
   }
 
   async unwatch(storeId: string): Promise<void> {
+    // Clear any pending timeout to prevent timer leak
+    const pendingTimeout = this.pendingTimeouts.get(storeId);
+    if (pendingTimeout) {
+      clearTimeout(pendingTimeout);
+      this.pendingTimeouts.delete(storeId);
+    }
+
     const watcher = this.watchers.get(storeId);
     if (watcher) {
       await watcher.close();

@@ -464,6 +464,28 @@ describe('WatchService', () => {
       expect(watcher1?.close).toHaveBeenCalled();
       expect(watcher2?.close).not.toHaveBeenCalled();
     });
+
+    it('clears pending timeout to prevent timer leak', async () => {
+      await watchService.watch(mockFileStore, 1000);
+
+      const watcher = mockWatchers[0];
+      const allHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
+        (call: unknown[]) => call[0] === 'all'
+      )?.[1] as (() => void) | undefined;
+
+      // Trigger a file change (sets timeout)
+      allHandler?.();
+
+      // Unwatch before timeout fires
+      await watchService.unwatch(mockFileStore.id);
+
+      // Advance past debounce time - timeout should NOT fire
+      vi.advanceTimersByTime(1500);
+      await vi.runAllTimersAsync();
+
+      // indexStore should NOT have been called since we unwatched
+      expect(mockIndexService.indexStore).not.toHaveBeenCalled();
+    });
   });
 
   describe('unwatchAll', () => {
