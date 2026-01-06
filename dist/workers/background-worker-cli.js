@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import {
   IntelligentCrawler
-} from "../chunk-RST4XGRL.js";
+} from "../chunk-ZEPTDEIL.js";
 import {
   JobService,
   createDocumentId,
   createServices,
   createStoreId
-} from "../chunk-6PBP5DVD.js";
-import "../chunk-L2YVNC63.js";
+} from "../chunk-3ABAWNLA.js";
+import "../chunk-3GJAG5UV.js";
 
 // src/workers/background-worker-cli.ts
 import fs from "fs";
@@ -16,6 +16,10 @@ import path from "path";
 
 // src/workers/background-worker.ts
 import { createHash } from "crypto";
+function calculateIndexProgress(current, total, scale = 100) {
+  if (total === 0) return 0;
+  return current / total * scale;
+}
 var BackgroundWorker = class {
   constructor(jobService, storeService, indexService, lanceStore, embeddingEngine) {
     this.jobService = jobService;
@@ -97,7 +101,7 @@ var BackgroundWorker = class {
       if (currentJob?.status === "cancelled") {
         throw new Error("Job cancelled by user");
       }
-      const indexProgress = event.current / event.total * 70;
+      const indexProgress = calculateIndexProgress(event.current, event.total, 70);
       const totalProgress = 30 + indexProgress;
       this.jobService.updateJob(job.id, {
         message: `Indexed ${String(event.current)}/${String(event.total)} files`,
@@ -130,7 +134,7 @@ var BackgroundWorker = class {
       if (currentJob?.status === "cancelled") {
         throw new Error("Job cancelled by user");
       }
-      const progress = event.current / event.total * 100;
+      const progress = calculateIndexProgress(event.current, event.total);
       this.jobService.updateJob(job.id, {
         message: `Indexed ${String(event.current)}/${String(event.total)} files`,
         progress: Math.min(99, progress),
@@ -173,7 +177,6 @@ var BackgroundWorker = class {
     crawler.on("progress", (progress) => {
       const currentJob = this.jobService.getJob(job.id);
       if (currentJob?.status === "cancelled") {
-        void crawler.stop();
         return;
       }
       const crawlProgress = progress.pagesVisited / resolvedMaxPages * 80;

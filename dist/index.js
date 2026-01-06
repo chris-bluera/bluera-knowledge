@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import {
   runMCPServer
-} from "./chunk-WT2DAEO7.js";
+} from "./chunk-VW4WDUGT.js";
 import {
   IntelligentCrawler
-} from "./chunk-RST4XGRL.js";
+} from "./chunk-ZEPTDEIL.js";
 import {
   ASTParser,
   ChunkingService,
@@ -16,8 +16,8 @@ import {
   err,
   extractRepoName,
   ok
-} from "./chunk-6PBP5DVD.js";
-import "./chunk-L2YVNC63.js";
+} from "./chunk-3ABAWNLA.js";
+import "./chunk-3GJAG5UV.js";
 
 // src/index.ts
 import { homedir as homedir2 } from "os";
@@ -193,77 +193,85 @@ function createSearchCommand(getOptions) {
   const search = new Command3("search").description("Search indexed documents using vector similarity + full-text matching").argument("<query>", "Search query").option("-s, --stores <stores>", "Limit search to specific stores (comma-separated IDs or names)").option("-m, --mode <mode>", "vector (embeddings only), fts (text only), hybrid (both, default)", "hybrid").option("-n, --limit <count>", "Maximum results to return (default: 10)", "10").option("-t, --threshold <score>", "Minimum score 0-1; omit low-relevance results").option("--include-content", "Show full document content, not just preview snippet").option("--detail <level>", "Context detail: minimal, contextual, full (default: minimal)", "minimal").action(async (query, options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
+    let exitCode = 0;
     try {
       let storeIds = (await services.store.list()).map((s) => s.id);
-      if (options.stores !== void 0) {
-        const requestedStores = options.stores.split(",").map((s) => s.trim());
-        const resolvedStores = [];
-        for (const requested of requestedStores) {
-          const store = await services.store.getByIdOrName(requested);
-          if (store !== void 0) {
-            resolvedStores.push(store.id);
-          } else {
-            console.error(`Error: Store not found: ${requested}`);
-            process.exit(3);
-          }
-        }
-        storeIds = resolvedStores;
-      }
-      if (storeIds.length === 0) {
-        console.error("No stores to search. Create a store first.");
-        process.exit(1);
-      }
-      for (const storeId of storeIds) {
-        await services.lance.initialize(storeId);
-      }
-      const results = await services.search.search({
-        query,
-        stores: storeIds,
-        mode: options.mode ?? "hybrid",
-        limit: parseInt(options.limit ?? "10", 10),
-        threshold: options.threshold !== void 0 ? parseFloat(options.threshold) : void 0,
-        includeContent: options.includeContent,
-        detail: options.detail ?? "minimal"
-      });
-      if (globalOpts.format === "json") {
-        console.log(JSON.stringify(results, null, 2));
-      } else if (globalOpts.quiet === true) {
-        for (const r of results.results) {
-          const path = r.metadata.path ?? r.metadata.url ?? "unknown";
-          console.log(path);
-        }
-      } else {
-        console.log(`
-Search: "${query}"`);
-        console.log(`Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms
-`);
-        if (results.results.length === 0) {
-          console.log("No results found.\n");
-        } else {
-          for (let i = 0; i < results.results.length; i++) {
-            const r = results.results[i];
-            if (r === void 0) continue;
-            if (r.summary) {
-              console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${r.summary.type}: ${r.summary.name}`);
-              console.log(`   ${r.summary.location}`);
-              console.log(`   ${r.summary.purpose}`);
-              if (r.context && options.detail !== "minimal") {
-                console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(", ")}`);
-                console.log(`   Related: ${r.context.relatedConcepts.slice(0, 3).join(", ")}`);
-              }
-              console.log();
+      searchLogic: {
+        if (options.stores !== void 0) {
+          const requestedStores = options.stores.split(",").map((s) => s.trim());
+          const resolvedStores = [];
+          for (const requested of requestedStores) {
+            const store = await services.store.getByIdOrName(requested);
+            if (store !== void 0) {
+              resolvedStores.push(store.id);
             } else {
-              const path = r.metadata.path ?? r.metadata.url ?? "unknown";
-              console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${path}`);
-              const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, " ") + (r.content.length > 150 ? "..." : "");
-              console.log(`   ${preview}
+              console.error(`Error: Store not found: ${requested}`);
+              exitCode = 3;
+              break searchLogic;
+            }
+          }
+          storeIds = resolvedStores;
+        }
+        if (storeIds.length === 0) {
+          console.error("No stores to search. Create a store first.");
+          exitCode = 1;
+          break searchLogic;
+        }
+        for (const storeId of storeIds) {
+          await services.lance.initialize(storeId);
+        }
+        const results = await services.search.search({
+          query,
+          stores: storeIds,
+          mode: options.mode ?? "hybrid",
+          limit: parseInt(options.limit ?? "10", 10),
+          threshold: options.threshold !== void 0 ? parseFloat(options.threshold) : void 0,
+          includeContent: options.includeContent,
+          detail: options.detail ?? "minimal"
+        });
+        if (globalOpts.format === "json") {
+          console.log(JSON.stringify(results, null, 2));
+        } else if (globalOpts.quiet === true) {
+          for (const r of results.results) {
+            const path = r.metadata.path ?? r.metadata.url ?? "unknown";
+            console.log(path);
+          }
+        } else {
+          console.log(`
+Search: "${query}"`);
+          console.log(`Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms
 `);
+          if (results.results.length === 0) {
+            console.log("No results found.\n");
+          } else {
+            for (let i = 0; i < results.results.length; i++) {
+              const r = results.results[i];
+              if (r === void 0) continue;
+              if (r.summary) {
+                console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${r.summary.type}: ${r.summary.name}`);
+                console.log(`   ${r.summary.location}`);
+                console.log(`   ${r.summary.purpose}`);
+                if (r.context && options.detail !== "minimal") {
+                  console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(", ")}`);
+                  console.log(`   Related: ${r.context.relatedConcepts.slice(0, 3).join(", ")}`);
+                }
+                console.log();
+              } else {
+                const path = r.metadata.path ?? r.metadata.url ?? "unknown";
+                console.log(`${String(i + 1)}. [${r.score.toFixed(2)}] ${path}`);
+                const preview = r.highlight ?? r.content.slice(0, 150).replace(/\n/g, " ") + (r.content.length > 150 ? "..." : "");
+                console.log(`   ${preview}
+`);
+              }
             }
           }
         }
       }
     } finally {
       await destroyServices(services);
+    }
+    if (exitCode !== 0) {
+      process.exit(exitCode);
     }
   });
   return search;
@@ -276,49 +284,57 @@ function createIndexCommand(getOptions) {
   const index = new Command4("index").description("Scan store files, chunk text, generate embeddings, save to LanceDB").argument("<store>", "Store ID or name").option("--force", "Re-index all files even if unchanged").action(async (storeIdOrName, _options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
+    let exitCode = 0;
     try {
-      const store = await services.store.getByIdOrName(storeIdOrName);
-      if (store === void 0) {
-        console.error(`Error: Store not found: ${storeIdOrName}`);
-        process.exit(3);
-      }
-      const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== "json";
-      let spinner;
-      if (isInteractive) {
-        spinner = ora(`Indexing store: ${store.name}`).start();
-      } else if (globalOpts.quiet !== true && globalOpts.format !== "json") {
-        console.log(`Indexing store: ${store.name}`);
-      }
-      await services.lance.initialize(store.id);
-      const result = await services.index.indexStore(store, (event) => {
-        if (event.type === "progress") {
-          if (spinner) {
-            spinner.text = `Indexing: ${String(event.current)}/${String(event.total)} files - ${event.message}`;
-          }
+      indexLogic: {
+        const store = await services.store.getByIdOrName(storeIdOrName);
+        if (store === void 0) {
+          console.error(`Error: Store not found: ${storeIdOrName}`);
+          exitCode = 3;
+          break indexLogic;
         }
-      });
-      if (result.success) {
-        if (globalOpts.format === "json") {
-          console.log(JSON.stringify(result.data, null, 2));
+        const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== "json";
+        let spinner;
+        if (isInteractive) {
+          spinner = ora(`Indexing store: ${store.name}`).start();
+        } else if (globalOpts.quiet !== true && globalOpts.format !== "json") {
+          console.log(`Indexing store: ${store.name}`);
+        }
+        await services.lance.initialize(store.id);
+        const result = await services.index.indexStore(store, (event) => {
+          if (event.type === "progress") {
+            if (spinner) {
+              spinner.text = `Indexing: ${String(event.current)}/${String(event.total)} files - ${event.message}`;
+            }
+          }
+        });
+        if (result.success) {
+          if (globalOpts.format === "json") {
+            console.log(JSON.stringify(result.data, null, 2));
+          } else {
+            const message = `Indexed ${String(result.data.documentsIndexed)} documents, ${String(result.data.chunksCreated)} chunks in ${String(result.data.timeMs)}ms`;
+            if (spinner !== void 0) {
+              spinner.succeed(message);
+            } else if (globalOpts.quiet !== true) {
+              console.log(message);
+            }
+          }
         } else {
-          const message = `Indexed ${String(result.data.documentsIndexed)} documents, ${String(result.data.chunksCreated)} chunks in ${String(result.data.timeMs)}ms`;
+          const message = `Error: ${result.error.message}`;
           if (spinner !== void 0) {
-            spinner.succeed(message);
-          } else if (globalOpts.quiet !== true) {
-            console.log(message);
+            spinner.fail(message);
+          } else {
+            console.error(message);
           }
+          exitCode = 4;
+          break indexLogic;
         }
-      } else {
-        const message = `Error: ${result.error.message}`;
-        if (spinner !== void 0) {
-          spinner.fail(message);
-        } else {
-          console.error(message);
-        }
-        process.exit(4);
       }
     } finally {
       await destroyServices(services);
+    }
+    if (exitCode !== 0) {
+      process.exit(exitCode);
     }
   });
   index.command("watch <store>").description("Watch store directory; re-index when files change").option("--debounce <ms>", "Wait N ms after last change before re-indexing (default: 1000)", "1000").action(async (storeIdOrName, options) => {
@@ -329,7 +345,7 @@ function createIndexCommand(getOptions) {
       console.error(`Error: File/repo store not found: ${storeIdOrName}`);
       process.exit(3);
     }
-    const { WatchService } = await import("./watch.service-YAIKKDCF.js");
+    const { WatchService } = await import("./watch.service-WYB3BAND.js");
     const watchService = new WatchService(services.index, services.lance);
     if (globalOpts.quiet !== true) {
       console.log(`Watching ${store.name} for changes...`);
@@ -457,6 +473,14 @@ function createServeCommand(getOptions) {
     const app = createApp(services);
     const port = parseInt(options.port ?? "3847", 10);
     const host = options.host ?? "127.0.0.1";
+    const shutdown = () => {
+      void (async () => {
+        await destroyServices(services);
+        process.exit(0);
+      })();
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
     console.log(`Starting server on http://${host}:${String(port)}`);
     serve({
       fetch: app.fetch,

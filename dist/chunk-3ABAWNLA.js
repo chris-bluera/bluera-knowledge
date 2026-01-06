@@ -337,7 +337,7 @@ var JobService = class {
 };
 
 // src/services/config.service.ts
-import { readFile, writeFile, mkdir } from "fs/promises";
+import { readFile, writeFile, mkdir, access } from "fs/promises";
 import { dirname as dirname2, resolve } from "path";
 import { homedir as homedir2 } from "os";
 
@@ -452,6 +452,14 @@ var ProjectRootService = class {
 };
 
 // src/services/config.service.ts
+async function fileExists(path3) {
+  try {
+    await access(path3);
+    return true;
+  } catch {
+    return false;
+  }
+}
 var ConfigService = class {
   configPath;
   dataDir;
@@ -469,11 +477,17 @@ var ConfigService = class {
     if (this.config !== null) {
       return this.config;
     }
-    try {
-      const content = await readFile(this.configPath, "utf-8");
-      this.config = { ...DEFAULT_CONFIG, ...JSON.parse(content) };
-    } catch {
+    const exists = await fileExists(this.configPath);
+    if (!exists) {
       this.config = { ...DEFAULT_CONFIG };
+      await this.save(this.config);
+      return this.config;
+    }
+    const content = await readFile(this.configPath, "utf-8");
+    try {
+      this.config = { ...DEFAULT_CONFIG, ...JSON.parse(content) };
+    } catch (error) {
+      throw new Error(`Failed to parse config file at ${this.configPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
     return this.config;
   }
@@ -497,7 +511,7 @@ var ConfigService = class {
 };
 
 // src/services/store.service.ts
-import { readFile as readFile2, writeFile as writeFile2, mkdir as mkdir3, stat } from "fs/promises";
+import { readFile as readFile2, writeFile as writeFile2, mkdir as mkdir3, stat, access as access2 } from "fs/promises";
 import { join as join4, resolve as resolve2 } from "path";
 import { randomUUID as randomUUID2 } from "crypto";
 
@@ -558,6 +572,14 @@ function extractRepoName(url) {
 }
 
 // src/services/store.service.ts
+async function fileExists2(path3) {
+  try {
+    await access2(path3);
+    return true;
+  } catch {
+    return false;
+  }
+}
 var StoreService = class {
   dataDir;
   registry = { stores: [] };
@@ -706,8 +728,14 @@ var StoreService = class {
   }
   async loadRegistry() {
     const registryPath = join4(this.dataDir, "stores.json");
+    const exists = await fileExists2(registryPath);
+    if (!exists) {
+      this.registry = { stores: [] };
+      await this.saveRegistry();
+      return;
+    }
+    const content = await readFile2(registryPath, "utf-8");
     try {
-      const content = await readFile2(registryPath, "utf-8");
       const data = JSON.parse(content);
       this.registry = {
         stores: data.stores.map((s) => ({
@@ -717,8 +745,8 @@ var StoreService = class {
           updatedAt: new Date(s.updatedAt)
         }))
       };
-    } catch {
-      this.registry = { stores: [] };
+    } catch (error) {
+      throw new Error(`Failed to parse store registry at ${registryPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   async saveRegistry() {
@@ -755,9 +783,63 @@ var CodeUnitService = class {
     let endLine = startLine;
     let braceCount = 0;
     let foundFirstBrace = false;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inTemplateLiteral = false;
+    let inMultiLineComment = false;
     for (let i = startLine - 1; i < lines.length; i++) {
       const line = lines[i] ?? "";
-      for (const char of line) {
+      let inSingleLineComment = false;
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        const prevChar = j > 0 ? line[j - 1] : "";
+        const nextChar = j < line.length - 1 ? line[j + 1] : "";
+        if (prevChar === "\\" && (inSingleQuote || inDoubleQuote || inTemplateLiteral)) {
+          continue;
+        }
+        if (inMultiLineComment) {
+          if (char === "*" && nextChar === "/") {
+            inMultiLineComment = false;
+            j++;
+          }
+          continue;
+        }
+        if (inSingleLineComment) {
+          continue;
+        }
+        if (inSingleQuote) {
+          if (char === "'") inSingleQuote = false;
+          continue;
+        }
+        if (inDoubleQuote) {
+          if (char === '"') inDoubleQuote = false;
+          continue;
+        }
+        if (inTemplateLiteral) {
+          if (char === "`") inTemplateLiteral = false;
+          continue;
+        }
+        if (char === "/" && nextChar === "*") {
+          inMultiLineComment = true;
+          j++;
+          continue;
+        }
+        if (char === "/" && nextChar === "/") {
+          inSingleLineComment = true;
+          continue;
+        }
+        if (char === "'") {
+          inSingleQuote = true;
+          continue;
+        }
+        if (char === '"') {
+          inDoubleQuote = true;
+          continue;
+        }
+        if (char === "`") {
+          inTemplateLiteral = true;
+          continue;
+        }
         if (char === "{") {
           braceCount++;
           foundFirstBrace = true;
@@ -3792,6 +3874,7 @@ var PythonBridge = class {
       });
     }
     if (this.process.stdout === null) {
+      this.process.kill();
       this.process = null;
       return Promise.reject(new Error("Python bridge process stdout is null"));
     }
@@ -4002,4 +4085,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-6PBP5DVD.js.map
+//# sourceMappingURL=chunk-3ABAWNLA.js.map

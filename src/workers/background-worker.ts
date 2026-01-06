@@ -9,6 +9,18 @@ import type { Job } from '../types/job.js';
 import type { Document } from '../types/document.js';
 import { createStoreId, createDocumentId } from '../types/brands.js';
 
+/**
+ * Calculate index progress as a percentage, handling division by zero.
+ * @param current - Current number of items processed
+ * @param total - Total number of items (may be 0)
+ * @param scale - Scale factor for progress (default 100 for 0-100%)
+ * @returns Progress value, or 0 if total is 0
+ */
+export function calculateIndexProgress(current: number, total: number, scale: number = 100): number {
+  if (total === 0) return 0;
+  return (current / total) * scale;
+}
+
 export class BackgroundWorker {
   constructor(
     private readonly jobService: JobService,
@@ -113,7 +125,7 @@ export class BackgroundWorker {
       }
 
       // Indexing is 70% of total progress (30-100%)
-      const indexProgress = (event.current / event.total) * 70;
+      const indexProgress = calculateIndexProgress(event.current, event.total, 70);
       const totalProgress = 30 + indexProgress;
 
       this.jobService.updateJob(job.id, {
@@ -155,7 +167,7 @@ export class BackgroundWorker {
         throw new Error('Job cancelled by user');
       }
 
-      const progress = (event.current / event.total) * 100;
+      const progress = calculateIndexProgress(event.current, event.total);
 
       this.jobService.updateJob(job.id, {
         message: `Indexed ${String(event.current)}/${String(event.total)} files`,
@@ -204,10 +216,9 @@ export class BackgroundWorker {
 
     // Listen for progress events
     crawler.on('progress', (progress: CrawlProgress) => {
-      // Check if job was cancelled
+      // Check if job was cancelled - just return early, for-await loop will throw and finally will cleanup
       const currentJob = this.jobService.getJob(job.id);
       if (currentJob?.status === 'cancelled') {
-        void crawler.stop();
         return;
       }
 

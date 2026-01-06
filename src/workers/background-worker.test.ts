@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { BackgroundWorker } from './background-worker.js';
+import { BackgroundWorker, calculateIndexProgress } from './background-worker.js';
 import { JobService } from '../services/job.service.js';
 import { StoreService } from '../services/store.service.js';
 import { IndexService } from '../services/index.service.js';
@@ -173,6 +173,33 @@ describe('BackgroundWorker', () => {
       await expect(worker.executeJob(job.id)).rejects.toThrow(
         'Web store non-existent-store not found'
       );
+    });
+  });
+
+  describe('calculateIndexProgress', () => {
+    it('handles event.total === 0 without division by zero (NaN)', () => {
+      const result = calculateIndexProgress(0, 0, 70);
+      expect(Number.isNaN(result)).toBe(false);
+      expect(result).toBe(0);
+    });
+
+    it('handles event.total === 0 with scale 100', () => {
+      const result = calculateIndexProgress(0, 0, 100);
+      expect(Number.isNaN(result)).toBe(false);
+      expect(result).toBe(0);
+    });
+
+    it('calculates progress correctly for non-zero total', () => {
+      // 5/10 * 70 = 35
+      expect(calculateIndexProgress(5, 10, 70)).toBe(35);
+      // 5/10 * 100 = 50
+      expect(calculateIndexProgress(5, 10, 100)).toBe(50);
+      // 10/10 * 100 = 100
+      expect(calculateIndexProgress(10, 10, 100)).toBe(100);
+    });
+
+    it('uses default scale of 100', () => {
+      expect(calculateIndexProgress(5, 10)).toBe(50);
     });
   });
 });

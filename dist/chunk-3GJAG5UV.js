@@ -2,6 +2,7 @@
 import { watch } from "chokidar";
 var WatchService = class {
   watchers = /* @__PURE__ */ new Map();
+  pendingTimeouts = /* @__PURE__ */ new Map();
   indexService;
   lanceStore;
   constructor(indexService, lanceStore) {
@@ -21,6 +22,7 @@ var WatchService = class {
     const reindexHandler = () => {
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => {
+        this.pendingTimeouts.delete(store.id);
         void (async () => {
           try {
             await this.lanceStore.initialize(store.id);
@@ -31,6 +33,7 @@ var WatchService = class {
           }
         })();
       }, debounceMs);
+      this.pendingTimeouts.set(store.id, timeout);
     };
     watcher.on("all", reindexHandler);
     watcher.on("error", (error) => {
@@ -40,6 +43,11 @@ var WatchService = class {
     return Promise.resolve();
   }
   async unwatch(storeId) {
+    const pendingTimeout = this.pendingTimeouts.get(storeId);
+    if (pendingTimeout) {
+      clearTimeout(pendingTimeout);
+      this.pendingTimeouts.delete(storeId);
+    }
     const watcher = this.watchers.get(storeId);
     if (watcher) {
       await watcher.close();
@@ -56,4 +64,4 @@ var WatchService = class {
 export {
   WatchService
 };
-//# sourceMappingURL=chunk-L2YVNC63.js.map
+//# sourceMappingURL=chunk-3GJAG5UV.js.map
