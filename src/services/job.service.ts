@@ -176,7 +176,12 @@ export class JobService {
     if (fs.existsSync(pidFile)) {
       try {
         const pid = parseInt(fs.readFileSync(pidFile, 'utf-8'), 10);
-        process.kill(pid, 'SIGTERM');
+        // Validate PID: must be positive integer > 0
+        // PID 0 = sends to process group (DANGEROUS - kills terminal!)
+        // Negative PIDs have special meanings in kill()
+        if (!Number.isNaN(pid) && Number.isInteger(pid) && pid > 0) {
+          process.kill(pid, 'SIGTERM');
+        }
       } catch {
         // Process may have already exited, ignore
       }
