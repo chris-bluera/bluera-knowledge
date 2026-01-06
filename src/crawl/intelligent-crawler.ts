@@ -104,6 +104,20 @@ export class IntelligentCrawler extends EventEmitter {
     maxPages: number,
     useHeadless: boolean = false,
   ): AsyncIterable<CrawlResult> {
+    // Check if Claude CLI is available before attempting intelligent mode
+    if (!ClaudeClient.isAvailable()) {
+      const fallbackProgress: CrawlProgress = {
+        type: 'error',
+        pagesVisited: 0,
+        totalPages: maxPages,
+        message: 'Claude CLI not found, using simple crawl mode (install Claude Code for intelligent crawling)',
+        error: new Error('Claude CLI not available'),
+      };
+      this.emit('progress', fallbackProgress);
+      yield* this.crawlSimple(seedUrl, extractInstruction, maxPages, useHeadless);
+      return;
+    }
+
     let strategy: CrawlStrategy;
 
     try {
@@ -276,30 +290,43 @@ export class IntelligentCrawler extends EventEmitter {
 
     // Optional: Extract specific information using Claude
     if (extractInstruction !== undefined && extractInstruction !== '') {
-      try {
-        const extractionProgress: CrawlProgress = {
-          type: 'extraction',
-          pagesVisited,
-          totalPages: 0,
-          currentUrl: url,
-        };
-        this.emit('progress', extractionProgress);
-
-        extracted = await this.claudeClient.extractContent(
-          conversion.markdown,
-          extractInstruction,
-        );
-      } catch (error) {
-        // If extraction fails, just store raw markdown
-        const extractionErrorProgress: CrawlProgress = {
+      // Skip extraction if Claude CLI isn't available
+      if (!ClaudeClient.isAvailable()) {
+        const skipProgress: CrawlProgress = {
           type: 'error',
           pagesVisited,
           totalPages: 0,
           currentUrl: url,
-          message: 'Extraction failed, storing raw markdown',
-          error: error instanceof Error ? error : new Error(String(error)),
+          message: 'Skipping extraction (Claude CLI not available), storing raw markdown',
+          error: new Error('Claude CLI not available'),
         };
-        this.emit('progress', extractionErrorProgress);
+        this.emit('progress', skipProgress);
+      } else {
+        try {
+          const extractionProgress: CrawlProgress = {
+            type: 'extraction',
+            pagesVisited,
+            totalPages: 0,
+            currentUrl: url,
+          };
+          this.emit('progress', extractionProgress);
+
+          extracted = await this.claudeClient.extractContent(
+            conversion.markdown,
+            extractInstruction,
+          );
+        } catch (error) {
+          // If extraction fails, just store raw markdown
+          const extractionErrorProgress: CrawlProgress = {
+            type: 'error',
+            pagesVisited,
+            totalPages: 0,
+            currentUrl: url,
+            message: 'Extraction failed, storing raw markdown',
+            error: error instanceof Error ? error : new Error(String(error)),
+          };
+          this.emit('progress', extractionErrorProgress);
+        }
       }
     }
 

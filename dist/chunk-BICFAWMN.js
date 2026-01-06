@@ -7,7 +7,7 @@ import { EventEmitter } from "events";
 import axios from "axios";
 
 // src/crawl/claude-client.ts
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 var CRAWL_STRATEGY_SCHEMA = {
   type: "object",
   properties: {
@@ -23,8 +23,33 @@ var CRAWL_STRATEGY_SCHEMA = {
   },
   required: ["urls", "reasoning"]
 };
-var ClaudeClient = class {
+var ClaudeClient = class _ClaudeClient {
   timeout;
+  static availabilityChecked = false;
+  static available = false;
+  /**
+   * Check if Claude CLI is available in PATH
+   * Result is cached after first check for performance
+   */
+  static isAvailable() {
+    if (!_ClaudeClient.availabilityChecked) {
+      try {
+        execSync("which claude", { stdio: "ignore" });
+        _ClaudeClient.available = true;
+      } catch {
+        _ClaudeClient.available = false;
+      }
+      _ClaudeClient.availabilityChecked = true;
+    }
+    return _ClaudeClient.available;
+  }
+  /**
+   * Reset availability cache (for testing)
+   */
+  static resetAvailabilityCache() {
+    _ClaudeClient.availabilityChecked = false;
+    _ClaudeClient.available = false;
+  }
   constructor(options = {}) {
     this.timeout = options.timeout ?? 3e4;
   }
@@ -370,6 +395,18 @@ var IntelligentCrawler = class extends EventEmitter {
    * Intelligent mode: Use Claude to determine which URLs to crawl
    */
   async *crawlIntelligent(seedUrl, crawlInstruction, extractInstruction, maxPages, useHeadless = false) {
+    if (!ClaudeClient.isAvailable()) {
+      const fallbackProgress = {
+        type: "error",
+        pagesVisited: 0,
+        totalPages: maxPages,
+        message: "Claude CLI not found, using simple crawl mode (install Claude Code for intelligent crawling)",
+        error: new Error("Claude CLI not available")
+      };
+      this.emit("progress", fallbackProgress);
+      yield* this.crawlSimple(seedUrl, extractInstruction, maxPages, useHeadless);
+      return;
+    }
     let strategy;
     try {
       const strategyStartProgress = {
@@ -499,28 +536,40 @@ var IntelligentCrawler = class extends EventEmitter {
     }
     let extracted;
     if (extractInstruction !== void 0 && extractInstruction !== "") {
-      try {
-        const extractionProgress = {
-          type: "extraction",
-          pagesVisited,
-          totalPages: 0,
-          currentUrl: url
-        };
-        this.emit("progress", extractionProgress);
-        extracted = await this.claudeClient.extractContent(
-          conversion.markdown,
-          extractInstruction
-        );
-      } catch (error) {
-        const extractionErrorProgress = {
+      if (!ClaudeClient.isAvailable()) {
+        const skipProgress = {
           type: "error",
           pagesVisited,
           totalPages: 0,
           currentUrl: url,
-          message: "Extraction failed, storing raw markdown",
-          error: error instanceof Error ? error : new Error(String(error))
+          message: "Skipping extraction (Claude CLI not available), storing raw markdown",
+          error: new Error("Claude CLI not available")
         };
-        this.emit("progress", extractionErrorProgress);
+        this.emit("progress", skipProgress);
+      } else {
+        try {
+          const extractionProgress = {
+            type: "extraction",
+            pagesVisited,
+            totalPages: 0,
+            currentUrl: url
+          };
+          this.emit("progress", extractionProgress);
+          extracted = await this.claudeClient.extractContent(
+            conversion.markdown,
+            extractInstruction
+          );
+        } catch (error) {
+          const extractionErrorProgress = {
+            type: "error",
+            pagesVisited,
+            totalPages: 0,
+            currentUrl: url,
+            message: "Extraction failed, storing raw markdown",
+            error: error instanceof Error ? error : new Error(String(error))
+          };
+          this.emit("progress", extractionErrorProgress);
+        }
       }
     }
     return {
@@ -604,4 +653,4 @@ var IntelligentCrawler = class extends EventEmitter {
 export {
   IntelligentCrawler
 };
-//# sourceMappingURL=chunk-65AP7AF4.js.map
+//# sourceMappingURL=chunk-BICFAWMN.js.map

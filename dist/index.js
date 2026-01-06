@@ -4,7 +4,7 @@ import {
 } from "./chunk-AIKC6ROY.js";
 import {
   IntelligentCrawler
-} from "./chunk-65AP7AF4.js";
+} from "./chunk-BICFAWMN.js";
 import {
   ASTParser,
   createDocumentId,

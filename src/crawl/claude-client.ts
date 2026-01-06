@@ -3,7 +3,7 @@
  * Uses `claude -p` programmatically to analyze page structure and extract content
  */
 
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 
 /**
  * Schema for crawl strategy response from Claude
@@ -34,6 +34,33 @@ const CRAWL_STRATEGY_SCHEMA = {
  */
 export class ClaudeClient {
   private readonly timeout: number;
+  private static availabilityChecked = false;
+  private static available = false;
+
+  /**
+   * Check if Claude CLI is available in PATH
+   * Result is cached after first check for performance
+   */
+  static isAvailable(): boolean {
+    if (!ClaudeClient.availabilityChecked) {
+      try {
+        execSync('which claude', { stdio: 'ignore' });
+        ClaudeClient.available = true;
+      } catch {
+        ClaudeClient.available = false;
+      }
+      ClaudeClient.availabilityChecked = true;
+    }
+    return ClaudeClient.available;
+  }
+
+  /**
+   * Reset availability cache (for testing)
+   */
+  static resetAvailabilityCache(): void {
+    ClaudeClient.availabilityChecked = false;
+    ClaudeClient.available = false;
+  }
 
   constructor(options: { timeout?: number } = {}) {
     this.timeout = options.timeout ?? 30000; // 30s default

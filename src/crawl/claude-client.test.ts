@@ -11,9 +11,10 @@ import { EventEmitter } from 'node:events';
 // Mock child_process
 vi.mock('node:child_process', () => ({
   spawn: vi.fn(),
+  execSync: vi.fn(),
 }));
 
-const { spawn } = await import('node:child_process');
+const { spawn, execSync } = await import('node:child_process');
 
 describe('ClaudeClient', () => {
   let client: ClaudeClient;
@@ -31,9 +32,51 @@ describe('ClaudeClient', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ClaudeClient.resetAvailabilityCache(); // Reset static cache between tests
     client = new ClaudeClient({ timeout: 100 }); // Short timeout for tests
     mockProcess = new MockChildProcess();
     vi.mocked(spawn).mockReturnValue(mockProcess as unknown as ChildProcess);
+  });
+
+  describe('isAvailable', () => {
+    it('should return true when claude is in PATH', () => {
+      vi.mocked(execSync).mockReturnValue(Buffer.from('/usr/local/bin/claude'));
+
+      expect(ClaudeClient.isAvailable()).toBe(true);
+      expect(execSync).toHaveBeenCalledWith('which claude', { stdio: 'ignore' });
+    });
+
+    it('should return false when claude is not in PATH', () => {
+      vi.mocked(execSync).mockImplementation(() => {
+        throw new Error('Command not found');
+      });
+
+      expect(ClaudeClient.isAvailable()).toBe(false);
+    });
+
+    it('should cache the result after first check', () => {
+      vi.mocked(execSync).mockReturnValue(Buffer.from('/usr/local/bin/claude'));
+
+      // First call
+      expect(ClaudeClient.isAvailable()).toBe(true);
+      expect(execSync).toHaveBeenCalledTimes(1);
+
+      // Second call - should use cache
+      expect(ClaudeClient.isAvailable()).toBe(true);
+      expect(execSync).toHaveBeenCalledTimes(1); // Still 1, not 2
+    });
+
+    it('should reset cache with resetAvailabilityCache', () => {
+      vi.mocked(execSync).mockReturnValue(Buffer.from('/usr/local/bin/claude'));
+
+      expect(ClaudeClient.isAvailable()).toBe(true);
+      expect(execSync).toHaveBeenCalledTimes(1);
+
+      ClaudeClient.resetAvailabilityCache();
+
+      expect(ClaudeClient.isAvailable()).toBe(true);
+      expect(execSync).toHaveBeenCalledTimes(2); // Called again after reset
+    });
   });
 
   describe('determineCrawlUrls', () => {

@@ -30,12 +30,14 @@ describe('IntelligentCrawler', () => {
     vi.clearAllMocks();
     progressEvents = [];
 
-    // Setup ClaudeClient mock
+    // Setup ClaudeClient mock - ensure isAvailable returns true for intelligent mode tests
     mockClaudeClient = {
       determineCrawlUrls: vi.fn(),
       extractContent: vi.fn(),
     };
     vi.mocked(ClaudeClient).mockImplementation(function() { return mockClaudeClient; });
+    // Mock static isAvailable to return true (Claude CLI is available in tests)
+    vi.mocked(ClaudeClient.isAvailable).mockReturnValue(true);
 
     // Setup PythonBridge mock
     mockPythonBridge = {
@@ -857,6 +859,73 @@ describe('IntelligentCrawler', () => {
       // Should successfully crawl the second URL
       expect(results).toHaveLength(1);
       expect(results[0]?.url).toBe('https://example.com/success');
+    });
+  });
+
+  describe('npm Package Mode (Claude CLI Not Installed)', () => {
+    it('should use simple mode when Claude CLI is not available', async () => {
+      // Simulate npm package usage without Claude Code installed
+      vi.mocked(ClaudeClient.isAvailable).mockReturnValue(false);
+
+      // Setup link extraction for simple mode
+      mockPythonBridge.crawl.mockResolvedValue({
+        pages: [{ links: [] }],
+      });
+
+      const results: { url: string }[] = [];
+
+      for await (const result of crawler.crawl('https://example.com', {
+        crawlInstruction: 'Find all documentation pages', // Would use intelligent mode
+        maxPages: 5,
+      })) {
+        results.push(result);
+      }
+
+      // Should have crawled using simple BFS mode
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0]?.url).toBe('https://example.com');
+
+      // Should have emitted progress event about mode switch
+      const modeEvent = progressEvents.find(
+        e => e.type === 'error' && e.message?.includes('Claude CLI not found')
+      );
+      expect(modeEvent).toBeDefined();
+      expect(modeEvent?.message).toContain('using simple crawl mode');
+
+      // Should NOT have called Claude's determineCrawlUrls
+      expect(mockClaudeClient.determineCrawlUrls).not.toHaveBeenCalled();
+    });
+
+    it('should skip extraction when Claude CLI is not available', async () => {
+      // Simulate npm package usage without Claude Code installed
+      vi.mocked(ClaudeClient.isAvailable).mockReturnValue(false);
+
+      // Setup for simple mode
+      mockPythonBridge.crawl.mockResolvedValue({
+        pages: [{ links: [] }],
+      });
+
+      const results: { url: string; extracted?: string }[] = [];
+
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        extractInstruction: 'Extract pricing info', // Would use Claude
+        maxPages: 1,
+      })) {
+        results.push(result);
+      }
+
+      expect(results.length).toBe(1);
+      expect(results[0]?.extracted).toBeUndefined(); // Should not have extracted
+
+      // Should have emitted skip extraction progress event
+      const skipEvent = progressEvents.find(
+        e => e.type === 'error' && e.message?.includes('Skipping extraction')
+      );
+      expect(skipEvent).toBeDefined();
+
+      // Should NOT have called Claude's extractContent
+      expect(mockClaudeClient.extractContent).not.toHaveBeenCalled();
     });
   });
 });
