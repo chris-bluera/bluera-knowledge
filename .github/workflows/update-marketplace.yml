@@ -5,6 +5,11 @@ on:
     workflows: ["Release"]
     types: [completed]
 
+# Prevent parallel marketplace updates - queue instead of cancel
+concurrency:
+  group: update-marketplace
+  cancel-in-progress: false
+
 jobs:
   update-marketplace:
     runs-on: ubuntu-latest

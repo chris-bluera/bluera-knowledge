@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
 
+# Prevent parallel tag creation - queue instead of cancel
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
 jobs:
   auto-release:
     runs-on: ubuntu-latest
