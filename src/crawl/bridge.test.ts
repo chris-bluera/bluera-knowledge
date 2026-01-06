@@ -421,6 +421,18 @@ describe('PythonBridge', () => {
 
       await expect(bridge.start()).rejects.toThrow('Python bridge process stdout is null');
     });
+
+    it('should kill process when stdout is null to prevent zombie process', async () => {
+      const nullStdoutProcess = new MockChildProcess();
+      (nullStdoutProcess as any).stdout = null;
+
+      vi.mocked(spawn).mockReturnValue(nullStdoutProcess as unknown as ChildProcess);
+
+      await expect(bridge.start()).rejects.toThrow('Python bridge process stdout is null');
+
+      // Critical: process must be killed to prevent zombie
+      expect(nullStdoutProcess.kill).toHaveBeenCalled();
+    });
   });
 
   describe('Memory Leak Prevention', () => {

@@ -70,7 +70,8 @@ export class PythonBridge {
     }
 
     if (this.process.stdout === null) {
-      this.process = null;  // Clean up partial state
+      this.process.kill();  // Kill process to prevent zombie
+      this.process = null;  // Clean up reference
       return Promise.reject(new Error('Python bridge process stdout is null'));
     }
     const rl = createInterface({ input: this.process.stdout });
