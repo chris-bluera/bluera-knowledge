@@ -8,7 +8,11 @@
 
 > 🚀 **Build a local knowledge base for your AI coding agent—dependency source code, crawled docs, and your own files, all instantly searchable.**
 
-When Claude Code helps you code, it needs context: how does this library work? What does that API do? Instead of slow web searches or outdated training data, Bluera Knowledge gives your agent instant local access to:
+**Use it as:**
+- 🔌 **Claude Code Plugin** — Slash commands + MCP tools + Skills for optimal Claude Code integration
+- 📦 **npm Package** — Standalone CLI for any editor, CI/CD, or automation
+
+Bluera Knowledge gives AI coding agents instant local access to authoritative context:
 
 - **Dependency source code** — Clone and search the repos of dependencies you actually use
 - **Documentation** — Crawl, index, and search any docs site
@@ -54,6 +58,8 @@ All searchable in milliseconds, no rate limits, fully offline.
 
 ## 📦 Installation
 
+### As Claude Code Plugin
+
 ```bash
 # Add the Bluera marketplace (one-time setup)
 /plugin marketplace add blueraai/bluera-marketplace
@@ -64,6 +70,19 @@ All searchable in milliseconds, no rate limits, fully offline.
 
 > [!NOTE]
 > **First launch may appear to hang** while the plugin installs Python dependencies (crawl4ai). This is normal—subsequent launches are instant.
+
+### As npm Package
+
+```bash
+# Global install (CLI available everywhere)
+npm install -g @blueraai/bluera-knowledge
+
+# Or project install
+npm install --save-dev @blueraai/bluera-knowledge
+```
+
+> [!TIP]
+> Both installation methods provide the same core functionality. The plugin adds slash commands and Skills; the npm package provides a standalone CLI.
 
 ---
 
@@ -179,7 +198,7 @@ The plugin's Skills teach Claude Code these patterns, so it automatically uses t
 
 ## 🚀 Quick Start
 
-Follow these steps to set up knowledge stores for your project:
+### Using Claude Code Plugin
 
 - [ ] **📦 Add a library**: `/bluera-knowledge:add-repo https://github.com/lodash/lodash`
 - [ ] **📁 Index your docs**: `/bluera-knowledge:add-folder ./docs --name=project-docs`
@@ -188,6 +207,22 @@ Follow these steps to set up knowledge stores for your project:
 
 > [!TIP]
 > Not sure which libraries to index? Use `/bluera-knowledge:suggest` to analyze your project's dependencies.
+
+### Using CLI (npm package)
+
+```bash
+# Add a library
+bluera-knowledge store create lodash --type repo --source https://github.com/lodash/lodash
+
+# Index your docs
+bluera-knowledge store create project-docs --type file --source ./docs
+
+# Test search
+bluera-knowledge search "deep clone object"
+
+# View stores
+bluera-knowledge store list
+```
 
 ---
 
@@ -784,6 +819,23 @@ sequenceDiagram
 - **⚡ Hybrid approach** - Fast axios for static sites, Playwright for JS-rendered sites
 - **🔄 Automatic fallback** - If headless fetch fails, automatically falls back to axios
 
+### 🤖 Intelligent Mode vs Simple Mode
+
+The crawler operates in two modes depending on Claude Code CLI availability:
+
+| Mode | Requires Claude CLI | Behavior |
+|------|---------------------|----------|
+| **Intelligent** | ✅ Yes | Claude analyzes pages and selects URLs based on natural language instructions |
+| **Simple (BFS)** | ❌ No | Breadth-first crawl up to max depth (2 levels) |
+
+**Automatic detection:**
+- When Claude Code CLI is available: Full intelligent mode with `--crawl` and `--extract` instructions
+- When Claude Code CLI is unavailable: Automatically uses simple BFS mode
+- Clear messaging: "Claude CLI not found, using simple crawl mode"
+
+> [!NOTE]
+> Install Claude Code to unlock `--crawl` (AI-guided URL selection) and `--extract` (AI content extraction). Without it, web crawling still works but uses simple BFS mode.
+
 ---
 
 ## 🔧 Troubleshooting
@@ -849,6 +901,18 @@ Large repositories (10,000+ files) take longer to index. If indexing fails:
 2. Ensure the source repository/folder is accessible
 3. For repo stores, verify git is installed: `git --version`
 4. Check for network connectivity (for repo stores)
+</details>
+
+<details>
+<summary><b>🤖 "Claude CLI not found" during crawl</b></summary>
+
+This means intelligent crawling is unavailable. The crawler will automatically use simple BFS mode instead.
+
+To enable intelligent crawling with `--crawl` and `--extract`:
+1. Install Claude Code: https://claude.com/code
+2. Ensure `claude` command is in PATH: `which claude`
+
+Simple mode still crawls effectively—it just doesn't use AI to select which pages to crawl or extract specific content.
 </details>
 
 ---
@@ -1061,6 +1125,9 @@ The plugin includes a Model Context Protocol server that exposes search tools. T
 
 While Bluera Knowledge works seamlessly as a Claude Code plugin, it's also available as a standalone CLI tool for use outside Claude Code.
 
+> [!NOTE]
+> When using CLI without Claude Code installed, web crawling uses simple BFS mode. Install Claude Code to unlock `--crawl` (AI-guided URL selection) and `--extract` (AI content extraction) instructions.
+
 ### Installation
 
 Install globally via npm:
@@ -1157,6 +1224,9 @@ Both interfaces use the same underlying services, so you can switch between them
 ---
 
 ## 🎓 Skills for Claude Code
+
+> [!NOTE]
+> Skills are a Claude Code-specific feature. They're automatically loaded when using the plugin but aren't available when using the npm package directly.
 
 Bluera Knowledge includes built-in Skills that teach Claude Code how to use the plugin effectively. Skills provide procedural knowledge that complements the MCP tools.
 
