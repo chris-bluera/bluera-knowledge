@@ -153,6 +153,21 @@ export class LanceStore {
     }
   }
 
+  /**
+   * Async close that allows native code cleanup time.
+   * Use this before process.exit() to prevent mutex crashes.
+   */
+  async closeAsync(): Promise<void> {
+    this.tables.clear();
+    if (this.connection !== null) {
+      this.connection.close();
+      this.connection = null;
+      // Allow native threads time to complete cleanup
+      // LanceDB's native code has background threads that need time
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
   private getTableName(storeId: StoreId): string {
     return `documents_${storeId}`;
   }

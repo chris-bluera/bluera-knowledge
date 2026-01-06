@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { destroyServices, type ServiceContainer } from './index.js';
 import type { PythonBridge } from '../crawl/bridge.js';
+import type { LanceStore } from '../db/lance.js';
 
 describe('destroyServices', () => {
   let mockPythonBridge: { stop: ReturnType<typeof vi.fn> };
+  let mockLance: { closeAsync: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
   let mockServices: ServiceContainer;
 
   beforeEach(() => {
@@ -11,8 +13,14 @@ describe('destroyServices', () => {
       stop: vi.fn().mockResolvedValue(undefined),
     };
 
+    mockLance = {
+      closeAsync: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn(),
+    };
+
     mockServices = {
       pythonBridge: mockPythonBridge as unknown as PythonBridge,
+      lance: mockLance as unknown as LanceStore,
     } as unknown as ServiceContainer;
   });
 
@@ -34,5 +42,33 @@ describe('destroyServices', () => {
     await destroyServices(mockServices);
 
     expect(mockPythonBridge.stop).toHaveBeenCalledTimes(2);
+  });
+
+  it('calls closeAsync on LanceStore for native cleanup', async () => {
+    await destroyServices(mockServices);
+
+    expect(mockLance.closeAsync).toHaveBeenCalledTimes(1);
+    // Should use async version, not sync
+    expect(mockLance.close).not.toHaveBeenCalled();
+  });
+
+  it('handles LanceStore closeAsync errors gracefully', async () => {
+    mockLance.closeAsync.mockRejectedValue(new Error('closeAsync failed'));
+
+    // Should not throw even if closeAsync fails
+    await expect(destroyServices(mockServices)).resolves.not.toThrow();
+  });
+
+  it('waits for LanceStore async cleanup before returning', async () => {
+    let closeCompleted = false;
+    mockLance.closeAsync.mockImplementation(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      closeCompleted = true;
+    });
+
+    await destroyServices(mockServices);
+
+    // Should have waited for closeAsync to complete
+    expect(closeCompleted).toBe(true);
   });
 });

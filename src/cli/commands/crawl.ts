@@ -82,6 +82,7 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
       const webChunker = ChunkingService.forContentType('web');
       let pagesIndexed = 0;
       let chunksCreated = 0;
+      let exitCode = 0;
 
       // Listen for progress events
       crawler.on('progress', (progress: CrawlProgress) => {
@@ -184,10 +185,14 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
         } else {
           console.error(`Error: ${message}`);
         }
-        process.exit(6);
+        exitCode = 6;
       } finally {
         await crawler.stop();
         await destroyServices(services);
+      }
+
+      if (exitCode !== 0) {
+        process.exit(exitCode);
       }
     });
 }

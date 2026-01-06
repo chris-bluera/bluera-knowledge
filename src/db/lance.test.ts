@@ -323,6 +323,65 @@ describe('LanceStore', () => {
     });
   });
 
+  describe('closeAsync', () => {
+    it('returns a promise that resolves after cleanup', async () => {
+      const asyncCloseStoreId = createStoreId('async-close-test');
+      const asyncStore = new LanceStore(tempDir);
+      await asyncStore.initialize(asyncCloseStoreId);
+
+      const doc = {
+        id: createDocumentId('async-close-doc'),
+        content: 'test content for async close',
+        vector: new Array(384).fill(0.1),
+        metadata: {
+          type: 'file' as const,
+          storeId: asyncCloseStoreId,
+          indexedAt: new Date(),
+        },
+      };
+
+      await asyncStore.addDocuments(asyncCloseStoreId, [doc]);
+
+      // closeAsync should return a promise
+      const result = asyncStore.closeAsync();
+      expect(result).toBeInstanceOf(Promise);
+      await expect(result).resolves.not.toThrow();
+    });
+
+    it('handles closeAsync when never initialized', async () => {
+      const uninitializedStore = new LanceStore(tempDir);
+
+      // Should not throw even when never initialized
+      await expect(uninitializedStore.closeAsync()).resolves.not.toThrow();
+    });
+
+    it('allows native threads time to complete', async () => {
+      const timedStoreId = createStoreId('timed-close-test');
+      const timedStore = new LanceStore(tempDir);
+      await timedStore.initialize(timedStoreId);
+
+      const doc = {
+        id: createDocumentId('timed-doc'),
+        content: 'test',
+        vector: new Array(384).fill(0.1),
+        metadata: {
+          type: 'file' as const,
+          storeId: timedStoreId,
+          indexedAt: new Date(),
+        },
+      };
+
+      await timedStore.addDocuments(timedStoreId, [doc]);
+
+      const startTime = Date.now();
+      await timedStore.closeAsync();
+      const elapsed = Date.now() - startTime;
+
+      // Should take at least some time for native cleanup
+      expect(elapsed).toBeGreaterThanOrEqual(50);
+    });
+  });
+
   describe('multiple documents operations', () => {
     it('adds multiple documents at once', async () => {
       const multiStoreId = createStoreId('multi-doc-store');

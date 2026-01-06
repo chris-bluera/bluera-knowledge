@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import {
   runMCPServer
-} from "./chunk-OGEY66FZ.js";
+} from "./chunk-WT2DAEO7.js";
 import {
   IntelligentCrawler
-} from "./chunk-2SJHNRXD.js";
+} from "./chunk-RST4XGRL.js";
 import {
   ASTParser,
   ChunkingService,
@@ -16,7 +16,7 @@ import {
   err,
   extractRepoName,
   ok
-} from "./chunk-RWSXP3PQ.js";
+} from "./chunk-6PBP5DVD.js";
 import "./chunk-L2YVNC63.js";
 
 // src/index.ts
@@ -515,6 +515,7 @@ function createCrawlCommand(getOptions) {
     const webChunker = ChunkingService.forContentType("web");
     let pagesIndexed = 0;
     let chunksCreated = 0;
+    let exitCode = 0;
     crawler.on("progress", (progress) => {
       if (spinner) {
         if (progress.type === "strategy") {
@@ -600,10 +601,13 @@ function createCrawlCommand(getOptions) {
       } else {
         console.error(`Error: ${message}`);
       }
-      process.exit(6);
+      exitCode = 6;
     } finally {
       await crawler.stop();
       await destroyServices(services);
+    }
+    if (exitCode !== 0) {
+      process.exit(exitCode);
     }
   });
 }

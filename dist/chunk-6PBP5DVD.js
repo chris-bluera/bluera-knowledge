@@ -3603,6 +3603,18 @@ var LanceStore = class {
       this.connection = null;
     }
   }
+  /**
+   * Async close that allows native code cleanup time.
+   * Use this before process.exit() to prevent mutex crashes.
+   */
+  async closeAsync() {
+    this.tables.clear();
+    if (this.connection !== null) {
+      this.connection.close();
+      this.connection = null;
+      await new Promise((resolve3) => setTimeout(resolve3, 100));
+    }
+  }
   getTableName(storeId) {
     return `documents_${storeId}`;
   }
@@ -3961,7 +3973,7 @@ async function createServices(configPath, dataDir, projectRoot) {
 async function destroyServices(services) {
   logger4.info("Shutting down services");
   try {
-    services.lance.close();
+    await services.lance.closeAsync();
   } catch (e) {
     logger4.error({ error: e }, "Error closing LanceStore");
   }
@@ -3990,4 +4002,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-RWSXP3PQ.js.map
+//# sourceMappingURL=chunk-6PBP5DVD.js.map

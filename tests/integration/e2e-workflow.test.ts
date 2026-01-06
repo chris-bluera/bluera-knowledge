@@ -70,6 +70,8 @@ describe('E2E Workflow Tests', () => {
   }, 30000);
 
   afterAll(async () => {
+    // Close LanceStore to prevent mutex crash during process exit
+    lanceStore.close();
     await rm(tempDir, { recursive: true, force: true });
   });
 

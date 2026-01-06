@@ -80,7 +80,8 @@ export async function createServices(
 export async function destroyServices(services: ServiceContainer): Promise<void> {
   logger.info('Shutting down services');
   try {
-    services.lance.close();
+    // Use async close to allow native threads time to cleanup
+    await services.lance.closeAsync();
   } catch (e) {
     logger.error({ error: e }, 'Error closing LanceStore');
   }

@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.9.32](https://github.com/blueraai/bluera-knowledge/compare/v0.9.31...v0.9.32) (2026-01-06)
+
 ## [0.9.31](https://github.com/blueraai/bluera-knowledge/compare/v0.9.30...v0.9.31) (2026-01-06)
 
 
