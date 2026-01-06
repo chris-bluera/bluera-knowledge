@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.9.26](https://github.com/blueraai/bluera-knowledge/compare/v0.9.25...v0.9.26) (2026-01-06)
+
+
+### Bug Fixes
+
+* **tests:** make spawn-worker tests more robust ([05e3127](https://github.com/blueraai/bluera-knowledge/commit/05e312748d250592df1ce23395006954907f5387))
+
 ## [0.9.25](https://github.com/blueraai/bluera-knowledge/compare/v0.9.23...v0.9.25) (2026-01-06)
 
 
