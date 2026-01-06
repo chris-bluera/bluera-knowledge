@@ -469,10 +469,33 @@ function createCrawlCommand(getOptions) {
   return new Command6("crawl").description("Crawl web pages with natural language control and index into store").argument("<url>", "URL to crawl").argument("<store>", "Target web store to add crawled content to").option("--crawl <instruction>", 'Natural language instruction for what to crawl (e.g., "all Getting Started pages")').option("--extract <instruction>", 'Natural language instruction for what to extract (e.g., "extract API references")').option("--simple", "Use simple BFS mode instead of intelligent crawling").option("--max-pages <number>", "Maximum number of pages to crawl", "50").option("--headless", "Use headless browser for JavaScript-rendered sites").action(async (url, storeIdOrName, cmdOptions) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    const store = await services.store.getByIdOrName(storeIdOrName);
-    if (!store || store.type !== "web") {
+    let store;
+    let storeCreated = false;
+    const existingStore = await services.store.getByIdOrName(storeIdOrName);
+    if (!existingStore) {
+      const result = await services.store.create({
+        name: storeIdOrName,
+        type: "web",
+        url
+      });
+      if (!result.success) {
+        await destroyServices(services);
+        throw new Error(`Failed to create store: ${result.error.message}`);
+      }
+      const createdStore = result.data;
+      if (createdStore.type !== "web") {
+        throw new Error("Unexpected store type after creation");
+      }
+      store = createdStore;
+      storeCreated = true;
+      if (globalOpts.quiet !== true && globalOpts.format !== "json") {
+        console.log(`Created web store: ${store.name}`);
+      }
+    } else if (existingStore.type !== "web") {
       await destroyServices(services);
-      throw new Error(`Web store not found: ${storeIdOrName}`);
+      throw new Error(`Store "${storeIdOrName}" exists but is not a web store (type: ${existingStore.type})`);
+    } else {
+      store = existingStore;
     }
     const maxPages = cmdOptions.maxPages !== void 0 ? parseInt(cmdOptions.maxPages) : 50;
     const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== "json";
@@ -550,6 +573,7 @@ function createCrawlCommand(getOptions) {
       const crawlResult = {
         success: true,
         store: store.name,
+        storeCreated,
         url,
         pagesCrawled: pagesIndexed,
         chunksCreated,

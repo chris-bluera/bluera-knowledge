@@ -6,6 +6,7 @@ import { IntelligentCrawler, type CrawlProgress } from '../../crawl/intelligent-
 import { createDocumentId } from '../../types/brands.js';
 import type { GlobalOptions } from '../program.js';
 import type { Document } from '../../types/document.js';
+import type { WebStore } from '../../types/store.js';
 import { ChunkingService } from '../../services/chunking.service.js';
 import { classifyWebContentType } from '../../services/index.service.js';
 
@@ -29,10 +30,38 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
 
-      const store = await services.store.getByIdOrName(storeIdOrName);
-      if (!store || store.type !== 'web') {
+      // Look up or auto-create web store
+      let store: WebStore;
+      let storeCreated = false;
+      const existingStore = await services.store.getByIdOrName(storeIdOrName);
+
+      if (!existingStore) {
+        // Auto-create web store
+        const result = await services.store.create({
+          name: storeIdOrName,
+          type: 'web',
+          url,
+        });
+        if (!result.success) {
+          await destroyServices(services);
+          throw new Error(`Failed to create store: ${result.error.message}`);
+        }
+        // Type narrowing: success check above ensures result.data is Store
+        // We know it's a WebStore because we created it with type: 'web'
+        const createdStore = result.data;
+        if (createdStore.type !== 'web') {
+          throw new Error('Unexpected store type after creation');
+        }
+        store = createdStore;
+        storeCreated = true;
+        if (globalOpts.quiet !== true && globalOpts.format !== 'json') {
+          console.log(`Created web store: ${store.name}`);
+        }
+      } else if (existingStore.type !== 'web') {
         await destroyServices(services);
-        throw new Error(`Web store not found: ${storeIdOrName}`);
+        throw new Error(`Store "${storeIdOrName}" exists but is not a web store (type: ${existingStore.type})`);
+      } else {
+        store = existingStore;
       }
 
       const maxPages = cmdOptions.maxPages !== undefined ? parseInt(cmdOptions.maxPages) : 50;
@@ -132,6 +161,7 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
         const crawlResult = {
           success: true,
           store: store.name,
+          storeCreated,
           url,
           pagesCrawled: pagesIndexed,
           chunksCreated,

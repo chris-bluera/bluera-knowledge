@@ -38,6 +38,7 @@ describe('crawl command execution', () => {
       store: {
         getByIdOrName: vi.fn(),
         list: vi.fn(),
+        create: vi.fn(),
       },
       lance: {
         initialize: vi.fn(),
@@ -291,19 +292,109 @@ describe('crawl command execution', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('throws error when store not found', async () => {
+  describe('store auto-creation', () => {
+    it('auto-creates web store when store does not exist', async () => {
+      const createdStore: WebStore = {
+        id: createStoreId('new-store-id'),
+        name: 'new-store',
+        type: 'web',
+        url: 'https://example.com',
+        depth: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
       mockServices.store.getByIdOrName.mockResolvedValue(undefined);
+      mockServices.store.create.mockResolvedValue({ success: true, data: createdStore });
+      mockServices.lance.initialize.mockResolvedValue(undefined);
+      mockServices.embeddings.embed.mockResolvedValue([0.1, 0.2, 0.3]);
+      mockServices.lance.addDocuments.mockResolvedValue(undefined);
+
+      mockCrawler.crawl.mockReturnValue(
+        (async function* () {
+          yield {
+            url: 'https://example.com/page1',
+            title: 'Page 1',
+            markdown: '# Content',
+            depth: 0,
+          };
+        })()
+      );
 
       const command = createCrawlCommand(getOptions);
       const actionHandler = command._actionHandler;
 
-      await expect(actionHandler(['https://example.com', 'nonexistent-store'])).rejects.toThrow(
-        'Web store not found: nonexistent-store'
+      await actionHandler(['https://example.com', 'new-store']);
+
+      expect(mockServices.store.create).toHaveBeenCalledWith({
+        name: 'new-store',
+        type: 'web',
+        url: 'https://example.com',
+      });
+      expect(consoleLogSpy).toHaveBeenCalledWith('Created web store: new-store');
+      expect(mockCrawler.crawl).toHaveBeenCalled();
+    });
+
+    it('throws error when store creation fails', async () => {
+      mockServices.store.getByIdOrName.mockResolvedValue(undefined);
+      mockServices.store.create.mockResolvedValue({ success: false, error: new Error('Name already exists') });
+
+      const command = createCrawlCommand(getOptions);
+      const actionHandler = command._actionHandler;
+
+      await expect(actionHandler(['https://example.com', 'bad-store'])).rejects.toThrow(
+        'Failed to create store: Name already exists'
       );
       expect(mockCrawler.crawl).not.toHaveBeenCalled();
     });
 
+    it('includes storeCreated in JSON output when store was created', async () => {
+      const createdStore: WebStore = {
+        id: createStoreId('new-store-id'),
+        name: 'new-store',
+        type: 'web',
+        url: 'https://example.com',
+        depth: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockServices.store.getByIdOrName.mockResolvedValue(undefined);
+      mockServices.store.create.mockResolvedValue({ success: true, data: createdStore });
+      mockServices.lance.initialize.mockResolvedValue(undefined);
+      mockServices.embeddings.embed.mockResolvedValue([0.1, 0.2, 0.3]);
+      mockServices.lance.addDocuments.mockResolvedValue(undefined);
+
+      mockCrawler.crawl.mockReturnValue(
+        (async function* () {
+          yield {
+            url: 'https://example.com/page1',
+            title: 'Page 1',
+            markdown: '# Content',
+            depth: 0,
+          };
+        })()
+      );
+
+      getOptions = () => ({
+        config: undefined,
+        dataDir: '/tmp/test',
+        quiet: false,
+        format: 'json',
+      });
+
+      const command = createCrawlCommand(getOptions);
+      const actionHandler = command._actionHandler;
+
+      await actionHandler(['https://example.com', 'new-store']);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('"storeCreated": true')
+      );
+    });
+  });
+
+  describe('error handling', () => {
     it('throws error when store is not a web store', async () => {
       const mockFileStore = {
         id: createStoreId('store-1'),
@@ -320,7 +411,7 @@ describe('crawl command execution', () => {
       const actionHandler = command._actionHandler;
 
       await expect(actionHandler(['https://example.com', 'file-store'])).rejects.toThrow(
-        'Web store not found: file-store'
+        'Store "file-store" exists but is not a web store (type: file)'
       );
     });
 

@@ -12,6 +12,8 @@ node ${CLAUDE_PLUGIN_ROOT}/dist/index.js crawl $ARGUMENTS
 
 The web pages will be crawled with intelligent link selection and optional natural language extraction, then indexed for searching.
 
+**Note:** The web store is auto-created if it doesn't exist. No need to create the store first.
+
 ## Usage Examples
 
 **Intelligent crawl strategy:**
