@@ -16,13 +16,13 @@ HAS_SRC_CHANGES=$(echo "$CHANGED_FILES" | grep -E '^src/.*\.(ts|js)$' || true)
 HAS_TEST_CHANGES=$(echo "$CHANGED_FILES" | grep -E '\.(test|spec)\.(ts|js)$' || true)
 HAS_CONFIG_CHANGES=$(echo "$CHANGED_FILES" | grep -E '^(package\.json|tsconfig\.json|tsup\.config\.ts|vitest\.config\.ts)' || true)
 
-# If only documentation/non-code files changed, skip coverage tests
-if [ -z "$HAS_SRC_CHANGES" ] && [ -z "$HAS_TEST_CHANGES" ] && [ -z "$HAS_CONFIG_CHANGES" ]; then
-  echo "ℹ️  No code changes detected, skipping coverage tests"
+# Skip coverage if no source or test files changed
+if [ -z "$HAS_SRC_CHANGES" ] && [ -z "$HAS_TEST_CHANGES" ]; then
+  echo "ℹ️  No source/test changes detected, skipping coverage tests"
   exit 0
 fi
 
-# Run coverage tests for code changes
+# Run coverage tests only for source/test changes
 echo "🧪 Running coverage tests..."
 bun run test:coverage:quiet || exit 1
 
