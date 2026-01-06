@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.9.25](https://github.com/blueraai/bluera-knowledge/compare/v0.9.23...v0.9.25) (2026-01-06)
+
+
+### Features
+
+* **ci:** switch to npm trusted publishing (OIDC) ([269c48d](https://github.com/blueraai/bluera-knowledge/commit/269c48d6b04c9e6ebc3c3d77bfe1543f6519c68e))
+
+
+### Bug Fixes
+
+* **ci:** upgrade npm for trusted publishing support ([9a4a8e0](https://github.com/blueraai/bluera-knowledge/commit/9a4a8e041eb90d549fa5474368c60261e5ed0005))
+
 ## [0.9.24](https://github.com/blueraai/bluera-knowledge/compare/v0.9.23...v0.9.24) (2026-01-06)
 
 
