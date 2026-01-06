@@ -18,6 +18,9 @@ All searchable in milliseconds, no rate limits, fully offline.
 
 ## 📑 Table of Contents
 
+<details>
+<summary>Click to expand</summary>
+
 - [Installation](#-installation)
 - [Why Bluera Knowledge?](#-why-bluera-knowledge)
 - [Token Efficiency](#-token-efficiency)
@@ -36,9 +39,15 @@ All searchable in milliseconds, no rate limits, fully offline.
 - [Skills for Claude Code](#-skills-for-claude-code)
 - [Data Storage](#-data-storage)
 - [Development](#-development)
+  - [Setup](#-setup)
+  - [Commands / Scripts](#-commands)
+  - [Releasing](#-releasing)
+  - [Testing](#-testing-locally)
 - [Technologies](#-technologies)
 - [Contributing](#-contributing)
 - [License](#-license)
+
+</details>
 
 ---
 
