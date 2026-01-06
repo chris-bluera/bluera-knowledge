@@ -1285,7 +1285,7 @@ Replace the path with your actual repo location. This creates a separate `bluera
 | `bun run prepush` | 📊 Run coverage tests (verbose) | Manual testing with full output |
 | `bun run lint:quiet` | 🔇 ESLint (minimal output) | Used by git hooks |
 | `bun run typecheck:quiet` | 🔇 Type check (minimal output) | Used by git hooks |
-| `bun run test:changed:quiet` | 🔇 Test changed files (minimal) | Used by git hooks |
+| `bun run test:changed:quiet` | 🔇 Test changed files (minimal output) | Used by git hooks |
 | `bun run test:coverage:quiet` | 🔇 Coverage (minimal output) | Used by git hooks |
 | `bun run build:quiet` | 🔇 Build (minimal output) | Used by git hooks |
 
