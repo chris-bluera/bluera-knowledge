@@ -312,7 +312,7 @@ When you use `/bluera-knowledge:` commands, here's what happens:
 ```
 You: /bluera-knowledge:stores
   ↓
-Command file instructs Claude Code to use list_stores tool
+Command file instructs Claude Code to use execute("stores")
   ↓
 MCP tool queries LanceDB for store metadata
   ↓
@@ -339,20 +339,18 @@ This architecture means commands provide a clean user interface while MCP tools 
 - 🔄 Manage and re-index stores
 
 ### 🤖 MCP Tools
-**AI agents access knowledge through Model Context Protocol:**
+**AI agents access knowledge through Model Context Protocol (3 tools for minimal context overhead):**
 
 | Tool | Purpose |
 |------|---------|
 | `search` | 🔍 Semantic vector search across all stores |
-| `get_store_info` | 📂 Get file paths for direct Grep/Glob access |
-| `list_stores` | 📋 View available knowledge stores |
-| `create_store` | ➕ Add new knowledge sources |
-| `index_store` | 🔄 Re-index existing stores |
-| `delete_store` | 🗑️ Delete a store and all associated data |
-| `get_full_context` | 📖 Retrieve complete code context |
-| `check_job_status` | ⏱️ Check background vector indexing job progress |
-| `list_jobs` | 📊 List all background vector indexing jobs |
-| `cancel_job` | ⛔ Cancel running operations |
+| `get_full_context` | 📖 Retrieve complete code context for a search result |
+| `execute` | ⚡ Meta-tool for store/job management commands |
+
+The `execute` tool consolidates store and job management into a single tool with subcommands:
+- **Store commands**: `stores`, `store:info`, `store:create`, `store:index`, `store:delete`
+- **Job commands**: `jobs`, `job:status`, `job:cancel`
+- **Help**: `help`, `commands`
 
 ---
 
@@ -1086,6 +1084,8 @@ The plugin includes a Model Context Protocol server that exposes search tools. T
 
 ### 🛠️ Available MCP Tools
 
+The plugin exposes 3 MCP tools optimized for minimal context overhead:
+
 #### `search`
 🔍 Semantic vector search across all indexed stores or a specific subset. Returns structured code units with relevance ranking.
 
@@ -1096,28 +1096,32 @@ The plugin includes a Model Context Protocol server that exposes search tools. T
 - `limit` - Maximum results (default: 10)
 - `stores` - Array of specific store IDs to search (optional, searches all stores if not specified)
 
-#### `get_store_info`
-📂 Get detailed information about a store including its file path for direct Grep/Glob access.
-
-**Returns:**
-- Store metadata
-- File path to cloned repository or indexed folder
-- Enables direct file operations on source
-
-#### `list_stores`
-📋 List all indexed knowledge stores.
+#### `get_full_context`
+📖 Retrieve complete code and context for a specific search result by ID.
 
 **Parameters:**
-- `type` - Filter by type: file, repo, or web (optional)
+- `resultId` - The result ID from a previous search
 
-#### `create_store`
-➕ Create a new knowledge store from Git URL or local path.
+#### `execute`
+⚡ Meta-tool for store and job management. Consolidates 8 operations into one tool with subcommands.
 
-#### `index_store`
-🔄 Index or re-index a knowledge store to make it searchable.
+**Parameters:**
+- `command` - Command to execute (see below)
+- `args` - Command-specific arguments (optional)
 
-#### `get_full_context`
-📖 Retrieve complete code and context for a specific search result.
+**Available commands:**
+| Command | Args | Description |
+|---------|------|-------------|
+| `stores` | `type?` | List all knowledge stores |
+| `store:info` | `store` | Get detailed store information including file path |
+| `store:create` | `name`, `type`, `source`, `branch?`, `description?` | Create a new store |
+| `store:index` | `store` | Re-index an existing store |
+| `store:delete` | `store` | Delete a store and all data |
+| `jobs` | `activeOnly?`, `status?` | List background jobs |
+| `job:status` | `jobId` | Check specific job status |
+| `job:cancel` | `jobId` | Cancel a running job |
+| `help` | `command?` | Show help for commands |
+| `commands` | - | List all available commands |
 
 ---
 
@@ -1262,7 +1266,7 @@ Best practices for creating, indexing, and managing stores.
 ### 🔄 MCP + Skills Working Together
 
 Skills teach **how** to use the MCP tools effectively:
-- MCP provides the **capabilities** (search, create_store, index_store, etc.)
+- MCP provides the **capabilities** (search, get_full_context, execute commands)
 - Skills provide **procedural knowledge** (when to use which tool, best practices, workflows)
 
 This hybrid approach reduces unnecessary tool calls and context usage while maintaining universal MCP compatibility.
