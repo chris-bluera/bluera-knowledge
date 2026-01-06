@@ -21,7 +21,7 @@
     "lint:deadcode:strict": "knip",
     "typecheck": "tsc --noEmit",
     "precommit": ".husky/pre-commit",
-    "prepush": "bun run test:coverage:quiet",
+    "prepush": ".husky/pre-push",
     "lint:quiet": "eslint src/ --quiet && echo '✓ Lint passed' || echo '❌ ESLint errors'",
     "lint:deadcode:quiet": "knip --no-exit-code --quiet 2>&1 | grep -E '^(Unused|Configuration)' || echo '✓ No unused code'",
     "typecheck:quiet": "tsc --noEmit --pretty false 2>&1 | grep -E '^(src/|error TS)' || echo '✓ Type check passed'",

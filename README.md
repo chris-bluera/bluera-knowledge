@@ -1281,8 +1281,8 @@ Replace the path with your actual repo location. This creates a separate `bluera
 | `bun run test:coverage` | 📊 Run tests with coverage | Before committing, CI checks |
 | `bun run lint` | 🔍 Run ESLint | Check code style issues |
 | `bun run typecheck` | 🔒 Run TypeScript type checking | Verify type safety |
-| `bun run precommit` | ✨ Full validation suite (verbose) | Manual testing with full output |
-| `bun run prepush` | 📊 Run coverage tests (verbose) | Manual testing with full output |
+| `bun run precommit` | ✨ Smart validation (file-type aware) | Runs only relevant checks based on changed files |
+| `bun run prepush` | 📊 Smart coverage (skips tests for docs) | Runs coverage only for code changes |
 | `bun run lint:quiet` | 🔇 ESLint (minimal output) | Used by git hooks |
 | `bun run typecheck:quiet` | 🔇 Type check (minimal output) | Used by git hooks |
 | `bun run test:changed:quiet` | 🔇 Test changed files (minimal output) | Used by git hooks |
@@ -1295,8 +1295,8 @@ The `dist/` directory **must be committed** because Claude Code plugins are inst
 
 **Good news: This is fully automatic!**
 
-1. **On every commit**, the pre-commit hook runs `bun run precommit` which includes `bun run build`
-2. **After the build**, the hook automatically stages `dist/` via `git add dist/`
+1. **On every commit**, the pre-commit hook intelligently validates based on file types
+2. **If source/config changed**, it runs build and automatically stages `dist/` via `git add dist/`
 3. **You never need to manually build or stage dist** — just commit your source changes
 
 **For live rebuilding during development:**
