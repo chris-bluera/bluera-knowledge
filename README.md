@@ -1,7 +1,7 @@
 # 🧠 Bluera Knowledge
 
 [![CI](https://github.com/blueraai/bluera-knowledge/actions/workflows/ci.yml/badge.svg)](https://github.com/blueraai/bluera-knowledge/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-0.9.19-blue)
+![Version](https://img.shields.io/badge/version-0.9.20-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue)
