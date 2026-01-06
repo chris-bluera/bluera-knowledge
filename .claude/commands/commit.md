@@ -15,9 +15,11 @@ Create atomic, well-organized commits with each logical feature in its own commi
 
 **1. Analyze**: Run `git diff HEAD` to see all changes
 
-**2. Group**: Identify logical features (use atomic-commits Skill for grouping rules)
+**2. README Check**: Evaluate if changes need README updates (see atomic-commits Skill table)
 
-**3. Commit each group**:
+**3. Group**: Identify logical features (use atomic-commits Skill for grouping rules)
+
+**4. Commit each group**:
 ```bash
 git add <files>        # Stage related files
 bun run precommit      # Validate (smart - skips checks for doc-only changes)
@@ -25,9 +27,9 @@ bun run precommit      # Validate (smart - skips checks for doc-only changes)
 git commit -m "<type>(<scope>): <description>"
 ```
 
-**4. Handle untracked**: Categorize each untracked file as commit/ignore/intentional
+**5. Handle untracked**: Categorize each untracked file as commit/ignore/intentional
 
-**5. Report**: Show commits created and final `git status --short`
+**6. Report**: Show commits created and final `git status --short`
 
 ## Validation
 

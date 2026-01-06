@@ -38,16 +38,23 @@ git diff --cached                          # Staged only
 git ls-files --others --exclude-standard   # Untracked
 ```
 
-**After analyzing, check if README.md needs updating:**
-- **Features/Commands**: New CLI commands, Skills, MCP tools, or Features
-- **Setup/Config**: Installation steps, Claude Code settings, or data storage changes
-- **Development**: npm scripts (package.json table), setup requirements, or release process
-- **Dependencies**: New packages in Technologies section or troubleshooting tips
+### 2. Evaluate README Impact
+**STOP and evaluate each row - does this change warrant README updates?**
 
-### 2. Group by Feature
+| Category | Question | If YES, update |
+|----------|----------|----------------|
+| Features | New CLI command, Skill, MCP tool, or capability? | Features/Commands section |
+| Setup | Changed install steps, settings, or data paths? | Setup/Installation section |
+| Scripts | New/changed npm scripts? | package.json scripts table |
+| Behavior | Changed how existing features work? | Relevant feature section |
+| Deps | New package or common error scenario? | Technologies/Troubleshooting |
+
+**If any YES**: Update the README appropriately and include it in this commit (feature + docs = atomic unit)
+
+### 3. Group by Feature
 Each commit = one complete, testable change.
 
-### 3. Commit Each Group
+### 4. Commit Each Group
 ```bash
 git add <files>        # Stage related files
 bun run precommit      # Validate (already quiet)
@@ -55,7 +62,7 @@ bun run precommit      # Validate (already quiet)
 git commit -m "..."    # Commit when valid
 ```
 
-### 4. Handle Untracked Files
+### 5. Handle Untracked Files
 - **Should commit**: Add to appropriate commit
 - **Should ignore**: Suggest `.gitignore` (ask first)
 - **Intentional**: Document why untracked
