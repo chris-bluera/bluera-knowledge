@@ -141,6 +141,19 @@ var LRUCache = class {
   }
 };
 
+// src/services/token.service.ts
+var CHARS_PER_TOKEN = 3.5;
+function estimateTokens(text) {
+  if (!text) return 0;
+  return Math.ceil(text.length / CHARS_PER_TOKEN);
+}
+function formatTokenCount(tokens) {
+  if (tokens >= 1e3) {
+    return `~${(tokens / 1e3).toFixed(1)}k`;
+  }
+  return `~${String(tokens)}`;
+}
+
 // src/mcp/handlers/search.handler.ts
 var logger = createLogger("mcp-search");
 var resultCache = new LRUCache(1e3);
@@ -181,12 +194,6 @@ var handleSearch = async (args, context) => {
   for (const result of results.results) {
     resultCache.set(result.id, result);
   }
-  const estimatedTokens = results.results.reduce((sum, r) => {
-    let tokens = 100;
-    if (r.context) tokens += 200;
-    if (r.full) tokens += 800;
-    return sum + tokens;
-  }, 0);
   const enhancedResults = await Promise.all(results.results.map(async (r) => {
     const storeId = r.metadata.storeId;
     const store = await services.store.getByIdOrName(storeId);
@@ -205,14 +212,17 @@ var handleSearch = async (args, context) => {
   const responseJson = JSON.stringify({
     results: enhancedResults,
     totalResults: results.totalResults,
-    estimatedTokens,
     mode: results.mode,
     timeMs: results.timeMs
   }, null, 2);
+  const responseTokens = estimateTokens(responseJson);
+  const header = `Search: "${validated.query}" | Results: ${String(results.totalResults)} | ${formatTokenCount(responseTokens)} tokens | ${String(results.timeMs)}ms
+
+`;
   logger.info({
     query: validated.query,
     totalResults: results.totalResults,
-    estimatedTokens,
+    responseTokens,
     timeMs: results.timeMs,
     ...summarizePayload(responseJson, "mcp-response", validated.query)
   }, "Search complete - context sent to Claude Code");
@@ -220,7 +230,7 @@ var handleSearch = async (args, context) => {
     content: [
       {
         type: "text",
-        text: responseJson
+        text: header + responseJson
       }
     ]
   };
@@ -1010,4 +1020,4 @@ export {
   createMCPServer,
   runMCPServer
 };
-//# sourceMappingURL=chunk-HBDPPDAF.js.map
+//# sourceMappingURL=chunk-77JFMEMN.js.map

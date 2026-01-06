@@ -3,6 +3,20 @@ import { handleSearch, handleGetFullContext, resultCache } from './search.handle
 import type { HandlerContext } from '../types.js';
 import type { ServiceContainer } from '../../services/index.js';
 
+/**
+ * Extract JSON from search response that includes a header line.
+ * Format: "Search: ... | Results: ... | ~X tokens | Xms\n\n{json}"
+ */
+function parseSearchResponse(text: string): { header: string; json: Record<string, unknown> } {
+  const parts = text.split('\n\n');
+  const header = parts[0] ?? '';
+  const jsonStr = parts.slice(1).join('\n\n');
+  return {
+    header,
+    json: JSON.parse(jsonStr || '{}')
+  };
+}
+
 describe('Search Handlers', () => {
   let mockContext: HandlerContext;
   let mockServices: ServiceContainer;
@@ -70,7 +84,10 @@ describe('Search Handlers', () => {
         })
       );
 
-      const response = JSON.parse(result.content[0]?.text ?? '{}');
+      const { header, json: response } = parseSearchResponse(result.content[0]?.text ?? '');
+      expect(header).toContain('Search: "test query"');
+      expect(header).toContain('Results: 1');
+      expect(header).toContain('tokens');
       expect(response.results).toHaveLength(1);
       expect(response.totalResults).toBe(1);
     });
@@ -129,14 +146,15 @@ describe('Search Handlers', () => {
       expect(cached?.id).toBe('doc1');
     });
 
-    it('should calculate estimated tokens', async () => {
+    it('should show token count in header', async () => {
       const result = await handleSearch(
         { query: 'test', detail: 'minimal', limit: 10 },
         mockContext
       );
 
-      const response = JSON.parse(result.content[0]?.text ?? '{}');
-      expect(response.estimatedTokens).toBeGreaterThan(0);
+      const { header } = parseSearchResponse(result.content[0]?.text ?? '');
+      // Header should contain token count (either "~X tokens" or "~X.Xk tokens")
+      expect(header).toMatch(/~\d+\.?\d*k? tokens/);
     });
 
     it('should add repoRoot for repo stores', async () => {
@@ -156,7 +174,7 @@ describe('Search Handlers', () => {
         mockContext
       );
 
-      const response = JSON.parse(result.content[0]?.text ?? '{}');
+      const { json: response } = parseSearchResponse(result.content[0]?.text ?? '');
       expect(response.results[0]?.summary.repoRoot).toBe('/repos/test');
     });
 
@@ -166,7 +184,7 @@ describe('Search Handlers', () => {
         mockContext
       );
 
-      const response = JSON.parse(result.content[0]?.text ?? '{}');
+      const { json: response } = parseSearchResponse(result.content[0]?.text ?? '');
       expect(response.results[0]?.summary.repoRoot).toBeUndefined();
     });
 
@@ -176,7 +194,7 @@ describe('Search Handlers', () => {
         mockContext
       );
 
-      const response = JSON.parse(result.content[0]?.text ?? '{}');
+      const { json: response } = parseSearchResponse(result.content[0]?.text ?? '');
       expect(response.results[0]?.summary.storeName).toBe('Test Store');
     });
 
@@ -186,11 +204,12 @@ describe('Search Handlers', () => {
         mockContext
       );
 
-      const response = JSON.parse(result.content[0]?.text ?? '{}');
+      const { header, json: response } = parseSearchResponse(result.content[0]?.text ?? '');
       expect(response).toHaveProperty('totalResults', 1);
-      expect(response).toHaveProperty('estimatedTokens');
       expect(response).toHaveProperty('mode', 'hybrid');
       expect(response).toHaveProperty('timeMs', 50);
+      // Token count is now in header, not in JSON
+      expect(header).toContain('tokens');
     });
   });
 

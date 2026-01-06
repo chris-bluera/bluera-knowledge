@@ -5,6 +5,7 @@ import type { SearchQuery, DocumentId, StoreId } from '../../types/index.js';
 import { LRUCache } from '../cache.js';
 import type { SearchResult } from '../../types/search.js';
 import { createLogger, summarizePayload } from '../../logging/index.js';
+import { estimateTokens, formatTokenCount } from '../../services/token.service.js';
 
 const logger = createLogger('mcp-search');
 
@@ -74,14 +75,6 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
     resultCache.set(result.id, result);
   }
 
-  // Calculate estimated tokens
-  const estimatedTokens = results.results.reduce((sum, r) => {
-    let tokens = 100; // Base for summary
-    if (r.context) tokens += 200;
-    if (r.full) tokens += 800;
-    return sum + tokens;
-  }, 0);
-
   // Add repoRoot to results for cloned repos
   const enhancedResults = await Promise.all(results.results.map(async (r) => {
     const storeId = r.metadata.storeId;
@@ -103,16 +96,21 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
   const responseJson = JSON.stringify({
     results: enhancedResults,
     totalResults: results.totalResults,
-    estimatedTokens,
     mode: results.mode,
     timeMs: results.timeMs
   }, null, 2);
+
+  // Calculate actual token estimate based on response content
+  const responseTokens = estimateTokens(responseJson);
+
+  // Create visible header with token usage
+  const header = `Search: "${validated.query}" | Results: ${String(results.totalResults)} | ${formatTokenCount(responseTokens)} tokens | ${String(results.timeMs)}ms\n\n`;
 
   // Log the complete MCP response that will be sent to Claude Code
   logger.info({
     query: validated.query,
     totalResults: results.totalResults,
-    estimatedTokens,
+    responseTokens,
     timeMs: results.timeMs,
     ...summarizePayload(responseJson, 'mcp-response', validated.query),
   }, 'Search complete - context sent to Claude Code');
@@ -121,7 +119,7 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
     content: [
       {
         type: 'text',
-        text: responseJson
+        text: header + responseJson
       }
     ]
   };
