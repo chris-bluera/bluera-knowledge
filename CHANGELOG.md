@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.9.16](https://github.com/blueraai/bluera-knowledge/compare/v0.9.14...v0.9.16) (2026-01-06)
+
+
+### Features
+
+* **ci:** add workflow_dispatch to auto-release for manual triggering ([4835c9c](https://github.com/blueraai/bluera-knowledge/commit/4835c9c698766999154ff217475b3f38718289d6))
+* **crawl:** add Claude CLI availability detection for npm package mode ([9afaae5](https://github.com/blueraai/bluera-knowledge/commit/9afaae5b4b4da98ce787d966c9910004401756dd))
+* **release:** add automatic changelog generation with commit-and-tag-version ([177c6a3](https://github.com/blueraai/bluera-knowledge/commit/177c6a35f0a965b701940b2f8fc72fe2e4645647))
+* rename to @blueraai/bluera-knowledge and add npm publishing ([51a86cb](https://github.com/blueraai/bluera-knowledge/commit/51a86cb574fb9752224e724c1047a5000f4e898b))
+* **skills:** add hybrid MCP + Skills enhancement ([9fbee1d](https://github.com/blueraai/bluera-knowledge/commit/9fbee1d90d02663dbda9646e244423c7840330a6))
+
+
+### Bug Fixes
+
+* **ci:** add model warm-up step to prevent race conditions ([4f5cc6a](https://github.com/blueraai/bluera-knowledge/commit/4f5cc6a6a33f4ab28e8daa2ee6a02e1cc81bf59b))
+* **ci:** correct model cache location and test timeouts ([8ae7d9d](https://github.com/blueraai/bluera-knowledge/commit/8ae7d9dcd38ac7ccea3a5bae83ef07449adb693f))
+* **ci:** use bun in release workflow and add concurrency controls ([659c4f8](https://github.com/blueraai/bluera-knowledge/commit/659c4f83c7d4f093a5d626c9e460db92e82e3c9c))
+* **ci:** use check-regexp in update-marketplace and improve tag extraction ([a009d5f](https://github.com/blueraai/bluera-knowledge/commit/a009d5f90c6f5ddd3244a9f15fa228630dbd509d))
+* **ci:** use check-regexp to wait for CI jobs that exist immediately ([34a4be2](https://github.com/blueraai/bluera-knowledge/commit/34a4be2fa4a64221efc84b66b16491bb0624701f))
+* **cli:** resolve hanging subprocess by adding destroyServices cleanup ([36acc15](https://github.com/blueraai/bluera-knowledge/commit/36acc1560ed6ea999781e63614de701c7277c8d5))
+* **docs:** remove nested code blocks breaking GitHub rendering ([11aef7a](https://github.com/blueraai/bluera-knowledge/commit/11aef7a433623c8831e235714a7c1382b146504d))
+* **hooks:** make npm precommit script use smart git hook ([4a9f6b0](https://github.com/blueraai/bluera-knowledge/commit/4a9f6b0bddfd3d1d310b8dba40093c36cc3fa163))
+* **package:** correct npm org from [@blueraai](https://github.com/blueraai) to [@bluera](https://github.com/bluera) ([7366ebd](https://github.com/blueraai/bluera-knowledge/commit/7366ebd14a406c36a3675bb8d64d57bf3732b2f1))
+* **security:** address vulnerabilities from security audit ([4de8b46](https://github.com/blueraai/bluera-knowledge/commit/4de8b461268484dadccee86da42f96c6917e262d))
+* **test:** remove flaky performance assertions from stress tests ([69a480b](https://github.com/blueraai/bluera-knowledge/commit/69a480ba00b6e4b5aace4ea1b732c0246552dc40))
+
 ## [0.9.15](https://github.com/blueraai/bluera-knowledge/compare/v0.9.14...v0.9.15) (2026-01-06)
 
 
