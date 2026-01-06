@@ -38,6 +38,12 @@ git diff --cached                          # Staged only
 git ls-files --others --exclude-standard   # Untracked
 ```
 
+**After analyzing, check if README.md needs updating:**
+- **Features/Commands**: New CLI commands, Skills, MCP tools, or Features
+- **Setup/Config**: Installation steps, Claude Code settings, or data storage changes
+- **Development**: npm scripts (package.json table), setup requirements, or release process
+- **Dependencies**: New packages in Technologies section or troubleshooting tips
+
 ### 2. Group by Feature
 Each commit = one complete, testable change.
 
