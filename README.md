@@ -8,9 +8,16 @@
 
 > 🚀 **Build a local knowledge base for your AI coding agent—dependency source code, crawled docs, and your own files, all instantly searchable.**
 
-**Use it as:**
-- 🔌 **Claude Code Plugin** — Slash commands + MCP tools + Skills for optimal Claude Code integration
-- 📦 **npm Package** — Standalone CLI for any editor, CI/CD, or automation
+**Two ways to use it:**
+
+| | npm Package | Claude Code Plugin |
+|--|-------------|-------------------|
+| **Install** | `npm install -g bluera-knowledge` | `/plugin install bluera-knowledge@bluera` |
+| **Interface** | CLI commands | Slash commands + MCP tools |
+| **Works with** | Any AI tool, any editor | Claude Code specifically |
+| **Best for** | CI/CD, automation, other editors | Native Claude Code integration |
+
+Both provide the same core functionality: index repos, crawl docs, semantic search.
 
 Bluera Knowledge gives AI coding agents instant local access to authoritative context:
 
@@ -58,20 +65,7 @@ All searchable in milliseconds, no rate limits, fully offline.
 
 ## 📦 Installation
 
-### As Claude Code Plugin
-
-```bash
-# Add the Bluera marketplace (one-time setup)
-/plugin marketplace add blueraai/bluera-marketplace
-
-# Install the plugin (or use /plugin to browse the UI)
-/plugin install bluera-knowledge@bluera
-```
-
-> [!NOTE]
-> **First launch may appear to hang** while the plugin installs Python dependencies (crawl4ai). This is normal—subsequent launches are instant.
-
-### As npm Package
+### npm Package (CLI)
 
 ```bash
 # Global install (CLI available everywhere)
@@ -81,14 +75,28 @@ npm install -g bluera-knowledge
 npm install --save-dev bluera-knowledge
 ```
 
-> [!TIP]
-> Both installation methods provide the same core functionality. The plugin adds slash commands and Skills; the npm package provides a standalone CLI.
+Works with any AI coding tool, editor, CI/CD pipeline, or automation.
+
+### Claude Code Plugin
+
+```bash
+# Add the Bluera marketplace (one-time setup)
+/plugin marketplace add blueraai/bluera-marketplace
+
+# Install the plugin (or use /plugin to browse the UI)
+/plugin install bluera-knowledge@bluera
+```
+
+Adds slash commands, MCP tools, and Skills for optimal Claude Code integration.
+
+> [!NOTE]
+> **First launch may appear to hang** while the plugin installs Python dependencies (crawl4ai). This is normal—subsequent launches are instant.
 
 ---
 
 ## ✨ Why Bluera Knowledge?
 
-When you ask Claude Code "how do I handle errors in Express middleware?", it can:
+When your AI coding assistant needs to answer "how do I handle errors in Express middleware?", it can:
 
 1. **Guess from training data** — might be outdated or wrong
 2. **Search the web** — slow, rate-limited, often returns blog posts instead of source
