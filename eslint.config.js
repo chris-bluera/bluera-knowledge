@@ -42,7 +42,7 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', '*.config.js', '**/*.test.ts', 'tests/**/*.ts'],
+    ignores: ['dist/**', 'node_modules/**', '*.config.js', '*.config.ts', '**/*.test.ts', 'tests/**/*.ts'],
   },
   // Test files: Apply custom skip-comment rule only
   {

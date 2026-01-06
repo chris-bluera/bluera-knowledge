@@ -48,6 +48,22 @@ describe('EmbeddingEngine', () => {
     const customEngine = new EmbeddingEngine('Xenova/all-MiniLM-L6-v2', 512);
     expect(customEngine.getDimensions()).toBe(512);
   });
+
+  it('skips initialization when already initialized', async () => {
+    // Engine is already initialized from beforeAll
+    // Calling initialize again should be a no-op
+    await engine.initialize();
+    const embedding = await engine.embed('test');
+    expect(embedding).toHaveLength(384);
+  });
+
+  it('handles large batch with multiple chunks', async () => {
+    // Create enough texts to trigger multiple batch iterations (BATCH_SIZE = 32)
+    const texts = Array.from({ length: 40 }, (_, i) => `Text number ${String(i)}`);
+    const embeddings = await engine.embedBatch(texts);
+    expect(embeddings).toHaveLength(40);
+    expect(embeddings.every((e) => e.length === 384)).toBe(true);
+  }, 60000);
 });
 
 function cosineSimilarity(a: number[], b: number[]): number {

@@ -411,5 +411,6 @@ describe('store.handler', () => {
       const data = JSON.parse(result.content[0].text);
       expect(data.store.type).toBe('file');
     });
+
   });
 });

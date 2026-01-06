@@ -356,6 +356,52 @@ import type { Props } from "./types";
   });
 
   describe('Edge cases and special scenarios', () => {
+    it('handles default exported class', () => {
+      const code = 'export default class DefaultClass { method() {} }';
+      const nodes = parser.parse(code, 'typescript');
+
+      expect(nodes).toHaveLength(1);
+      expect(nodes[0]?.exported).toBe(true);
+      expect(nodes[0]?.name).toBe('DefaultClass');
+    });
+
+    it('handles anonymous default exported class (no id)', () => {
+      const code = 'export default class { method() {} }';
+      const nodes = parser.parse(code, 'javascript');
+
+      // Anonymous classes don't have an id, should be skipped
+      expect(nodes.filter(n => n.type === 'class')).toHaveLength(0);
+    });
+
+    it('handles class with computed property method (non-identifier key)', () => {
+      const code = `class MyClass {
+  ['computed']() { return 42; }
+  normalMethod() { return 1; }
+}`;
+      const nodes = parser.parse(code, 'javascript');
+
+      // Computed properties have StringLiteral keys, not Identifier
+      // Only normalMethod should be captured
+      expect(nodes[0]?.methods).toHaveLength(1);
+      expect(nodes[0]?.methods?.[0]?.name).toBe('normalMethod');
+    });
+
+    it('handles class with rest parameters in method', () => {
+      const code = `class MyClass {
+  method(...args) { return args; }
+}`;
+      const nodes = parser.parse(code, 'javascript');
+
+      expect(nodes[0]?.methods?.[0]?.signature).toBe('method(param)');
+    });
+
+    it('handles function with rest parameters', () => {
+      const code = 'function spread(...items) { return items; }';
+      const nodes = parser.parse(code, 'javascript');
+
+      expect(nodes[0]?.signature).toBe('spread(param)');
+    });
+
     it('handles functions with complex destructured parameters', () => {
       const code = 'function complex({ a, b }, [c, d]) { return a + b + c + d; }';
       const nodes = parser.parse(code, 'javascript');

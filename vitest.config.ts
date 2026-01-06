@@ -19,6 +19,7 @@ export default defineConfig({
             'src/crawl/bridge.test.ts',
             'src/plugin/git-clone.test.ts',
             'src/services/project-root.service.test.ts',
+            'src/workers/spawn-worker.test.ts',
           ],
           // Use forks pool for onnxruntime-node compatibility
           pool: 'forks',
@@ -38,6 +39,7 @@ export default defineConfig({
             'src/crawl/bridge.test.ts',
             'src/plugin/git-clone.test.ts',
             'src/services/project-root.service.test.ts',
+            'src/workers/spawn-worker.test.ts',
           ],
           // Use forks pool for onnxruntime-node compatibility
           pool: 'forks',

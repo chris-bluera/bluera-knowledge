@@ -28,6 +28,16 @@ describe('Result type', () => {
       const result = err(new Error('failed'));
       expect(() => unwrap(result)).toThrow('failed');
     });
+
+    it('throws wrapped error for non-Error error value', () => {
+      const result = err('string error message');
+      expect(() => unwrap(result)).toThrow('string error message');
+    });
+
+    it('converts non-string error to string', () => {
+      const result = err(404);
+      expect(() => unwrap(result)).toThrow('404');
+    });
   });
 
   describe('unwrapOr', () => {

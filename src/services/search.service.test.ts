@@ -1243,3 +1243,415 @@ describe('SearchService - Path Keyword Boosting', () => {
     expect(results.results.length).toBe(1);
   });
 });
+
+describe('SearchService - Code Graph Integration', () => {
+  let mockLanceStore: LanceStore;
+  let mockEmbeddingEngine: EmbeddingEngine;
+  let mockCodeGraphService: { loadGraph: ReturnType<typeof vi.fn> };
+  let searchService: SearchService;
+  const storeId = createStoreId('test-store');
+
+  beforeEach(() => {
+    mockLanceStore = {
+      search: vi.fn(),
+      fullTextSearch: vi.fn(),
+    } as unknown as LanceStore;
+
+    mockEmbeddingEngine = {
+      embed: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
+    } as unknown as EmbeddingEngine;
+
+    mockCodeGraphService = {
+      loadGraph: vi.fn(),
+    };
+
+    // Create SearchService with mock codeGraphService
+    searchService = new SearchService(
+      mockLanceStore,
+      mockEmbeddingEngine,
+      mockCodeGraphService as unknown as import('./code-graph.service.js').CodeGraphService
+    );
+  });
+
+  it('includes usage stats from code graph when detail is contextual', async () => {
+    // Create a mock CodeGraph with getCalledByCount and getCallsCount methods
+    const mockGraph = {
+      getCalledByCount: vi.fn().mockReturnValue(3),
+      getCallsCount: vi.fn().mockReturnValue(5),
+      getIncomingEdges: vi.fn().mockReturnValue([]),
+      getEdges: vi.fn().mockReturnValue([]),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'export function myFunction() { return 42; }',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/utils.ts'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'myFunction',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'contextual',
+    });
+
+    expect(results.results.length).toBe(1);
+    expect(results.results[0]?.context).toBeDefined();
+    expect(results.results[0]?.context?.usage).toBeDefined();
+    expect(results.results[0]?.context?.usage?.calledBy).toBe(3);
+    expect(results.results[0]?.context?.usage?.calls).toBe(5);
+    expect(mockGraph.getCalledByCount).toHaveBeenCalledWith('/src/utils.ts:myFunction');
+    expect(mockGraph.getCallsCount).toHaveBeenCalledWith('/src/utils.ts:myFunction');
+  });
+
+  it('returns zero usage stats when symbol is anonymous', async () => {
+    const mockGraph = {
+      getCalledByCount: vi.fn(),
+      getCallsCount: vi.fn(),
+      getIncomingEdges: vi.fn().mockReturnValue([]),
+      getEdges: vi.fn().mockReturnValue([]),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        // Content that matches no symbol patterns (no function/class/const keywords followed by identifiers)
+        content: 'This is just plain documentation text with no code symbols at all.',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/readme.md'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'documentation text',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'contextual',
+    });
+
+    expect(results.results.length).toBe(1);
+    expect(results.results[0]?.context?.usage?.calledBy).toBe(0);
+    expect(results.results[0]?.context?.usage?.calls).toBe(0);
+    // Graph methods should NOT be called for anonymous symbols
+    expect(mockGraph.getCalledByCount).not.toHaveBeenCalled();
+    expect(mockGraph.getCallsCount).not.toHaveBeenCalled();
+  });
+
+  it('returns zero usage stats when symbol is empty', async () => {
+    const mockGraph = {
+      getCalledByCount: vi.fn(),
+      getCallsCount: vi.fn(),
+      getIncomingEdges: vi.fn().mockReturnValue([]),
+      getEdges: vi.fn().mockReturnValue([]),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: '   \n\n   ', // whitespace only content
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/empty.ts'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'empty content',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'contextual',
+    });
+
+    // Graph methods should NOT be called for symbols that can't be extracted
+    expect(mockGraph.getCalledByCount).not.toHaveBeenCalled();
+  });
+
+  it('includes related code from graph when detail is full', async () => {
+    const mockGraph = {
+      getCalledByCount: vi.fn().mockReturnValue(2),
+      getCallsCount: vi.fn().mockReturnValue(1),
+      getIncomingEdges: vi.fn().mockReturnValue([
+        { from: '/src/caller.ts:callerFunction', to: '/src/utils.ts:myFunction', type: 'calls', confidence: 0.8 },
+        { from: '/src/main.ts:init', to: '/src/utils.ts:myFunction', type: 'calls', confidence: 0.9 },
+      ]),
+      getEdges: vi.fn().mockReturnValue([
+        { from: '/src/utils.ts:myFunction', to: '/src/helper.ts:helperFn', type: 'calls', confidence: 0.8 },
+      ]),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: '/** My function does stuff */\nexport function myFunction() { return helperFn(); }',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/utils.ts'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'myFunction',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'full',
+    });
+
+    expect(results.results.length).toBe(1);
+    expect(results.results[0]?.full).toBeDefined();
+    expect(results.results[0]?.full?.relatedCode).toBeDefined();
+    expect(results.results[0]?.full?.relatedCode?.length).toBe(3);
+
+    // Check incoming (callers)
+    const callers = results.results[0]?.full?.relatedCode?.filter(r => r.relationship === 'calls this');
+    expect(callers?.length).toBe(2);
+    expect(callers?.some(c => c.file === '/src/caller.ts' && c.summary === 'callerFunction()')).toBe(true);
+    expect(callers?.some(c => c.file === '/src/main.ts' && c.summary === 'init()')).toBe(true);
+
+    // Check outgoing (callees)
+    const callees = results.results[0]?.full?.relatedCode?.filter(r => r.relationship === 'called by this');
+    expect(callees?.length).toBe(1);
+    expect(callees?.[0]?.file).toBe('/src/helper.ts');
+    expect(callees?.[0]?.summary).toBe('helperFn()');
+  });
+
+  it('returns empty related code for anonymous symbols', async () => {
+    const mockGraph = {
+      getCalledByCount: vi.fn(),
+      getCallsCount: vi.fn(),
+      getIncomingEdges: vi.fn(),
+      getEdges: vi.fn(),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'Just plain text without code symbols',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/notes.txt'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'notes',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'full',
+    });
+
+    expect(results.results.length).toBe(1);
+    expect(results.results[0]?.full?.relatedCode).toEqual([]);
+    // Graph methods should NOT be called for anonymous symbols
+    expect(mockGraph.getIncomingEdges).not.toHaveBeenCalled();
+    expect(mockGraph.getEdges).not.toHaveBeenCalled();
+  });
+
+  it('handles edges with non-calls type gracefully', async () => {
+    const mockGraph = {
+      getCalledByCount: vi.fn().mockReturnValue(0),
+      getCallsCount: vi.fn().mockReturnValue(0),
+      getIncomingEdges: vi.fn().mockReturnValue([
+        { from: '/src/index.ts', to: '/src/utils.ts:myFunction', type: 'imports', confidence: 1.0 },
+      ]),
+      getEdges: vi.fn().mockReturnValue([
+        { from: '/src/utils.ts:myFunction', to: '/src/types.ts:MyInterface', type: 'implements', confidence: 1.0 },
+      ]),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'export function myFunction() { return 42; }',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/utils.ts'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'myFunction',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'full',
+    });
+
+    expect(results.results.length).toBe(1);
+    // No related code should be returned because edges are not 'calls' type
+    expect(results.results[0]?.full?.relatedCode).toEqual([]);
+  });
+
+  it('parses node IDs without colons correctly', async () => {
+    const mockGraph = {
+      getCalledByCount: vi.fn().mockReturnValue(1),
+      getCallsCount: vi.fn().mockReturnValue(0),
+      getIncomingEdges: vi.fn().mockReturnValue([
+        // Edge with nodeId that has no colon (edge case)
+        { from: 'simpleNodeId', to: '/src/utils.ts:myFunction', type: 'calls', confidence: 0.8 },
+      ]),
+      getEdges: vi.fn().mockReturnValue([]),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'export function myFunction() { return 42; }',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/utils.ts'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'myFunction',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'full',
+    });
+
+    expect(results.results.length).toBe(1);
+    const callers = results.results[0]?.full?.relatedCode?.filter(r => r.relationship === 'calls this');
+    expect(callers?.length).toBe(1);
+    // When nodeId has no colon, file should be the whole nodeId and symbol should be empty -> 'unknown'
+    expect(callers?.[0]?.file).toBe('simpleNodeId');
+    expect(callers?.[0]?.summary).toBe('unknown');
+  });
+
+  it('handles null graph gracefully', async () => {
+    mockCodeGraphService.loadGraph.mockResolvedValue(null);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'export function myFunction() { return 42; }',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/utils.ts'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'myFunction',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'full',
+    });
+
+    expect(results.results.length).toBe(1);
+    expect(results.results[0]?.context?.usage?.calledBy).toBe(0);
+    expect(results.results[0]?.context?.usage?.calls).toBe(0);
+    expect(results.results[0]?.full?.relatedCode).toEqual([]);
+  });
+
+  it('limits related code to 10 items', async () => {
+    // Create 15 incoming edges
+    const manyIncomingEdges = Array.from({ length: 15 }, (_, i) => ({
+      from: `/src/file${i}.ts:func${i}`,
+      to: '/src/utils.ts:myFunction',
+      type: 'calls' as const,
+      confidence: 0.8
+    }));
+
+    const mockGraph = {
+      getCalledByCount: vi.fn().mockReturnValue(15),
+      getCallsCount: vi.fn().mockReturnValue(0),
+      getIncomingEdges: vi.fn().mockReturnValue(manyIncomingEdges),
+      getEdges: vi.fn().mockReturnValue([]),
+    };
+
+    mockCodeGraphService.loadGraph.mockResolvedValue(mockGraph);
+
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'export function myFunction() { return 42; }',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/utils.ts'
+        }
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'myFunction',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      detail: 'full',
+    });
+
+    expect(results.results.length).toBe(1);
+    // Should be limited to 10 related items
+    expect(results.results[0]?.full?.relatedCode?.length).toBe(10);
+  });
+});
