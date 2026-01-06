@@ -1,5 +1,5 @@
 ---
-description: Create atomic commits grouped by logical features with README awareness.
+description: Create atomic commits grouped by logical features with README.md and CLAUDE.md awareness.
 allowed-tools: Bash(git:*), Read, Glob, Grep
 ---
 
@@ -15,7 +15,9 @@ Create atomic, well-organized commits with each logical feature in its own commi
 
 **1. Analyze**: Run `git diff HEAD` to see all changes
 
-**2. README Check**: Evaluate if changes need README updates using this criteria:
+**2. Documentation Check**: Evaluate if changes need README.md or CLAUDE.md updates.
+
+### README.md (User-facing documentation)
 
 | Change Type | README Section to Update |
 |-------------|-------------------------|
@@ -27,11 +29,25 @@ Create atomic, well-organized commits with each logical feature in its own commi
 | New features | Feature documentation |
 | Installation changes | Installation section |
 
-**If any of these files changed, check README:**
+**Trigger files → check README.md:**
 - `src/mcp/server.ts` - MCP tool surface
 - `plugin.json` - Plugin metadata
-- `package.json` scripts - Usage commands
-- `commands/*.md` - Command documentation references
+- `commands/*.md` - Command documentation
+
+### CLAUDE.md (Claude Code memory)
+
+| Change Type | CLAUDE.md Section to Update |
+|-------------|----------------------------|
+| package.json scripts | Scripts section |
+| CI/CD workflow changes | GitHub Actions Workflows section |
+| Build/dist process changes | Distribution Requirements section |
+| Coding conventions | ALWAYS/NEVER sections |
+
+**Trigger files → check CLAUDE.md:**
+- `package.json` scripts - Development commands
+- `.github/workflows/*.yml` - CI/CD workflows
+- `tsconfig.json`, `tsup.config.ts` - Build configuration
+- `.husky/*` - Git hooks
 
 **3. Group**: Identify logical features by grouping related files:
 - Same feature = same commit
