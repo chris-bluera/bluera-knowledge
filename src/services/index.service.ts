@@ -11,6 +11,9 @@ import { ok, err } from '../types/result.js';
 import { ChunkingService } from './chunking.service.js';
 import type { ProgressCallback } from '../types/progress.js';
 import type { CodeGraphService } from './code-graph.service.js';
+import { createLogger } from '../logging/index.js';
+
+const logger = createLogger('index-service');
 
 interface IndexResult {
   documentsIndexed: number;
@@ -51,13 +54,24 @@ export class IndexService {
   }
 
   async indexStore(store: Store, onProgress?: ProgressCallback): Promise<Result<IndexResult>> {
+    logger.info({
+      storeId: store.id,
+      storeName: store.name,
+      storeType: store.type,
+    }, 'Starting store indexing');
+
     try {
       if (store.type === 'file' || store.type === 'repo') {
         return await this.indexFileStore(store, onProgress);
       }
 
+      logger.error({ storeId: store.id, storeType: store.type }, 'Unsupported store type for indexing');
       return err(new Error(`Indexing not supported for store type: ${store.type}`));
     } catch (error) {
+      logger.error({
+        storeId: store.id,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Store indexing failed');
       return err(error instanceof Error ? error : new Error(String(error)));
     }
   }
@@ -67,6 +81,12 @@ export class IndexService {
     const files = await this.scanDirectory(store.path);
     const documents: Document[] = [];
     let filesProcessed = 0;
+
+    logger.debug({
+      storeId: store.id,
+      path: store.path,
+      fileCount: files.length,
+    }, 'Files scanned for indexing');
 
     // Collect source files for code graph building
     const sourceFiles: Array<{ path: string; content: string }> = [];
@@ -152,10 +172,21 @@ export class IndexService {
       message: 'Indexing complete'
     });
 
+    const timeMs = Date.now() - startTime;
+
+    logger.info({
+      storeId: store.id,
+      storeName: store.name,
+      documentsIndexed: filesProcessed,
+      chunksCreated: documents.length,
+      sourceFilesForGraph: sourceFiles.length,
+      timeMs,
+    }, 'Store indexing complete');
+
     return ok({
       documentsIndexed: filesProcessed,
       chunksCreated: documents.length,
-      timeMs: Date.now() - startTime,
+      timeMs,
     });
   }
 

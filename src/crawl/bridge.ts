@@ -11,6 +11,9 @@ import {
   validateHeadlessResult,
   validateParsePythonResult,
 } from './schemas.js';
+import { createLogger } from '../logging/index.js';
+
+const logger = createLogger('python-bridge');
 
 // Re-export for backwards compatibility
 export type { CrawledLink, ParsePythonResult };
@@ -32,24 +35,26 @@ export class PythonBridge {
   start(): Promise<void> {
     if (this.process) return Promise.resolve();
 
+    logger.debug('Starting Python bridge process');
+
     this.process = spawn('python3', ['python/crawl_worker.py'], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     // Add error handler for process spawn errors
     this.process.on('error', (err) => {
-      console.error('Python bridge process error:', err);
+      logger.error({ error: err.message, stack: err.stack }, 'Python bridge process error');
       this.rejectAllPending(new Error(`Process error: ${err.message}`));
     });
 
     // Add exit handler to detect non-zero exits
     this.process.on('exit', (code, signal) => {
       if (code !== 0 && code !== null) {
-        console.error(`Python bridge process exited with code ${String(code)}`);
+        logger.error({ code }, 'Python bridge process exited with non-zero code');
         this.rejectAllPending(new Error(`Process exited with code ${String(code)}`));
       } else if (signal && !this.stoppingIntentionally) {
         // Only log if we didn't intentionally stop the process
-        console.error(`Python bridge process killed with signal ${signal}`);
+        logger.error({ signal }, 'Python bridge process killed with signal');
         this.rejectAllPending(new Error(`Process killed with signal ${signal}`));
       }
       this.process = null;
@@ -60,7 +65,7 @@ export class PythonBridge {
     if (this.process.stderr) {
       const stderrRl = createInterface({ input: this.process.stderr });
       stderrRl.on('line', (line) => {
-        console.error('Python bridge stderr:', line);
+        logger.warn({ stderr: line }, 'Python bridge stderr output');
       });
     }
 
@@ -106,11 +111,14 @@ export class PythonBridge {
             } catch (error: unknown) {
               // Log validation failure with original response for debugging
               if (error instanceof ZodError) {
-                console.error('Python bridge response validation failed:', error.issues);
-                console.error('Original response:', JSON.stringify(response.result));
+                logger.error({
+                  issues: error.issues,
+                  response: JSON.stringify(response.result),
+                }, 'Python bridge response validation failed');
                 pending.reject(new Error(`Invalid response format from Python bridge: ${error.message}`));
               } else {
                 const errorMessage = error instanceof Error ? error.message : String(error);
+                logger.error({ error: errorMessage }, 'Response validation error');
                 pending.reject(new Error(`Response validation error: ${errorMessage}`));
               }
             }
@@ -118,7 +126,10 @@ export class PythonBridge {
           // If neither result nor error, leave pending (will timeout)
         }
       } catch (err) {
-        console.error('Failed to parse JSON response from Python bridge:', err, 'Line:', line);
+        logger.error({
+          error: err instanceof Error ? err.message : String(err),
+          line,
+        }, 'Failed to parse JSON response from Python bridge');
       }
     });
 

@@ -6,6 +6,9 @@ import { CodeUnitService } from './code-unit.service.js';
 import type { CodeUnit } from '../types/search.js';
 import type { CodeGraphService } from './code-graph.service.js';
 import type { CodeGraph } from '../analysis/code-graph.js';
+import { createLogger } from '../logging/index.js';
+
+const logger = createLogger('search-service');
 
 /**
  * Query intent classification for context-aware ranking.
@@ -220,6 +223,16 @@ export class SearchService {
     const limit = query.limit ?? 10;
     const stores = query.stores ?? [];
     const detail = query.detail ?? 'minimal';
+    const intent = classifyQueryIntent(query.query);
+
+    logger.debug({
+      query: query.query,
+      mode,
+      limit,
+      stores,
+      detail,
+      intent,
+    }, 'Search query received');
 
     let allResults: SearchResult[] = [];
 
@@ -254,13 +267,24 @@ export class SearchService {
       return this.addProgressiveContext(r, query.query, detail, graph);
     });
 
+    const timeMs = Date.now() - startTime;
+
+    logger.info({
+      query: query.query,
+      mode,
+      resultCount: enhancedResults.length,
+      dedupedFrom: allResults.length,
+      intent,
+      timeMs,
+    }, 'Search complete');
+
     return {
       query: query.query,
       mode,
       stores,
       results: enhancedResults,
       totalResults: enhancedResults.length,
-      timeMs: Date.now() - startTime,
+      timeMs,
     };
   }
 

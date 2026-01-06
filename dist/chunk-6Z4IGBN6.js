@@ -1,8 +1,10 @@
 import {
   JobService,
+  createLogger,
   createServices,
-  createStoreId
-} from "./chunk-5QMHZUC4.js";
+  createStoreId,
+  summarizePayload
+} from "./chunk-PM7UZC3P.js";
 
 // src/mcp/server.ts
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -140,9 +142,17 @@ var LRUCache = class {
 };
 
 // src/mcp/handlers/search.handler.ts
+var logger = createLogger("mcp-search");
 var resultCache = new LRUCache(1e3);
 var handleSearch = async (args, context) => {
   const validated = SearchArgsSchema.parse(args);
+  logger.info({
+    query: validated.query,
+    stores: validated.stores,
+    detail: validated.detail,
+    limit: validated.limit,
+    intent: validated.intent
+  }, "Search started");
   const { services } = context;
   const storeIds = validated.stores !== void 0 ? await Promise.all(validated.stores.map(async (s) => {
     const store = await services.store.getByIdOrName(s);
@@ -192,23 +202,32 @@ var handleSearch = async (args, context) => {
       full: r.full
     };
   }));
+  const responseJson = JSON.stringify({
+    results: enhancedResults,
+    totalResults: results.totalResults,
+    estimatedTokens,
+    mode: results.mode,
+    timeMs: results.timeMs
+  }, null, 2);
+  logger.info({
+    query: validated.query,
+    totalResults: results.totalResults,
+    estimatedTokens,
+    timeMs: results.timeMs,
+    ...summarizePayload(responseJson, "mcp-response", validated.query)
+  }, "Search complete - context sent to Claude Code");
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify({
-          results: enhancedResults,
-          totalResults: results.totalResults,
-          estimatedTokens,
-          mode: results.mode,
-          timeMs: results.timeMs
-        }, null, 2)
+        text: responseJson
       }
     ]
   };
 };
 var handleGetFullContext = async (args, context) => {
   const validated = GetFullContextArgsSchema.parse(args);
+  logger.info({ resultId: validated.resultId }, "Get full context requested");
   const resultId = validated.resultId;
   const cachedResult = resultCache.get(resultId);
   if (!cachedResult) {
@@ -217,17 +236,24 @@ var handleGetFullContext = async (args, context) => {
     );
   }
   if (cachedResult.full) {
+    const responseJson2 = JSON.stringify({
+      id: cachedResult.id,
+      score: cachedResult.score,
+      summary: cachedResult.summary,
+      context: cachedResult.context,
+      full: cachedResult.full
+    }, null, 2);
+    logger.info({
+      resultId,
+      cached: true,
+      hasFullContext: true,
+      ...summarizePayload(responseJson2, "mcp-full-context", resultId)
+    }, "Full context retrieved from cache");
     return {
       content: [
         {
           type: "text",
-          text: JSON.stringify({
-            id: cachedResult.id,
-            score: cachedResult.score,
-            summary: cachedResult.summary,
-            context: cachedResult.context,
-            full: cachedResult.full
-          }, null, 2)
+          text: responseJson2
         }
       ]
     };
@@ -265,17 +291,24 @@ var handleGetFullContext = async (args, context) => {
     };
   }
   resultCache.set(resultId, fullResult);
+  const responseJson = JSON.stringify({
+    id: fullResult.id,
+    score: fullResult.score,
+    summary: fullResult.summary,
+    context: fullResult.context,
+    full: fullResult.full
+  }, null, 2);
+  logger.info({
+    resultId,
+    cached: false,
+    hasFullContext: true,
+    ...summarizePayload(responseJson, "mcp-full-context", resultId)
+  }, "Full context retrieved via re-query");
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify({
-          id: fullResult.id,
-          score: fullResult.score,
-          summary: fullResult.summary,
-          context: fullResult.context,
-          full: fullResult.full
-        }, null, 2)
+        text: responseJson
       }
     ]
   };
@@ -823,6 +856,7 @@ var handleExecute = async (args, context) => {
 };
 
 // src/mcp/server.ts
+var logger2 = createLogger("mcp-server");
 function createMCPServer(options) {
   const server = new Server(
     {
@@ -913,30 +947,51 @@ function createMCPServer(options) {
   });
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    const startTime = Date.now();
+    logger2.info({ tool: name, args: JSON.stringify(args) }, "Tool invoked");
     const services = await createServices(
       options.config,
       options.dataDir,
       options.projectRoot
     );
     const context = { services, options };
-    if (name === "execute") {
-      const validated2 = ExecuteArgsSchema.parse(args ?? {});
-      return handleExecute(validated2, context);
+    try {
+      let result;
+      if (name === "execute") {
+        const validated = ExecuteArgsSchema.parse(args ?? {});
+        result = await handleExecute(validated, context);
+      } else {
+        const tool = tools.find((t) => t.name === name);
+        if (tool === void 0) {
+          throw new Error(`Unknown tool: ${name}`);
+        }
+        const validated = tool.schema.parse(args ?? {});
+        result = await tool.handler(validated, context);
+      }
+      const durationMs = Date.now() - startTime;
+      logger2.info({ tool: name, durationMs }, "Tool completed");
+      return result;
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+      logger2.error({
+        tool: name,
+        durationMs,
+        error: error instanceof Error ? error.message : String(error)
+      }, "Tool execution failed");
+      throw error;
     }
-    const tool = tools.find((t) => t.name === name);
-    if (tool === void 0) {
-      throw new Error(`Unknown tool: ${name}`);
-    }
-    const validated = tool.schema.parse(args ?? {});
-    return tool.handler(validated, context);
   });
   return server;
 }
 async function runMCPServer(options) {
+  logger2.info({
+    dataDir: options.dataDir,
+    projectRoot: options.projectRoot
+  }, "MCP server starting");
   const server = createMCPServer(options);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Bluera Knowledge MCP server running on stdio");
+  logger2.info("MCP server connected to stdio transport");
 }
 var scriptPath = process.argv[1] ?? "";
 var isMCPServerEntry = scriptPath.endsWith("mcp/server.js") || scriptPath.endsWith("mcp/server");
@@ -946,7 +1001,7 @@ if (isMCPServerEntry) {
     config: process.env["CONFIG_PATH"],
     projectRoot: process.env["PROJECT_ROOT"] ?? process.env["PWD"]
   }).catch((error) => {
-    console.error("Failed to start MCP server:", error);
+    logger2.error({ error: error instanceof Error ? error.message : String(error) }, "Failed to start MCP server");
     process.exit(1);
   });
 }
@@ -955,4 +1010,4 @@ export {
   createMCPServer,
   runMCPServer
 };
-//# sourceMappingURL=chunk-J7J6LXOJ.js.map
+//# sourceMappingURL=chunk-6Z4IGBN6.js.map

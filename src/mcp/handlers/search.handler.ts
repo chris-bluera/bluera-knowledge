@@ -4,6 +4,9 @@ import { SearchArgsSchema, GetFullContextArgsSchema } from '../schemas/index.js'
 import type { SearchQuery, DocumentId, StoreId } from '../../types/index.js';
 import { LRUCache } from '../cache.js';
 import type { SearchResult } from '../../types/search.js';
+import { createLogger, summarizePayload } from '../../logging/index.js';
+
+const logger = createLogger('mcp-search');
 
 // Create result cache for get_full_context
 // Uses LRU cache to prevent memory leaks (max 1000 items)
@@ -21,6 +24,14 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
 ): Promise<ToolResponse> => {
   // Validate arguments with Zod
   const validated = SearchArgsSchema.parse(args);
+
+  logger.info({
+    query: validated.query,
+    stores: validated.stores,
+    detail: validated.detail,
+    limit: validated.limit,
+    intent: validated.intent,
+  }, 'Search started');
 
   const { services } = context;
 
@@ -89,17 +100,28 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
     };
   }));
 
+  const responseJson = JSON.stringify({
+    results: enhancedResults,
+    totalResults: results.totalResults,
+    estimatedTokens,
+    mode: results.mode,
+    timeMs: results.timeMs
+  }, null, 2);
+
+  // Log the complete MCP response that will be sent to Claude Code
+  logger.info({
+    query: validated.query,
+    totalResults: results.totalResults,
+    estimatedTokens,
+    timeMs: results.timeMs,
+    ...summarizePayload(responseJson, 'mcp-response', validated.query),
+  }, 'Search complete - context sent to Claude Code');
+
   return {
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          results: enhancedResults,
-          totalResults: results.totalResults,
-          estimatedTokens,
-          mode: results.mode,
-          timeMs: results.timeMs
-        }, null, 2)
+        text: responseJson
       }
     ]
   };
@@ -118,6 +140,8 @@ export const handleGetFullContext: ToolHandler<GetFullContextArgs> = async (
   // Validate arguments with Zod
   const validated = GetFullContextArgsSchema.parse(args);
 
+  logger.info({ resultId: validated.resultId }, 'Get full context requested');
+
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const resultId = validated.resultId as DocumentId;
 
@@ -132,17 +156,26 @@ export const handleGetFullContext: ToolHandler<GetFullContextArgs> = async (
 
   // If result already has full context, return it
   if (cachedResult.full) {
+    const responseJson = JSON.stringify({
+      id: cachedResult.id,
+      score: cachedResult.score,
+      summary: cachedResult.summary,
+      context: cachedResult.context,
+      full: cachedResult.full
+    }, null, 2);
+
+    logger.info({
+      resultId,
+      cached: true,
+      hasFullContext: true,
+      ...summarizePayload(responseJson, 'mcp-full-context', resultId),
+    }, 'Full context retrieved from cache');
+
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({
-            id: cachedResult.id,
-            score: cachedResult.score,
-            summary: cachedResult.summary,
-            context: cachedResult.context,
-            full: cachedResult.full
-          }, null, 2)
+          text: responseJson
         }
       ]
     };
@@ -192,17 +225,26 @@ export const handleGetFullContext: ToolHandler<GetFullContextArgs> = async (
   // Update cache with full result
   resultCache.set(resultId, fullResult);
 
+  const responseJson = JSON.stringify({
+    id: fullResult.id,
+    score: fullResult.score,
+    summary: fullResult.summary,
+    context: fullResult.context,
+    full: fullResult.full
+  }, null, 2);
+
+  logger.info({
+    resultId,
+    cached: false,
+    hasFullContext: true,
+    ...summarizePayload(responseJson, 'mcp-full-context', resultId),
+  }, 'Full context retrieved via re-query');
+
   return {
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          id: fullResult.id,
-          score: fullResult.score,
-          summary: fullResult.summary,
-          context: fullResult.context,
-          full: fullResult.full
-        }, null, 2)
+        text: responseJson
       }
     ]
   };

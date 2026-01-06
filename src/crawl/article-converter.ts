@@ -7,6 +7,9 @@ import { extractFromHtml } from '@extractus/article-extractor';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import { preprocessHtmlForCodeBlocks, cleanupMarkdown } from './markdown-utils.js';
+import { createLogger, truncateForLog } from '../logging/index.js';
+
+const logger = createLogger('article-converter');
 
 export interface ConversionResult {
   markdown: string;
@@ -28,6 +31,8 @@ export async function convertHtmlToMarkdown(
   html: string,
   url: string,
 ): Promise<ConversionResult> {
+  logger.debug({ url, htmlLength: html.length }, 'Starting HTML conversion');
+
   try {
     // Step 1: Extract main article content
     let articleHtml: string;
@@ -38,13 +43,25 @@ export async function convertHtmlToMarkdown(
       if (article !== null && article.content !== undefined && article.content !== '') {
         articleHtml = article.content;
         title = article.title !== undefined && article.title !== '' ? article.title : undefined;
+        logger.debug({
+          url,
+          title,
+          extractedLength: articleHtml.length,
+          usedFullHtml: false,
+        }, 'Article content extracted');
       } else {
         // Fallback to full HTML if extraction fails
         articleHtml = html;
+        logger.debug({ url, usedFullHtml: true }, 'Article extraction returned empty, using full HTML');
       }
-    } catch {
+    } catch (extractError) {
       // Fallback to full HTML if extraction fails
       articleHtml = html;
+      logger.debug({
+        url,
+        usedFullHtml: true,
+        error: extractError instanceof Error ? extractError.message : String(extractError),
+      }, 'Article extraction failed, using full HTML');
     }
 
     // Step 2: Preprocess HTML for code blocks
@@ -83,12 +100,30 @@ export async function convertHtmlToMarkdown(
     // Step 4: Cleanup markdown with comprehensive regex patterns
     const markdown = cleanupMarkdown(rawMarkdown);
 
+    logger.debug({
+      url,
+      title,
+      rawMarkdownLength: rawMarkdown.length,
+      finalMarkdownLength: markdown.length,
+    }, 'HTML to markdown conversion complete');
+
+    // Log markdown preview at trace level
+    logger.trace({
+      url,
+      markdownPreview: truncateForLog(markdown, 1000),
+    }, 'Markdown content preview');
+
     return {
       markdown,
       ...(title !== undefined && { title }),
       success: true,
     };
   } catch (error) {
+    logger.error({
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    }, 'HTML to markdown conversion failed');
+
     return {
       markdown: '',
       success: false,

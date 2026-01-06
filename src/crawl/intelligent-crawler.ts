@@ -8,6 +8,9 @@ import axios from 'axios';
 import { ClaudeClient, type CrawlStrategy } from './claude-client.js';
 import { convertHtmlToMarkdown } from './article-converter.js';
 import { PythonBridge, type CrawledLink } from './bridge.js';
+import { createLogger, summarizePayload } from '../logging/index.js';
+
+const logger = createLogger('crawler');
 
 export interface CrawlOptions {
   crawlInstruction?: string; // Natural language: what to crawl
@@ -69,6 +72,13 @@ export class IntelligentCrawler extends EventEmitter {
     this.visited.clear();
     this.stopped = false;
 
+    logger.info({
+      seedUrl,
+      maxPages,
+      mode: simple ? 'simple' : (crawlInstruction !== undefined && crawlInstruction !== '' ? 'intelligent' : 'simple'),
+      hasExtractInstruction: extractInstruction !== undefined,
+    }, 'Starting crawl');
+
     const startProgress: CrawlProgress = {
       type: 'start',
       pagesVisited: 0,
@@ -85,6 +95,11 @@ export class IntelligentCrawler extends EventEmitter {
     } else {
       yield* this.crawlSimple(seedUrl, extractInstruction, maxPages, options.useHeadless ?? false);
     }
+
+    logger.info({
+      seedUrl,
+      pagesVisited: this.visited.size,
+    }, 'Crawl complete');
 
     const completeProgress: CrawlProgress = {
       type: 'complete',
@@ -220,9 +235,9 @@ export class IntelligentCrawler extends EventEmitter {
             const links = await this.extractLinks(current.url, useHeadless);
 
             if (links.length === 0) {
-              console.warn(`No links found on ${current.url} - page may be a leaf node`);
+              logger.debug({ url: current.url }, 'No links found - page may be a leaf node');
             } else {
-              console.log(`Found ${String(links.length)} links on ${current.url}`);
+              logger.debug({ url: current.url, linkCount: links.length }, 'Links extracted from page');
             }
 
             for (const link of links) {
@@ -283,8 +298,15 @@ export class IntelligentCrawler extends EventEmitter {
     const conversion = await convertHtmlToMarkdown(html, url);
 
     if (!conversion.success) {
+      logger.error({ url, error: conversion.error }, 'HTML to markdown conversion failed');
       throw new Error(`Failed to convert HTML: ${conversion.error ?? 'Unknown error'}`);
     }
+
+    logger.debug({
+      url,
+      title: conversion.title,
+      markdownLength: conversion.markdown.length,
+    }, 'Article converted to markdown');
 
     let extracted: string | undefined;
 
@@ -342,13 +364,23 @@ export class IntelligentCrawler extends EventEmitter {
    * Fetch HTML content from a URL
    */
   private async fetchHtml(url: string, useHeadless: boolean = false): Promise<string> {
+    const startTime = Date.now();
+    logger.debug({ url, useHeadless }, 'Fetching HTML');
+
     if (useHeadless) {
       try {
         const result = await this.pythonBridge.fetchHeadless(url);
+        const durationMs = Date.now() - startTime;
+        logger.info({
+          url,
+          useHeadless: true,
+          durationMs,
+          ...summarizePayload(result.html, 'raw-html', url),
+        }, 'Raw HTML fetched');
         return result.html;
       } catch (error) {
         // Fallback to axios if headless fails
-        console.warn(`Headless fetch failed for ${url}, falling back to axios:`, error);
+        logger.warn({ url, error: error instanceof Error ? error.message : String(error) }, 'Headless fetch failed, falling back to axios');
       }
     }
 
@@ -362,8 +394,17 @@ export class IntelligentCrawler extends EventEmitter {
         },
       });
 
+      const durationMs = Date.now() - startTime;
+      logger.info({
+        url,
+        useHeadless: false,
+        durationMs,
+        ...summarizePayload(response.data, 'raw-html', url),
+      }, 'Raw HTML fetched');
+
       return response.data;
     } catch (error) {
+      logger.error({ url, error: error instanceof Error ? error.message : String(error) }, 'Failed to fetch HTML');
       throw new Error(
         `Failed to fetch ${url}: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -398,7 +439,7 @@ export class IntelligentCrawler extends EventEmitter {
     } catch (error: unknown) {
       // Log the error for debugging
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Failed to extract links from ${url}:`, errorMessage);
+      logger.error({ url, error: errorMessage }, 'Failed to extract links');
 
       // Re-throw the error instead of silently swallowing it
       throw new Error(`Link extraction failed for ${url}: ${errorMessage}`);

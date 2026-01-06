@@ -9,6 +9,9 @@ import { tools } from './handlers/index.js';
 import { handleExecute } from './handlers/execute.handler.js';
 import { ExecuteArgsSchema } from './schemas/index.js';
 import type { MCPServerOptions } from './types.js';
+import { createLogger } from '../logging/index.js';
+
+const logger = createLogger('mcp-server');
 
 // eslint-disable-next-line @typescript-eslint/no-deprecated
 export function createMCPServer(options: MCPServerOptions): Server {
@@ -106,6 +109,9 @@ export function createMCPServer(options: MCPServerOptions): Server {
   // Handle tool calls
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    const startTime = Date.now();
+
+    logger.info({ tool: name, args: JSON.stringify(args) }, 'Tool invoked');
 
     // Create services once (needed by all handlers)
     const services = await createServices(
@@ -115,34 +121,56 @@ export function createMCPServer(options: MCPServerOptions): Server {
     );
     const context = { services, options };
 
-    // Handle execute meta-tool
-    if (name === 'execute') {
-      const validated = ExecuteArgsSchema.parse(args ?? {});
-      return handleExecute(validated, context);
+    try {
+      let result;
+
+      // Handle execute meta-tool
+      if (name === 'execute') {
+        const validated = ExecuteArgsSchema.parse(args ?? {});
+        result = await handleExecute(validated, context);
+      } else {
+        // Find handler in registry for native tools (search, get_full_context)
+        const tool = tools.find(t => t.name === name);
+        if (tool === undefined) {
+          throw new Error(`Unknown tool: ${name}`);
+        }
+
+        // Validate arguments with Zod
+        const validated = tool.schema.parse(args ?? {});
+
+        // Execute handler with context
+        result = await tool.handler(validated, context);
+      }
+
+      const durationMs = Date.now() - startTime;
+      logger.info({ tool: name, durationMs }, 'Tool completed');
+
+      return result;
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+      logger.error({
+        tool: name,
+        durationMs,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Tool execution failed');
+      throw error;
     }
-
-    // Find handler in registry for native tools (search, get_full_context)
-    const tool = tools.find(t => t.name === name);
-    if (tool === undefined) {
-      throw new Error(`Unknown tool: ${name}`);
-    }
-
-    // Validate arguments with Zod
-    const validated = tool.schema.parse(args ?? {});
-
-    // Execute handler with context
-    return tool.handler(validated, context);
   });
 
   return server;
 }
 
 export async function runMCPServer(options: MCPServerOptions): Promise<void> {
+  logger.info({
+    dataDir: options.dataDir,
+    projectRoot: options.projectRoot,
+  }, 'MCP server starting');
+
   const server = createMCPServer(options);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  console.error('Bluera Knowledge MCP server running on stdio');
+  logger.info('MCP server connected to stdio transport');
 }
 
 // Run the server only when this file is executed directly (not imported by CLI)
@@ -156,7 +184,7 @@ if (isMCPServerEntry) {
     config: process.env['CONFIG_PATH'],
     projectRoot: process.env['PROJECT_ROOT'] ?? process.env['PWD']
   }).catch((error: unknown) => {
-    console.error('Failed to start MCP server:', error);
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to start MCP server');
     process.exit(1);
   });
 }

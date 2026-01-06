@@ -1,6 +1,9 @@
 import {
-  PythonBridge
-} from "./chunk-5QMHZUC4.js";
+  PythonBridge,
+  createLogger,
+  summarizePayload,
+  truncateForLog
+} from "./chunk-PM7UZC3P.js";
 
 // src/crawl/intelligent-crawler.ts
 import { EventEmitter } from "events";
@@ -291,7 +294,9 @@ function cleanupMarkdown(markdown) {
 }
 
 // src/crawl/article-converter.ts
+var logger = createLogger("article-converter");
 async function convertHtmlToMarkdown(html, url) {
+  logger.debug({ url, htmlLength: html.length }, "Starting HTML conversion");
   try {
     let articleHtml;
     let title;
@@ -300,11 +305,23 @@ async function convertHtmlToMarkdown(html, url) {
       if (article !== null && article.content !== void 0 && article.content !== "") {
         articleHtml = article.content;
         title = article.title !== void 0 && article.title !== "" ? article.title : void 0;
+        logger.debug({
+          url,
+          title,
+          extractedLength: articleHtml.length,
+          usedFullHtml: false
+        }, "Article content extracted");
       } else {
         articleHtml = html;
+        logger.debug({ url, usedFullHtml: true }, "Article extraction returned empty, using full HTML");
       }
-    } catch {
+    } catch (extractError) {
       articleHtml = html;
+      logger.debug({
+        url,
+        usedFullHtml: true,
+        error: extractError instanceof Error ? extractError.message : String(extractError)
+      }, "Article extraction failed, using full HTML");
     }
     const preprocessed = preprocessHtmlForCodeBlocks(articleHtml);
     const turndownService = new TurndownService({
@@ -333,12 +350,26 @@ ${hashes} ${cleanContent}
     });
     const rawMarkdown = turndownService.turndown(preprocessed);
     const markdown = cleanupMarkdown(rawMarkdown);
+    logger.debug({
+      url,
+      title,
+      rawMarkdownLength: rawMarkdown.length,
+      finalMarkdownLength: markdown.length
+    }, "HTML to markdown conversion complete");
+    logger.trace({
+      url,
+      markdownPreview: truncateForLog(markdown, 1e3)
+    }, "Markdown content preview");
     return {
       markdown,
       ...title !== void 0 && { title },
       success: true
     };
   } catch (error) {
+    logger.error({
+      url,
+      error: error instanceof Error ? error.message : String(error)
+    }, "HTML to markdown conversion failed");
     return {
       markdown: "",
       success: false,
@@ -348,6 +379,7 @@ ${hashes} ${cleanContent}
 }
 
 // src/crawl/intelligent-crawler.ts
+var logger2 = createLogger("crawler");
 var IntelligentCrawler = class extends EventEmitter {
   claudeClient;
   pythonBridge;
@@ -372,6 +404,12 @@ var IntelligentCrawler = class extends EventEmitter {
     } = options;
     this.visited.clear();
     this.stopped = false;
+    logger2.info({
+      seedUrl,
+      maxPages,
+      mode: simple ? "simple" : crawlInstruction !== void 0 && crawlInstruction !== "" ? "intelligent" : "simple",
+      hasExtractInstruction: extractInstruction !== void 0
+    }, "Starting crawl");
     const startProgress = {
       type: "start",
       pagesVisited: 0,
@@ -384,6 +422,10 @@ var IntelligentCrawler = class extends EventEmitter {
     } else {
       yield* this.crawlSimple(seedUrl, extractInstruction, maxPages, options.useHeadless ?? false);
     }
+    logger2.info({
+      seedUrl,
+      pagesVisited: this.visited.size
+    }, "Crawl complete");
     const completeProgress = {
       type: "complete",
       pagesVisited: this.visited.size,
@@ -484,9 +526,9 @@ var IntelligentCrawler = class extends EventEmitter {
           try {
             const links = await this.extractLinks(current.url, useHeadless);
             if (links.length === 0) {
-              console.warn(`No links found on ${current.url} - page may be a leaf node`);
+              logger2.debug({ url: current.url }, "No links found - page may be a leaf node");
             } else {
-              console.log(`Found ${String(links.length)} links on ${current.url}`);
+              logger2.debug({ url: current.url, linkCount: links.length }, "Links extracted from page");
             }
             for (const link of links) {
               if (!this.visited.has(link) && this.isSameDomain(seedUrl, link)) {
@@ -532,8 +574,14 @@ var IntelligentCrawler = class extends EventEmitter {
     const html = await this.fetchHtml(url, useHeadless);
     const conversion = await convertHtmlToMarkdown(html, url);
     if (!conversion.success) {
+      logger2.error({ url, error: conversion.error }, "HTML to markdown conversion failed");
       throw new Error(`Failed to convert HTML: ${conversion.error ?? "Unknown error"}`);
     }
+    logger2.debug({
+      url,
+      title: conversion.title,
+      markdownLength: conversion.markdown.length
+    }, "Article converted to markdown");
     let extracted;
     if (extractInstruction !== void 0 && extractInstruction !== "") {
       if (!ClaudeClient.isAvailable()) {
@@ -583,12 +631,21 @@ var IntelligentCrawler = class extends EventEmitter {
    * Fetch HTML content from a URL
    */
   async fetchHtml(url, useHeadless = false) {
+    const startTime = Date.now();
+    logger2.debug({ url, useHeadless }, "Fetching HTML");
     if (useHeadless) {
       try {
         const result = await this.pythonBridge.fetchHeadless(url);
+        const durationMs = Date.now() - startTime;
+        logger2.info({
+          url,
+          useHeadless: true,
+          durationMs,
+          ...summarizePayload(result.html, "raw-html", url)
+        }, "Raw HTML fetched");
         return result.html;
       } catch (error) {
-        console.warn(`Headless fetch failed for ${url}, falling back to axios:`, error);
+        logger2.warn({ url, error: error instanceof Error ? error.message : String(error) }, "Headless fetch failed, falling back to axios");
       }
     }
     try {
@@ -598,8 +655,16 @@ var IntelligentCrawler = class extends EventEmitter {
           "User-Agent": "Mozilla/5.0 (compatible; bluera-knowledge-crawler/1.0)"
         }
       });
+      const durationMs = Date.now() - startTime;
+      logger2.info({
+        url,
+        useHeadless: false,
+        durationMs,
+        ...summarizePayload(response.data, "raw-html", url)
+      }, "Raw HTML fetched");
       return response.data;
     } catch (error) {
+      logger2.error({ url, error: error instanceof Error ? error.message : String(error) }, "Failed to fetch HTML");
       throw new Error(
         `Failed to fetch ${url}: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -625,7 +690,7 @@ var IntelligentCrawler = class extends EventEmitter {
       return firstPage.links;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Failed to extract links from ${url}:`, errorMessage);
+      logger2.error({ url, error: errorMessage }, "Failed to extract links");
       throw new Error(`Link extraction failed for ${url}: ${errorMessage}`);
     }
   }
@@ -653,4 +718,4 @@ var IntelligentCrawler = class extends EventEmitter {
 export {
   IntelligentCrawler
 };
-//# sourceMappingURL=chunk-BICFAWMN.js.map
+//# sourceMappingURL=chunk-RZSEVTQJ.js.map

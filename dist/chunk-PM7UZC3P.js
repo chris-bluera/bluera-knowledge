@@ -1,3 +1,142 @@
+// src/logging/logger.ts
+import pino from "pino";
+import { homedir } from "os";
+import { mkdirSync, existsSync } from "fs";
+import { join } from "path";
+var VALID_LEVELS = ["trace", "debug", "info", "warn", "error", "fatal"];
+var VALID_LEVELS_SET = new Set(VALID_LEVELS);
+function getLogDir() {
+  return join(homedir(), ".bluera", "bluera-knowledge", "logs");
+}
+function ensureLogDir() {
+  const logDir = getLogDir();
+  if (!existsSync(logDir)) {
+    mkdirSync(logDir, { recursive: true });
+  }
+  return logDir;
+}
+function isValidLogLevel(level) {
+  return VALID_LEVELS_SET.has(level);
+}
+function getLogLevel() {
+  const level = process.env["LOG_LEVEL"]?.toLowerCase();
+  if (level === void 0 || level === "") {
+    return "info";
+  }
+  if (!isValidLogLevel(level)) {
+    throw new Error(
+      `Invalid LOG_LEVEL: "${level}". Valid values: ${VALID_LEVELS.join(", ")}`
+    );
+  }
+  return level;
+}
+var rootLogger = null;
+function initializeLogger() {
+  if (rootLogger !== null) {
+    return rootLogger;
+  }
+  const logDir = ensureLogDir();
+  const logFile = join(logDir, "app.log");
+  const level = getLogLevel();
+  const options = {
+    level,
+    timestamp: pino.stdTimeFunctions.isoTime,
+    formatters: {
+      level: (label) => ({ level: label })
+    },
+    transport: {
+      target: "pino-roll",
+      options: {
+        file: logFile,
+        size: "10m",
+        // 10MB rotation
+        limit: { count: 5 },
+        // Keep 5 rotated files
+        mkdir: true
+      }
+    }
+  };
+  rootLogger = pino(options);
+  return rootLogger;
+}
+function createLogger(module) {
+  const root = initializeLogger();
+  return root.child({ module });
+}
+function isLevelEnabled(level) {
+  const currentLevel = getLogLevel();
+  const currentIndex = VALID_LEVELS.indexOf(currentLevel);
+  const checkIndex = VALID_LEVELS.indexOf(level);
+  return checkIndex >= currentIndex;
+}
+function getLogDirectory() {
+  return getLogDir();
+}
+function shutdownLogger() {
+  return new Promise((resolve3) => {
+    if (rootLogger !== null) {
+      rootLogger.flush();
+      setTimeout(() => {
+        rootLogger = null;
+        resolve3();
+      }, 100);
+    } else {
+      resolve3();
+    }
+  });
+}
+
+// src/logging/payload.ts
+import { writeFileSync, mkdirSync as mkdirSync2, existsSync as existsSync2 } from "fs";
+import { join as join2 } from "path";
+import { createHash } from "crypto";
+var MAX_PREVIEW_LENGTH = 500;
+var PAYLOAD_DUMP_THRESHOLD = 1e4;
+function getPayloadDir() {
+  const dir = join2(getLogDirectory(), "payload");
+  if (!existsSync2(dir)) {
+    mkdirSync2(dir, { recursive: true });
+  }
+  return dir;
+}
+function safeFilename(identifier) {
+  return identifier.replace(/[^a-zA-Z0-9-]/g, "_").substring(0, 50);
+}
+function summarizePayload(content, type, identifier, dumpFull = isLevelEnabled("trace")) {
+  const sizeBytes = Buffer.byteLength(content, "utf8");
+  const hash = createHash("md5").update(content).digest("hex").substring(0, 12);
+  const preview = truncateForLog(content, MAX_PREVIEW_LENGTH);
+  const baseSummary = { preview, sizeBytes, hash };
+  if (dumpFull && sizeBytes > PAYLOAD_DUMP_THRESHOLD) {
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
+    const safeId = safeFilename(identifier);
+    const filename = `${timestamp}-${type}-${safeId}-${hash}.json`;
+    const filepath = join2(getPayloadDir(), filename);
+    writeFileSync(
+      filepath,
+      JSON.stringify(
+        {
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          type,
+          identifier,
+          sizeBytes,
+          content
+        },
+        null,
+        2
+      )
+    );
+    return { ...baseSummary, payloadFile: filename };
+  }
+  return baseSummary;
+}
+function truncateForLog(content, maxLength = MAX_PREVIEW_LENGTH) {
+  if (content.length <= maxLength) {
+    return content;
+  }
+  return content.substring(0, maxLength) + "... [truncated]";
+}
+
 // src/services/job.service.ts
 import fs from "fs";
 import path from "path";
@@ -200,7 +339,7 @@ var JobService = class {
 // src/services/config.service.ts
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { dirname as dirname2, resolve } from "path";
-import { homedir } from "os";
+import { homedir as homedir2 } from "os";
 
 // src/types/config.ts
 var DEFAULT_CONFIG = {
@@ -239,8 +378,8 @@ var DEFAULT_CONFIG = {
 };
 
 // src/services/project-root.service.ts
-import { existsSync, statSync, realpathSync } from "fs";
-import { dirname, join, normalize, sep } from "path";
+import { existsSync as existsSync3, statSync, realpathSync } from "fs";
+import { dirname, join as join3, normalize, sep } from "path";
 var ProjectRootService = class {
   /**
    * Resolve project root directory using hierarchical detection.
@@ -270,8 +409,8 @@ var ProjectRootService = class {
     let currentPath = normalize(startPath);
     const root = normalize(sep);
     while (currentPath !== root) {
-      const gitPath = join(currentPath, ".git");
-      if (existsSync(gitPath)) {
+      const gitPath = join3(currentPath, ".git");
+      if (existsSync3(gitPath)) {
         try {
           const stats = statSync(gitPath);
           if (stats.isDirectory() || stats.isFile()) {
@@ -317,7 +456,7 @@ var ConfigService = class {
   configPath;
   dataDir;
   config = null;
-  constructor(configPath = `${homedir()}/.bluera/bluera-knowledge/config.json`, dataDir, projectRoot) {
+  constructor(configPath = `${homedir2()}/.bluera/bluera-knowledge/config.json`, dataDir, projectRoot) {
     this.configPath = configPath;
     if (dataDir !== void 0 && dataDir !== "") {
       this.dataDir = dataDir;
@@ -348,7 +487,7 @@ var ConfigService = class {
   }
   expandPath(path3, baseDir) {
     if (path3.startsWith("~")) {
-      return path3.replace("~", homedir());
+      return path3.replace("~", homedir2());
     }
     if (!path3.startsWith("/")) {
       return resolve(baseDir, path3);
@@ -359,7 +498,7 @@ var ConfigService = class {
 
 // src/services/store.service.ts
 import { readFile as readFile2, writeFile as writeFile2, mkdir as mkdir3, stat } from "fs/promises";
-import { join as join2, resolve as resolve2 } from "path";
+import { join as join4, resolve as resolve2 } from "path";
 import { randomUUID as randomUUID2 } from "crypto";
 
 // src/types/brands.ts
@@ -467,7 +606,7 @@ var StoreService = class {
       case "repo": {
         let repoPath = input.path;
         if (input.url !== void 0) {
-          const cloneDir = join2(this.dataDir, "repos", id);
+          const cloneDir = join4(this.dataDir, "repos", id);
           const result = await cloneRepository({
             url: input.url,
             targetDir: cloneDir,
@@ -563,7 +702,7 @@ var StoreService = class {
     return ok(void 0);
   }
   async loadRegistry() {
-    const registryPath = join2(this.dataDir, "stores.json");
+    const registryPath = join4(this.dataDir, "stores.json");
     try {
       const content = await readFile2(registryPath, "utf-8");
       const data = JSON.parse(content);
@@ -580,7 +719,7 @@ var StoreService = class {
     }
   }
   async saveRegistry() {
-    const registryPath = join2(this.dataDir, "stores.json");
+    const registryPath = join4(this.dataDir, "stores.json");
     await writeFile2(registryPath, JSON.stringify(this.registry, null, 2));
   }
 };
@@ -659,6 +798,7 @@ var CodeUnitService = class {
 };
 
 // src/services/search.service.ts
+var logger = createLogger("search-service");
 var INTENT_FILE_BOOSTS = {
   "how-to": {
     "documentation-primary": 1.3,
@@ -825,6 +965,15 @@ var SearchService = class {
     const limit = query.limit ?? 10;
     const stores = query.stores ?? [];
     const detail = query.detail ?? "minimal";
+    const intent = classifyQueryIntent(query.query);
+    logger.debug({
+      query: query.query,
+      mode,
+      limit,
+      stores,
+      detail,
+      intent
+    }, "Search query received");
     let allResults = [];
     const fetchLimit = limit * 3;
     if (mode === "vector") {
@@ -847,13 +996,22 @@ var SearchService = class {
       const graph = graphs.get(r.metadata.storeId) ?? null;
       return this.addProgressiveContext(r, query.query, detail, graph);
     });
+    const timeMs = Date.now() - startTime;
+    logger.info({
+      query: query.query,
+      mode,
+      resultCount: enhancedResults.length,
+      dedupedFrom: allResults.length,
+      intent,
+      timeMs
+    }, "Search complete");
     return {
       query: query.query,
       mode,
       stores,
       results: enhancedResults,
       totalResults: enhancedResults.length,
-      timeMs: Date.now() - startTime
+      timeMs
     };
   }
   /**
@@ -1331,8 +1489,8 @@ var SearchService = class {
 
 // src/services/index.service.ts
 import { readFile as readFile3, readdir } from "fs/promises";
-import { join as join3, extname, basename } from "path";
-import { createHash } from "crypto";
+import { join as join5, extname, basename } from "path";
+import { createHash as createHash2 } from "crypto";
 
 // src/services/chunking.service.ts
 var ChunkingService = class {
@@ -1596,6 +1754,7 @@ var ChunkingService = class {
 };
 
 // src/services/index.service.ts
+var logger2 = createLogger("index-service");
 var TEXT_EXTENSIONS = /* @__PURE__ */ new Set([
   ".txt",
   ".md",
@@ -1640,12 +1799,22 @@ var IndexService = class {
     this.codeGraphService = options.codeGraphService;
   }
   async indexStore(store, onProgress) {
+    logger2.info({
+      storeId: store.id,
+      storeName: store.name,
+      storeType: store.type
+    }, "Starting store indexing");
     try {
       if (store.type === "file" || store.type === "repo") {
         return await this.indexFileStore(store, onProgress);
       }
+      logger2.error({ storeId: store.id, storeType: store.type }, "Unsupported store type for indexing");
       return err(new Error(`Indexing not supported for store type: ${store.type}`));
     } catch (error) {
+      logger2.error({
+        storeId: store.id,
+        error: error instanceof Error ? error.message : String(error)
+      }, "Store indexing failed");
       return err(error instanceof Error ? error : new Error(String(error)));
     }
   }
@@ -1654,6 +1823,11 @@ var IndexService = class {
     const files = await this.scanDirectory(store.path);
     const documents = [];
     let filesProcessed = 0;
+    logger2.debug({
+      storeId: store.id,
+      path: store.path,
+      fileCount: files.length
+    }, "Files scanned for indexing");
     const sourceFiles = [];
     onProgress?.({
       type: "start",
@@ -1663,7 +1837,7 @@ var IndexService = class {
     });
     for (const filePath of files) {
       const content = await readFile3(filePath, "utf-8");
-      const fileHash = createHash("md5").update(content).digest("hex");
+      const fileHash = createHash2("md5").update(content).digest("hex");
       const chunks = this.chunker.chunk(content, filePath);
       const ext = extname(filePath).toLowerCase();
       const fileName = basename(filePath).toLowerCase();
@@ -1717,17 +1891,26 @@ var IndexService = class {
       total: files.length,
       message: "Indexing complete"
     });
+    const timeMs = Date.now() - startTime;
+    logger2.info({
+      storeId: store.id,
+      storeName: store.name,
+      documentsIndexed: filesProcessed,
+      chunksCreated: documents.length,
+      sourceFilesForGraph: sourceFiles.length,
+      timeMs
+    }, "Store indexing complete");
     return ok({
       documentsIndexed: filesProcessed,
       chunksCreated: documents.length,
-      timeMs: Date.now() - startTime
+      timeMs
     });
   }
   async scanDirectory(dir) {
     const files = [];
     const entries = await readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = join3(dir, entry.name);
+      const fullPath = join5(dir, entry.name);
       if (entry.isDirectory()) {
         if (!["node_modules", ".git", "dist", "build"].includes(entry.name)) {
           files.push(...await this.scanDirectory(fullPath));
@@ -1801,7 +1984,7 @@ var IndexService = class {
 
 // src/services/code-graph.service.ts
 import { readFile as readFile4, writeFile as writeFile3, mkdir as mkdir4 } from "fs/promises";
-import { join as join4, dirname as dirname3 } from "path";
+import { join as join6, dirname as dirname3 } from "path";
 
 // src/analysis/code-graph.ts
 var CodeGraph = class {
@@ -3118,7 +3301,7 @@ var CodeGraphService = class {
     this.graphCache.clear();
   }
   getGraphPath(storeId) {
-    return join4(this.dataDir, "graphs", `${storeId}.json`);
+    return join6(this.dataDir, "graphs", `${storeId}.json`);
   }
   /**
    * Type guard for SerializedGraph structure.
@@ -3273,9 +3456,9 @@ var LanceStore = class {
 
 // src/db/embeddings.ts
 import { pipeline, env } from "@huggingface/transformers";
-import { homedir as homedir2 } from "os";
-import { join as join5 } from "path";
-env.cacheDir = join5(homedir2(), ".cache", "huggingface-transformers");
+import { homedir as homedir3 } from "os";
+import { join as join7 } from "path";
+env.cacheDir = join7(homedir3(), ".cache", "huggingface-transformers");
 var EmbeddingEngine = class {
   extractor = null;
   modelName;
@@ -3398,25 +3581,27 @@ function validateParsePythonResult(data) {
 }
 
 // src/crawl/bridge.ts
+var logger3 = createLogger("python-bridge");
 var PythonBridge = class {
   process = null;
   pending = /* @__PURE__ */ new Map();
   stoppingIntentionally = false;
   start() {
     if (this.process) return Promise.resolve();
+    logger3.debug("Starting Python bridge process");
     this.process = spawn2("python3", ["python/crawl_worker.py"], {
       stdio: ["pipe", "pipe", "pipe"]
     });
     this.process.on("error", (err2) => {
-      console.error("Python bridge process error:", err2);
+      logger3.error({ error: err2.message, stack: err2.stack }, "Python bridge process error");
       this.rejectAllPending(new Error(`Process error: ${err2.message}`));
     });
     this.process.on("exit", (code, signal) => {
       if (code !== 0 && code !== null) {
-        console.error(`Python bridge process exited with code ${String(code)}`);
+        logger3.error({ code }, "Python bridge process exited with non-zero code");
         this.rejectAllPending(new Error(`Process exited with code ${String(code)}`));
       } else if (signal && !this.stoppingIntentionally) {
-        console.error(`Python bridge process killed with signal ${signal}`);
+        logger3.error({ signal }, "Python bridge process killed with signal");
         this.rejectAllPending(new Error(`Process killed with signal ${signal}`));
       }
       this.process = null;
@@ -3425,7 +3610,7 @@ var PythonBridge = class {
     if (this.process.stderr) {
       const stderrRl = createInterface({ input: this.process.stderr });
       stderrRl.on("line", (line) => {
-        console.error("Python bridge stderr:", line);
+        logger3.warn({ stderr: line }, "Python bridge stderr output");
       });
     }
     if (this.process.stdout === null) {
@@ -3460,18 +3645,24 @@ var PythonBridge = class {
               pending.resolve(validated);
             } catch (error) {
               if (error instanceof ZodError) {
-                console.error("Python bridge response validation failed:", error.issues);
-                console.error("Original response:", JSON.stringify(response.result));
+                logger3.error({
+                  issues: error.issues,
+                  response: JSON.stringify(response.result)
+                }, "Python bridge response validation failed");
                 pending.reject(new Error(`Invalid response format from Python bridge: ${error.message}`));
               } else {
                 const errorMessage = error instanceof Error ? error.message : String(error);
+                logger3.error({ error: errorMessage }, "Response validation error");
                 pending.reject(new Error(`Response validation error: ${errorMessage}`));
               }
             }
           }
         }
       } catch (err2) {
-        console.error("Failed to parse JSON response from Python bridge:", err2, "Line:", line);
+        logger3.error({
+          error: err2 instanceof Error ? err2.message : String(err2),
+          line
+        }, "Failed to parse JSON response from Python bridge");
       }
     });
     return Promise.resolve();
@@ -3570,7 +3761,9 @@ var PythonBridge = class {
 };
 
 // src/services/index.ts
+var logger4 = createLogger("services");
 async function createServices(configPath, dataDir, projectRoot) {
+  logger4.info({ configPath, dataDir, projectRoot }, "Initializing services");
   const config = new ConfigService(configPath, dataDir, projectRoot);
   const appConfig = await config.load();
   const resolvedDataDir = config.resolveDataDir();
@@ -3587,6 +3780,7 @@ async function createServices(configPath, dataDir, projectRoot) {
   const codeGraph = new CodeGraphService(resolvedDataDir, pythonBridge);
   const search = new SearchService(lance, embeddings, void 0, codeGraph);
   const index = new IndexService(lance, embeddings, { codeGraphService: codeGraph });
+  logger4.info({ dataDir: resolvedDataDir }, "Services initialized successfully");
   return {
     config,
     store,
@@ -3599,7 +3793,9 @@ async function createServices(configPath, dataDir, projectRoot) {
   };
 }
 async function destroyServices(services) {
+  logger4.info("Shutting down services");
   await services.pythonBridge.stop();
+  await shutdownLogger();
 }
 
 export {
@@ -3608,10 +3804,13 @@ export {
   ok,
   err,
   extractRepoName,
+  createLogger,
+  summarizePayload,
+  truncateForLog,
   ASTParser,
   PythonBridge,
   JobService,
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-5QMHZUC4.js.map
+//# sourceMappingURL=chunk-PM7UZC3P.js.map

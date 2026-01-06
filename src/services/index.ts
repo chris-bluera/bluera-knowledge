@@ -6,6 +6,9 @@ import { CodeGraphService } from './code-graph.service.js';
 import { LanceStore } from '../db/lance.js';
 import { EmbeddingEngine } from '../db/embeddings.js';
 import { PythonBridge } from '../crawl/bridge.js';
+import { createLogger, shutdownLogger } from '../logging/index.js';
+
+const logger = createLogger('services');
 
 export { ConfigService } from './config.service.js';
 export { StoreService } from './store.service.js';
@@ -32,6 +35,8 @@ export async function createServices(
   dataDir?: string,
   projectRoot?: string
 ): Promise<ServiceContainer> {
+  logger.info({ configPath, dataDir, projectRoot }, 'Initializing services');
+
   const config = new ConfigService(configPath, dataDir, projectRoot);
   const appConfig = await config.load();
   const resolvedDataDir = config.resolveDataDir();
@@ -54,6 +59,8 @@ export async function createServices(
   const search = new SearchService(lance, embeddings, undefined, codeGraph);
   const index = new IndexService(lance, embeddings, { codeGraphService: codeGraph });
 
+  logger.info({ dataDir: resolvedDataDir }, 'Services initialized successfully');
+
   return {
     config,
     store,
@@ -71,5 +78,7 @@ export async function createServices(
  * Call this after CLI commands complete to allow the process to exit.
  */
 export async function destroyServices(services: ServiceContainer): Promise<void> {
+  logger.info('Shutting down services');
   await services.pythonBridge.stop();
+  await shutdownLogger();
 }

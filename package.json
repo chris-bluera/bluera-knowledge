@@ -92,6 +92,8 @@
     "hono": "^4.11.1",
     "node-addon-api": "^8.5.0",
     "ora": "^9.0.0",
+    "pino": "^9.6.0",
+    "pino-roll": "^1.3.0",
     "slurp-ai": "^1.0.6",
     "tree-sitter": "^0.25.0",
     "tree-sitter-go": "^0.23.1",
