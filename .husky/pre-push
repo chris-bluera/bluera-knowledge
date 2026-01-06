@@ -1,4 +1,5 @@
 #!/bin/sh
+set -o pipefail
 
 # Get list of files changed in commits being pushed (compared to remote)
 # If remote doesn't exist yet, compare to HEAD~1
@@ -22,8 +23,17 @@ if [ -z "$HAS_SRC_CHANGES" ] && [ -z "$HAS_TEST_CHANGES" ]; then
   exit 0
 fi
 
-# Run coverage tests only for source/test changes
+# Run coverage tests - capture exit code before filtering output
 echo "🧪 Running coverage tests..."
-bun run test:coverage:quiet || exit 1
+COVERAGE_OUTPUT=$(bun run test:coverage 2>&1)
+COVERAGE_EXIT=$?
+
+# Show filtered summary
+echo "$COVERAGE_OUTPUT" | grep -E '(FAIL|Test Files|passed|Coverage|threshold|ERROR)' | tail -15
+
+if [ $COVERAGE_EXIT -ne 0 ]; then
+  echo "❌ Coverage tests failed"
+  exit 1
+fi
 
 echo "✅ Coverage tests passed"
