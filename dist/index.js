@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import {
   runMCPServer
-} from "./chunk-SZNTYLYT.js";
+} from "./chunk-OGEY66FZ.js";
 import {
   IntelligentCrawler
-} from "./chunk-DNOIM7BO.js";
+} from "./chunk-2SJHNRXD.js";
 import {
   ASTParser,
   ChunkingService,
@@ -16,7 +16,7 @@ import {
   err,
   extractRepoName,
   ok
-} from "./chunk-NJUMU4X2.js";
+} from "./chunk-RWSXP3PQ.js";
 import "./chunk-L2YVNC63.js";
 
 // src/index.ts
@@ -87,12 +87,14 @@ function createStoreCommand(getOptions) {
   store.command("create <name>").description("Create a new store pointing to a local path or URL").requiredOption("-t, --type <type>", "Store type: file (local dir), repo (git), web (crawled site)").requiredOption("-s, --source <path>", "Local path for file/repo stores, URL for web stores").option("-d, --description <desc>", "Optional description for the store").option("--tags <tags>", "Comma-separated tags for filtering").action(async (name, options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
+    let exitCode = 0;
     try {
+      const isUrl = options.source.startsWith("http://") || options.source.startsWith("https://");
       const result = await services.store.create({
         name,
         type: options.type,
-        path: options.type !== "web" ? options.source : void 0,
-        url: options.type === "web" ? options.source : void 0,
+        path: options.type === "file" || options.type === "repo" && !isUrl ? options.source : void 0,
+        url: options.type === "web" || options.type === "repo" && isUrl ? options.source : void 0,
         description: options.description,
         tags: options.tags?.split(",").map((t) => t.trim())
       });
@@ -106,10 +108,13 @@ Created store: ${result.data.name} (${result.data.id})
         }
       } else {
         console.error(`Error: ${result.error.message}`);
-        process.exit(1);
+        exitCode = 1;
       }
     } finally {
       await destroyServices(services);
+    }
+    if (exitCode !== 0) {
+      process.exit(exitCode);
     }
   });
   store.command("info <store>").description("Show store details: ID, type, path/URL, timestamps").action(async (storeIdOrName) => {

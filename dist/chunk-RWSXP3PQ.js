@@ -569,6 +569,9 @@ var StoreService = class {
     await this.loadRegistry();
   }
   async create(input) {
+    if (!input.name || input.name.trim() === "") {
+      return err(new Error("Store name cannot be empty"));
+    }
     const existing = await this.getByName(input.name);
     if (existing !== void 0) {
       return err(new Error(`Store with name "${input.name}" already exists`));
@@ -3593,6 +3596,13 @@ var LanceStore = class {
       this.tables.delete(tableName);
     }
   }
+  close() {
+    this.tables.clear();
+    if (this.connection !== null) {
+      this.connection.close();
+      this.connection = null;
+    }
+  }
   getTableName(storeId) {
     return `documents_${storeId}`;
   }
@@ -3950,7 +3960,16 @@ async function createServices(configPath, dataDir, projectRoot) {
 }
 async function destroyServices(services) {
   logger4.info("Shutting down services");
-  await services.pythonBridge.stop();
+  try {
+    services.lance.close();
+  } catch (e) {
+    logger4.error({ error: e }, "Error closing LanceStore");
+  }
+  try {
+    await services.pythonBridge.stop();
+  } catch (e) {
+    logger4.error({ error: e }, "Error stopping Python bridge");
+  }
   await shutdownLogger();
 }
 
@@ -3971,4 +3990,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-NJUMU4X2.js.map
+//# sourceMappingURL=chunk-RWSXP3PQ.js.map

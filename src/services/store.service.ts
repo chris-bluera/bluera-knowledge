@@ -37,6 +37,10 @@ export class StoreService {
   }
 
   async create(input: CreateStoreInput): Promise<Result<Store>> {
+    if (!input.name || input.name.trim() === '') {
+      return err(new Error('Store name cannot be empty'));
+    }
+
     const existing = await this.getByName(input.name);
     if (existing !== undefined) {
       return err(new Error(`Store with name "${input.name}" already exists`));

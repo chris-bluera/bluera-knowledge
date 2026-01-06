@@ -145,6 +145,14 @@ export class LanceStore {
     }
   }
 
+  close(): void {
+    this.tables.clear();
+    if (this.connection !== null) {
+      this.connection.close();
+      this.connection = null;
+    }
+  }
+
   private getTableName(storeId: StoreId): string {
     return `documents_${storeId}`;
   }

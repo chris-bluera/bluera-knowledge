@@ -79,6 +79,15 @@ export async function createServices(
  */
 export async function destroyServices(services: ServiceContainer): Promise<void> {
   logger.info('Shutting down services');
-  await services.pythonBridge.stop();
+  try {
+    services.lance.close();
+  } catch (e) {
+    logger.error({ error: e }, 'Error closing LanceStore');
+  }
+  try {
+    await services.pythonBridge.stop();
+  } catch (e) {
+    logger.error({ error: e }, 'Error stopping Python bridge');
+  }
   await shutdownLogger();
 }

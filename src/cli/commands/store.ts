@@ -54,12 +54,15 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
+      let exitCode = 0;
       try {
+        // Detect if source is a URL (for repo stores that should clone from remote)
+        const isUrl = options.source.startsWith('http://') || options.source.startsWith('https://');
         const result = await services.store.create({
           name,
           type: options.type,
-          path: options.type !== 'web' ? options.source : undefined,
-          url: options.type === 'web' ? options.source : undefined,
+          path: options.type === 'file' || (options.type === 'repo' && !isUrl) ? options.source : undefined,
+          url: options.type === 'web' || (options.type === 'repo' && isUrl) ? options.source : undefined,
           description: options.description,
           tags: options.tags?.split(',').map((t) => t.trim()),
         });
@@ -72,10 +75,13 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
           }
         } else {
           console.error(`Error: ${result.error.message}`);
-          process.exit(1);
+          exitCode = 1;
         }
       } finally {
         await destroyServices(services);
+      }
+      if (exitCode !== 0) {
+        process.exit(exitCode);
       }
     });
 
