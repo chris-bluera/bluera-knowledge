@@ -4029,7 +4029,7 @@ var PythonBridge = class {
           this.process = null;
         }
         resolve3();
-      }, 5e3);
+      }, 1e3);
     });
   }
   rejectAllPending(error) {
@@ -4105,4 +4105,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-DMUBYQ3O.js.map
+//# sourceMappingURL=chunk-RF4ITWO5.js.map

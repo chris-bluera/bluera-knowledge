@@ -253,7 +253,7 @@ export class PythonBridge {
       // Send SIGTERM to gracefully stop
       proc.kill();
 
-      // Safety timeout in case process doesn't exit within 5 seconds
+      // Safety timeout in case process doesn't exit within 1 second
       setTimeout(() => {
         proc.removeListener('exit', onExit);
         if (this.process === proc) {
@@ -261,7 +261,7 @@ export class PythonBridge {
           this.process = null;
         }
         resolve();
-      }, 5000);
+      }, 1000);
     });
   }
 

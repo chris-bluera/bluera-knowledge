@@ -33,7 +33,10 @@ describe('PythonBridge', () => {
     };
     stdout = new EventEmitter();
     stderr = new EventEmitter();
-    kill = vi.fn();
+    kill = vi.fn(() => {
+      // Emit exit event asynchronously to simulate real process behavior
+      setImmediate(() => this.emit('exit', 0, null));
+    });
   }
 
   class MockReadline extends EventEmitter {
@@ -507,10 +510,14 @@ describe('PythonBridge', () => {
       const promise1 = bridge.crawl('https://example.com/1', 1000);
       const promise2 = bridge.crawl('https://example.com/2', 1000);
 
+      // Attach rejection handlers BEFORE stop to avoid unhandled rejection
+      const rejection1 = expect(promise1).rejects.toThrow('stopped');
+      const rejection2 = expect(promise2).rejects.toThrow('stopped');
+
       await bridge.stop();
 
-      await expect(promise1).rejects.toThrow('stopped');
-      await expect(promise2).rejects.toThrow('stopped');
+      await rejection1;
+      await rejection2;
     });
   });
 
@@ -595,9 +602,12 @@ describe('PythonBridge', () => {
       await bridge.start();
       const promise = bridge.crawl('https://example.com');
 
+      // Attach rejection handler BEFORE stop to avoid unhandled rejection
+      const rejection = expect(promise).rejects.toThrow('Python bridge stopped');
+
       await bridge.stop();
 
-      await expect(promise).rejects.toThrow('Python bridge stopped');
+      await rejection;
     });
   });
 
