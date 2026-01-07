@@ -22,6 +22,12 @@ This file is YOUR (Claude's) project memory. It is NOT user documentation. It is
 
 ---
 
+## Package Manager
+
+**Use `bun`** - not npm or yarn. All scripts should be run with `bun run <script>`.
+
+---
+
 ## Scripts
 
 **Development:**
