@@ -43,6 +43,7 @@ describe('crawl command execution', () => {
       lance: {
         initialize: vi.fn(),
         addDocuments: vi.fn(),
+        createFtsIndex: vi.fn(),
       },
       embeddings: {
         embed: vi.fn(),

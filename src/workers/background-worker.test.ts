@@ -27,6 +27,7 @@ describe('BackgroundWorker', () => {
     lanceStore = {
       initialize: vi.fn().mockResolvedValue(undefined),
       addDocuments: vi.fn().mockResolvedValue(undefined),
+      createFtsIndex: vi.fn().mockResolvedValue(undefined),
     } as unknown as LanceStore;
     embeddingEngine = {
       embed: vi.fn().mockResolvedValue(new Array(384).fill(0)),

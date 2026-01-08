@@ -1094,6 +1094,7 @@ describe('IndexService - Error Handling Edge Cases', () => {
     // Create a mock that throws a string instead of Error
     const mockLanceStore = {
       addDocuments: vi.fn().mockRejectedValue('string error'),
+      createFtsIndex: vi.fn().mockResolvedValue(undefined),
     } as unknown as LanceStore;
 
     const indexService = new IndexService(mockLanceStore, embeddingEngine);

@@ -49,6 +49,7 @@ describe('createIndexCommand - Execution Tests', () => {
         initialize: vi.fn(),
         search: vi.fn(),
         addDocuments: vi.fn(),
+        createFtsIndex: vi.fn(),
       },
       search: {
         search: vi.fn(),
