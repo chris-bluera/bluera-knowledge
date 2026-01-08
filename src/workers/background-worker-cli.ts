@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
 import { BackgroundWorker } from './background-worker.js';
+import { writePidFile, deletePidFile, buildPidFilePath } from './pid-file.js';
 import { createServices } from '../services/index.js';
 import { JobService } from '../services/job.service.js';
 
@@ -27,16 +26,18 @@ async function main(): Promise<void> {
   const jobService = new JobService(dataDir);
   const services = await createServices(undefined, dataDir);
 
-  // Write PID file for job cancellation
-  const pidFile = path.join(
+  // Write PID file for job cancellation - CRITICAL: must succeed or job cannot be cancelled
+  const pidFile = buildPidFilePath(
     jobService['jobsDir'], // Access private field for PID path
-    `${jobId}.pid`
+    jobId
   );
 
   try {
-    fs.writeFileSync(pidFile, process.pid.toString(), 'utf-8');
+    writePidFile(pidFile, process.pid);
   } catch (error) {
-    console.error('Warning: Could not write PID file:', error);
+    // CRITICAL: Cannot proceed without PID file - job would be uncancellable
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
   }
 
   // Handle SIGTERM for graceful shutdown
@@ -47,13 +48,12 @@ async function main(): Promise<void> {
       message: 'Job cancelled by user',
     });
 
-    // Clean up PID file
-    try {
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
-      }
-    } catch (error) {
-      console.error('Warning: Could not remove PID file:', error);
+    // Clean up PID file (best-effort - don't block shutdown)
+    const deleteResult = deletePidFile(pidFile, 'sigterm');
+    if (!deleteResult.success && deleteResult.error !== undefined) {
+      console.error(
+        `Warning: Could not remove PID file during SIGTERM: ${deleteResult.error.message}`
+      );
     }
 
     process.exit(0);
@@ -71,13 +71,12 @@ async function main(): Promise<void> {
   try {
     await worker.executeJob(jobId);
 
-    // Clean up PID file on success
-    try {
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
-      }
-    } catch (error) {
-      console.error('Warning: Could not remove PID file:', error);
+    // Clean up PID file on success (best-effort - don't change exit code)
+    const successCleanup = deletePidFile(pidFile, 'success');
+    if (!successCleanup.success && successCleanup.error !== undefined) {
+      console.error(
+        `Warning: Could not remove PID file after success: ${successCleanup.error.message}`
+      );
     }
 
     console.log(`[${jobId}] Job completed successfully`);
@@ -86,13 +85,12 @@ async function main(): Promise<void> {
     // Job service already updated with failure status in BackgroundWorker
     console.error(`[${jobId}] Job failed:`, error);
 
-    // Clean up PID file on failure
-    try {
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
-      }
-    } catch (cleanupError) {
-      console.error('Warning: Could not remove PID file:', cleanupError);
+    // Clean up PID file on failure (best-effort - exit code reflects job failure)
+    const failureCleanup = deletePidFile(pidFile, 'failure');
+    if (!failureCleanup.success && failureCleanup.error !== undefined) {
+      console.error(
+        `Warning: Could not remove PID file after failure: ${failureCleanup.error.message}`
+      );
     }
 
     process.exit(1);

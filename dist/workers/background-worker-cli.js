@@ -10,10 +10,6 @@ import {
 } from "../chunk-WFNPNAAP.js";
 import "../chunk-6FHWC36B.js";
 
-// src/workers/background-worker-cli.ts
-import fs from "fs";
-import path from "path";
-
 // src/workers/background-worker.ts
 import { createHash } from "crypto";
 function calculateIndexProgress(current, total, scale = 100) {
@@ -238,6 +234,37 @@ var BackgroundWorker = class {
   }
 };
 
+// src/workers/pid-file.ts
+import fs from "fs";
+import path from "path";
+function writePidFile(pidFile, pid) {
+  try {
+    fs.writeFileSync(pidFile, pid.toString(), "utf-8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `CRITICAL: Failed to write PID file ${pidFile}. Job cannot be cancelled without PID file. Original error: ${message}`
+    );
+  }
+}
+function deletePidFile(pidFile, _context) {
+  try {
+    fs.unlinkSync(pidFile);
+    return { success: true };
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return { success: true };
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error : new Error(String(error))
+    };
+  }
+}
+function buildPidFilePath(jobsDir, jobId) {
+  return path.join(jobsDir, `${jobId}.pid`);
+}
+
 // src/workers/background-worker-cli.ts
 async function main() {
   const jobId = process.argv[2];
@@ -249,15 +276,16 @@ async function main() {
   }
   const jobService = new JobService(dataDir);
   const services = await createServices(void 0, dataDir);
-  const pidFile = path.join(
+  const pidFile = buildPidFilePath(
     jobService["jobsDir"],
     // Access private field for PID path
-    `${jobId}.pid`
+    jobId
   );
   try {
-    fs.writeFileSync(pidFile, process.pid.toString(), "utf-8");
+    writePidFile(pidFile, process.pid);
   } catch (error) {
-    console.error("Warning: Could not write PID file:", error);
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
   }
   process.on("SIGTERM", () => {
     console.log(`[${jobId}] Received SIGTERM, cancelling job...`);
@@ -265,12 +293,11 @@ async function main() {
       status: "cancelled",
       message: "Job cancelled by user"
     });
-    try {
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
-      }
-    } catch (error) {
-      console.error("Warning: Could not remove PID file:", error);
+    const deleteResult = deletePidFile(pidFile, "sigterm");
+    if (!deleteResult.success && deleteResult.error !== void 0) {
+      console.error(
+        `Warning: Could not remove PID file during SIGTERM: ${deleteResult.error.message}`
+      );
     }
     process.exit(0);
   });
@@ -283,23 +310,21 @@ async function main() {
   );
   try {
     await worker.executeJob(jobId);
-    try {
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
-      }
-    } catch (error) {
-      console.error("Warning: Could not remove PID file:", error);
+    const successCleanup = deletePidFile(pidFile, "success");
+    if (!successCleanup.success && successCleanup.error !== void 0) {
+      console.error(
+        `Warning: Could not remove PID file after success: ${successCleanup.error.message}`
+      );
     }
     console.log(`[${jobId}] Job completed successfully`);
     process.exit(0);
   } catch (error) {
     console.error(`[${jobId}] Job failed:`, error);
-    try {
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
-      }
-    } catch (cleanupError) {
-      console.error("Warning: Could not remove PID file:", cleanupError);
+    const failureCleanup = deletePidFile(pidFile, "failure");
+    if (!failureCleanup.success && failureCleanup.error !== void 0) {
+      console.error(
+        `Warning: Could not remove PID file after failure: ${failureCleanup.error.message}`
+      );
     }
     process.exit(1);
   }
