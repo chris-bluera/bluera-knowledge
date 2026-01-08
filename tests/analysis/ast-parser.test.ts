@@ -43,7 +43,7 @@ export class UserService {
     const parser = new ASTParser();
     const nodes = parser.parse(code, 'typescript');
 
-    const classNode = nodes.find(n => n.type === 'class');
+    const classNode = nodes.find((n) => n.type === 'class');
     expect(classNode).toBeDefined();
     expect(classNode?.name).toBe('UserService');
     expect(classNode?.methods).toHaveLength(3); // constructor + create + delete
@@ -78,11 +78,11 @@ class Bar {
     const parser = new ASTParser();
     const nodes = parser.parse(code, 'typescript');
 
-    const fooNode = nodes.find(n => n.name === 'foo');
+    const fooNode = nodes.find((n) => n.name === 'foo');
     expect(fooNode?.startLine).toBe(2);
     expect(fooNode?.endLine).toBe(4);
 
-    const barNode = nodes.find(n => n.name === 'Bar');
+    const barNode = nodes.find((n) => n.name === 'Bar');
     expect(barNode?.startLine).toBe(6);
     expect(barNode?.endLine).toBe(8);
   });

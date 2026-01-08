@@ -29,9 +29,11 @@ if [ -n "$TYPE_OUTPUT" ]; then
   exit 2
 fi
 
-# Check for anti-patterns in code files
-if git diff -- ':!.claude/' | grep -E '\b(fallback|deprecated|backward compatibility)\b' | grep -v '^-' | grep -qE '^\+'; then
-  echo 'Anti-pattern detected (fallback/deprecated/backward compatibility). Review CLAUDE.md.' >&2
+# Check for anti-patterns in code files only (not docs/markdown)
+ANTI_PATTERN=$(git diff -- '*.ts' '*.tsx' '*.js' '*.jsx' ':!dist/' | grep -E '\b(fallback|deprecated|backward compatibility|legacy)\b' | grep -v '^-' | grep -E '^\+' || true)
+if [ -n "$ANTI_PATTERN" ]; then
+  echo 'Anti-pattern detected (fallback/deprecated/backward compatibility/legacy). Review CLAUDE.md.' >&2
+  echo "$ANTI_PATTERN" >&2
   exit 2
 fi
 

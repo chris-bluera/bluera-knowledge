@@ -42,10 +42,7 @@ describe('ConfigService', () => {
 
   describe('path expansion', () => {
     it('expands tilde to home directory', () => {
-      const service = new ConfigService(
-        configPath,
-        '~/.bluera/data'
-      );
+      const service = new ConfigService(configPath, '~/.bluera/data');
       const dataDir = service.resolveDataDir();
       // Note: expandPath is called in constructor, so ~ will be kept
       // since dataDir parameter is explicitly provided
@@ -53,11 +50,7 @@ describe('ConfigService', () => {
     });
 
     it('resolves relative paths against project root', () => {
-      const service = new ConfigService(
-        configPath,
-        undefined,
-        tempDir
-      );
+      const service = new ConfigService(configPath, undefined, tempDir);
       const dataDir = service.resolveDataDir();
       // When dataDir is undefined, it uses DEFAULT_CONFIG.dataDir which is relative
       expect(dataDir).toContain(tempDir);
@@ -65,20 +58,14 @@ describe('ConfigService', () => {
 
     it('keeps absolute paths as-is', () => {
       const absolutePath = '/absolute/path/to/data';
-      const service = new ConfigService(
-        configPath,
-        absolutePath
-      );
+      const service = new ConfigService(configPath, absolutePath);
       const dataDir = service.resolveDataDir();
       expect(dataDir).toBe(absolutePath);
     });
 
     it('uses explicit dataDir when provided', () => {
       const explicitDir = '/explicit/data/dir';
-      const service = new ConfigService(
-        configPath,
-        explicitDir
-      );
+      const service = new ConfigService(configPath, explicitDir);
       const dataDir = service.resolveDataDir();
       expect(dataDir).toBe(explicitDir);
     });

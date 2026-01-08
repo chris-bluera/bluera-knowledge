@@ -1,10 +1,10 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { CodeGraph, type GraphNode } from '../analysis/code-graph.js';
 import { ASTParser } from '../analysis/ast-parser.js';
-import { RustASTParser } from '../analysis/rust-ast-parser.js';
+import { CodeGraph, type GraphNode } from '../analysis/code-graph.js';
 import { GoASTParser } from '../analysis/go-ast-parser.js';
 import { ParserFactory } from '../analysis/parser-factory.js';
+import { RustASTParser } from '../analysis/rust-ast-parser.js';
 import type { PythonBridge } from '../crawl/bridge.js';
 import type { StoreId } from '../types/brands.js';
 
@@ -157,7 +157,7 @@ export class CodeGraphService {
             name: node.name,
             exported: node.exported,
             startLine: node.startLine,
-            endLine: node.endLine
+            endLine: node.endLine,
           };
           if (node.signature !== undefined) {
             graphNode.signature = node.signature;
@@ -195,7 +195,7 @@ export class CodeGraphService {
           from: edge.from,
           to: edge.to,
           type: edgeType,
-          confidence: edge.confidence
+          confidence: edge.confidence,
         });
       }
 
@@ -209,18 +209,26 @@ export class CodeGraphService {
   /**
    * Get usage stats for a code element.
    */
-  getUsageStats(graph: CodeGraph, filePath: string, symbolName: string): { calledBy: number; calls: number } {
+  getUsageStats(
+    graph: CodeGraph,
+    filePath: string,
+    symbolName: string
+  ): { calledBy: number; calls: number } {
     const nodeId = `${filePath}:${symbolName}`;
     return {
       calledBy: graph.getCalledByCount(nodeId),
-      calls: graph.getCallsCount(nodeId)
+      calls: graph.getCallsCount(nodeId),
     };
   }
 
   /**
    * Get related code (callers and callees) for a code element.
    */
-  getRelatedCode(graph: CodeGraph, filePath: string, symbolName: string): Array<{ id: string; relationship: string }> {
+  getRelatedCode(
+    graph: CodeGraph,
+    filePath: string,
+    symbolName: string
+  ): Array<{ id: string; relationship: string }> {
     const nodeId = `${filePath}:${symbolName}`;
     const related: Array<{ id: string; relationship: string }> = [];
 
@@ -269,14 +277,18 @@ export class CodeGraphService {
   /**
    * Type guard for valid node types.
    */
-  private isValidNodeType(type: string): type is 'function' | 'class' | 'interface' | 'type' | 'const' | 'method' {
+  private isValidNodeType(
+    type: string
+  ): type is 'function' | 'class' | 'interface' | 'type' | 'const' | 'method' {
     return ['function', 'class', 'interface', 'type', 'const', 'method'].includes(type);
   }
 
   /**
    * Validate and return a node type, or undefined if invalid.
    */
-  private validateNodeType(type: string): 'function' | 'class' | 'interface' | 'type' | 'const' | 'method' | undefined {
+  private validateNodeType(
+    type: string
+  ): 'function' | 'class' | 'interface' | 'type' | 'const' | 'method' | undefined {
     if (this.isValidNodeType(type)) {
       return type;
     }
@@ -293,7 +305,9 @@ export class CodeGraphService {
   /**
    * Validate and return an edge type, or undefined if invalid.
    */
-  private validateEdgeType(type: string): 'calls' | 'imports' | 'extends' | 'implements' | undefined {
+  private validateEdgeType(
+    type: string
+  ): 'calls' | 'imports' | 'extends' | 'implements' | undefined {
     if (this.isValidEdgeType(type)) {
       return type;
     }

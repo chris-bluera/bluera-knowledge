@@ -28,7 +28,7 @@ describe('MCP Server', () => {
       const server = createMCPServer({
         dataDir: '/data',
         config: '/config.json',
-        projectRoot: '/project'
+        projectRoot: '/project',
       });
       expect(server).toBeDefined();
     });

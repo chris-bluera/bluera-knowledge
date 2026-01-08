@@ -27,10 +27,7 @@ export interface ConversionResult {
  * 3. Convert to markdown with Turndown + GFM
  * 4. Cleanup markdown (regex patterns)
  */
-export async function convertHtmlToMarkdown(
-  html: string,
-  url: string,
-): Promise<ConversionResult> {
+export async function convertHtmlToMarkdown(html: string, url: string): Promise<ConversionResult> {
   logger.debug({ url, htmlLength: html.length }, 'Starting HTML conversion');
 
   try {
@@ -40,28 +37,37 @@ export async function convertHtmlToMarkdown(
 
     try {
       const article = await extractFromHtml(html, url);
-      if (article !== null && article.content !== undefined && article.content !== '') {
+      if (article?.content !== undefined && article.content !== '') {
         articleHtml = article.content;
         title = article.title !== undefined && article.title !== '' ? article.title : undefined;
-        logger.debug({
-          url,
-          title,
-          extractedLength: articleHtml.length,
-          usedFullHtml: false,
-        }, 'Article content extracted');
+        logger.debug(
+          {
+            url,
+            title,
+            extractedLength: articleHtml.length,
+            usedFullHtml: false,
+          },
+          'Article content extracted'
+        );
       } else {
         // Fallback to full HTML if extraction fails
         articleHtml = html;
-        logger.debug({ url, usedFullHtml: true }, 'Article extraction returned empty, using full HTML');
+        logger.debug(
+          { url, usedFullHtml: true },
+          'Article extraction returned empty, using full HTML'
+        );
       }
     } catch (extractError) {
       // Fallback to full HTML if extraction fails
       articleHtml = html;
-      logger.debug({
-        url,
-        usedFullHtml: true,
-        error: extractError instanceof Error ? extractError.message : String(extractError),
-      }, 'Article extraction failed, using full HTML');
+      logger.debug(
+        {
+          url,
+          usedFullHtml: true,
+          error: extractError instanceof Error ? extractError.message : String(extractError),
+        },
+        'Article extraction failed, using full HTML'
+      );
     }
 
     // Step 2: Preprocess HTML for code blocks
@@ -100,18 +106,24 @@ export async function convertHtmlToMarkdown(
     // Step 4: Cleanup markdown with comprehensive regex patterns
     const markdown = cleanupMarkdown(rawMarkdown);
 
-    logger.debug({
-      url,
-      title,
-      rawMarkdownLength: rawMarkdown.length,
-      finalMarkdownLength: markdown.length,
-    }, 'HTML to markdown conversion complete');
+    logger.debug(
+      {
+        url,
+        title,
+        rawMarkdownLength: rawMarkdown.length,
+        finalMarkdownLength: markdown.length,
+      },
+      'HTML to markdown conversion complete'
+    );
 
     // Log markdown preview at trace level
-    logger.trace({
-      url,
-      markdownPreview: truncateForLog(markdown, 1000),
-    }, 'Markdown content preview');
+    logger.trace(
+      {
+        url,
+        markdownPreview: truncateForLog(markdown, 1000),
+      },
+      'Markdown content preview'
+    );
 
     return {
       markdown,
@@ -119,10 +131,13 @@ export async function convertHtmlToMarkdown(
       success: true,
     };
   } catch (error) {
-    logger.error({
-      url,
-      error: error instanceof Error ? error.message : String(error),
-    }, 'HTML to markdown conversion failed');
+    logger.error(
+      {
+        url,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'HTML to markdown conversion failed'
+    );
 
     return {
       markdown: '',

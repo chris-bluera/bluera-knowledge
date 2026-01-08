@@ -30,7 +30,7 @@ export function extractSnippet(
   const queryTerms = query
     .toLowerCase()
     .split(/\s+/)
-    .filter(t => t.length > 2); // Skip very short words
+    .filter((t) => t.length > 2); // Skip very short words
 
   // Normalize content for extraction
   const normalizedContent = content.replace(/\s+/g, ' ').trim();
@@ -112,7 +112,9 @@ function findBestMatchPosition(content: string, queryTerms: string[]): number {
     }
 
     // Bonus: Near markdown section header
-    const headerMatch = content.slice(Math.max(0, position - 100), position).match(/^#{1,3}\s+.+$/m);
+    const headerMatch = content
+      .slice(Math.max(0, position - 100), position)
+      .match(/^#{1,3}\s+.+$/m);
     if (headerMatch) {
       score += 4;
     }
@@ -166,10 +168,10 @@ function extractContextWindow(
 
   // Add ellipsis indicators
   if (start > 0) {
-    snippet = '...' + snippet;
+    snippet = `...${snippet}`;
   }
   if (end < content.length) {
-    snippet = snippet + '...';
+    snippet = `${snippet}...`;
   }
 
   return snippet;
@@ -187,5 +189,5 @@ function truncateWithEllipsis(content: string, maxLength: number): string {
   const truncateAt = content.lastIndexOf(' ', maxLength - 3);
   const cutPoint = truncateAt > maxLength * 0.5 ? truncateAt : maxLength - 3;
 
-  return content.slice(0, cutPoint).trim() + '...';
+  return `${content.slice(0, cutPoint).trim()}...`;
 }

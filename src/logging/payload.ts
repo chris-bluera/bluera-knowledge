@@ -6,9 +6,9 @@
  * - Optionally dumping full content to separate files at trace level
  */
 
+import { createHash } from 'node:crypto';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
 import { getLogDirectory, isLevelEnabled } from './logger.js';
 
 /** Maximum characters for log preview */
@@ -40,9 +40,7 @@ function getPayloadDir(): string {
 
 /** Generate a safe filename from an identifier */
 function safeFilename(identifier: string): string {
-  return identifier
-    .replace(/[^a-zA-Z0-9-]/g, '_')
-    .substring(0, 50);
+  return identifier.replace(/[^a-zA-Z0-9-]/g, '_').substring(0, 50);
 }
 
 /**
@@ -117,5 +115,5 @@ export function truncateForLog(content: string, maxLength: number = MAX_PREVIEW_
   if (content.length <= maxLength) {
     return content;
   }
-  return content.substring(0, maxLength) + '... [truncated]';
+  return `${content.substring(0, maxLength)}... [truncated]`;
 }

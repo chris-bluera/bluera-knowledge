@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 
 // Mock child_process
 vi.mock('node:child_process', () => ({
-  spawn: vi.fn()
+  spawn: vi.fn(),
 }));
 
 describe('GitClone - cloneRepository', () => {
@@ -42,7 +42,7 @@ describe('GitClone - cloneRepository', () => {
 
     const result = await cloneRepository({
       url: 'https://github.com/user/repo.git',
-      targetDir: join(tempDir, 'repo')
+      targetDir: join(tempDir, 'repo'),
     });
 
     expect(result.success).toBe(true);
@@ -62,7 +62,7 @@ describe('GitClone - cloneRepository', () => {
 
     await cloneRepository({
       url: 'https://github.com/user/repo.git',
-      targetDir: join(tempDir, 'repo')
+      targetDir: join(tempDir, 'repo'),
     });
 
     expect(mockSpawn).toHaveBeenCalledWith(
@@ -84,12 +84,20 @@ describe('GitClone - cloneRepository', () => {
     await cloneRepository({
       url: 'https://github.com/user/repo.git',
       targetDir: join(tempDir, 'repo'),
-      branch: 'develop'
+      branch: 'develop',
     });
 
     expect(mockSpawn).toHaveBeenCalledWith(
       'git',
-      ['clone', '--depth', '1', '--branch', 'develop', 'https://github.com/user/repo.git', join(tempDir, 'repo')],
+      [
+        'clone',
+        '--depth',
+        '1',
+        '--branch',
+        'develop',
+        'https://github.com/user/repo.git',
+        join(tempDir, 'repo'),
+      ],
       expect.any(Object)
     );
   });
@@ -106,7 +114,7 @@ describe('GitClone - cloneRepository', () => {
     await cloneRepository({
       url: 'https://github.com/user/repo.git',
       targetDir: join(tempDir, 'repo'),
-      depth: 10
+      depth: 10,
     });
 
     expect(mockSpawn).toHaveBeenCalledWith(
@@ -127,7 +135,7 @@ describe('GitClone - cloneRepository', () => {
 
     await cloneRepository({
       url: 'https://github.com/user/repo.git',
-      targetDir: join(tempDir, 'repo')
+      targetDir: join(tempDir, 'repo'),
     });
 
     expect(mockSpawn).toHaveBeenCalledWith(
@@ -151,7 +159,7 @@ describe('GitClone - cloneRepository', () => {
 
     const result = await cloneRepository({
       url: 'https://github.com/user/nonexistent.git',
-      targetDir: join(tempDir, 'repo')
+      targetDir: join(tempDir, 'repo'),
     });
 
     expect(result.success).toBe(false);
@@ -176,7 +184,7 @@ describe('GitClone - cloneRepository', () => {
 
     const result = await cloneRepository({
       url: 'https://github.com/user/repo.git',
-      targetDir: join(tempDir, 'repo')
+      targetDir: join(tempDir, 'repo'),
     });
 
     expect(result.success).toBe(false);
@@ -200,7 +208,7 @@ describe('GitClone - cloneRepository', () => {
 
     const result = await cloneRepository({
       url: 'https://github.com/user/repo.git',
-      targetDir: join(tempDir, 'repo')
+      targetDir: join(tempDir, 'repo'),
     });
 
     expect(result.success).toBe(false);
@@ -223,7 +231,7 @@ describe('GitClone - cloneRepository', () => {
 
     const result = await cloneRepository({
       url: 'https://github.com/user/repo.git',
-      targetDir: join(tempDir, 'repo')
+      targetDir: join(tempDir, 'repo'),
     });
 
     expect(result.success).toBe(false);
@@ -238,7 +246,10 @@ describe('GitClone - cloneRepository', () => {
 
     mockSpawn.mockImplementation(() => {
       setImmediate(() => {
-        (mockProcess.stderr as any).emit('data', Buffer.from('Remote branch nonexistent-branch not found'));
+        (mockProcess.stderr as any).emit(
+          'data',
+          Buffer.from('Remote branch nonexistent-branch not found')
+        );
         mockProcess.emit('close', 128);
       });
       return mockProcess;
@@ -247,7 +258,7 @@ describe('GitClone - cloneRepository', () => {
     const result = await cloneRepository({
       url: 'https://github.com/user/repo.git',
       targetDir: join(tempDir, 'repo'),
-      branch: 'nonexistent-branch'
+      branch: 'nonexistent-branch',
     });
 
     expect(result.success).toBe(false);

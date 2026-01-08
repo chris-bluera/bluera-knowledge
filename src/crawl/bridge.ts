@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
+import { createInterface } from 'node:readline';
 import { ZodError } from 'zod';
 import {
   type CrawlResult,
@@ -70,8 +70,8 @@ export class PythonBridge {
     }
 
     if (this.process.stdout === null) {
-      this.process.kill();  // Kill process to prevent zombie
-      this.process = null;  // Clean up reference
+      this.process.kill(); // Kill process to prevent zombie
+      this.process = null; // Clean up reference
       return Promise.reject(new Error('Python bridge process stdout is null'));
     }
     const rl = createInterface({ input: this.process.stdout });
@@ -112,11 +112,16 @@ export class PythonBridge {
             } catch (error: unknown) {
               // Log validation failure with original response for debugging
               if (error instanceof ZodError) {
-                logger.error({
-                  issues: error.issues,
-                  response: JSON.stringify(response.result),
-                }, 'Python bridge response validation failed');
-                pending.reject(new Error(`Invalid response format from Python bridge: ${error.message}`));
+                logger.error(
+                  {
+                    issues: error.issues,
+                    response: JSON.stringify(response.result),
+                  },
+                  'Python bridge response validation failed'
+                );
+                pending.reject(
+                  new Error(`Invalid response format from Python bridge: ${error.message}`)
+                );
               } else {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 logger.error({ error: errorMessage }, 'Response validation error');
@@ -127,10 +132,13 @@ export class PythonBridge {
           // If neither result nor error, leave pending (will timeout)
         }
       } catch (err) {
-        logger.error({
-          error: err instanceof Error ? err.message : String(err),
-          line,
-        }, 'Failed to parse JSON response from Python bridge');
+        logger.error(
+          {
+            error: err instanceof Error ? err.message : String(err),
+            line,
+          },
+          'Failed to parse JSON response from Python bridge'
+        );
       }
     });
 
@@ -158,13 +166,18 @@ export class PythonBridge {
         }
       }, timeoutMs);
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout, method: 'crawl' });
-      if (this.process === null || this.process.stdin === null) {
+      this.pending.set(id, {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Promise resolve type narrowing
+        resolve: resolve as (v: PendingResult) => void,
+        reject,
+        timeout,
+        method: 'crawl',
+      });
+      if (!this.process?.stdin) {
         reject(new Error('Python bridge process not available'));
         return;
       }
-      this.process.stdin.write(JSON.stringify(request) + '\n');
+      this.process.stdin.write(`${JSON.stringify(request)}\n`);
     });
   }
 
@@ -188,17 +201,26 @@ export class PythonBridge {
         }
       }, timeoutMs);
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout, method: 'fetch_headless' });
-      if (this.process === null || this.process.stdin === null) {
+      this.pending.set(id, {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Promise resolve type narrowing
+        resolve: resolve as (v: PendingResult) => void,
+        reject,
+        timeout,
+        method: 'fetch_headless',
+      });
+      if (!this.process?.stdin) {
         reject(new Error('Python bridge process not available'));
         return;
       }
-      this.process.stdin.write(JSON.stringify(request) + '\n');
+      this.process.stdin.write(`${JSON.stringify(request)}\n`);
     });
   }
 
-  async parsePython(code: string, filePath: string, timeoutMs: number = 10000): Promise<ParsePythonResult> {
+  async parsePython(
+    code: string,
+    filePath: string,
+    timeoutMs: number = 10000
+  ): Promise<ParsePythonResult> {
     if (!this.process) await this.start();
 
     const id = randomUUID();
@@ -214,17 +236,24 @@ export class PythonBridge {
         const pending = this.pending.get(id);
         if (pending) {
           this.pending.delete(id);
-          reject(new Error(`Python parsing timeout after ${String(timeoutMs)}ms for file: ${filePath}`));
+          reject(
+            new Error(`Python parsing timeout after ${String(timeoutMs)}ms for file: ${filePath}`)
+          );
         }
       }, timeoutMs);
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.pending.set(id, { resolve: resolve as (v: PendingResult) => void, reject, timeout, method: 'parse_python' });
-      if (this.process === null || this.process.stdin === null) {
+      this.pending.set(id, {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Promise resolve type narrowing
+        resolve: resolve as (v: PendingResult) => void,
+        reject,
+        timeout,
+        method: 'parse_python',
+      });
+      if (!this.process?.stdin) {
         reject(new Error('Python bridge process not available'));
         return;
       }
-      this.process.stdin.write(JSON.stringify(request) + '\n');
+      this.process.stdin.write(`${JSON.stringify(request)}\n`);
     });
   }
 

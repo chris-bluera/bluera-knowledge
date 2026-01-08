@@ -40,7 +40,10 @@ describe('convertHtmlToMarkdown', () => {
       const html = '<html><body><article><h1>Title</h1><p>Content</p></article></body></html>';
       const result = await convertHtmlToMarkdown(html, 'https://example.com');
 
-      expect(vi.mocked(articleExtractor.extractFromHtml)).toHaveBeenCalledWith(html, 'https://example.com');
+      expect(vi.mocked(articleExtractor.extractFromHtml)).toHaveBeenCalledWith(
+        html,
+        'https://example.com'
+      );
       expect(result.success).toBe(true);
     });
 

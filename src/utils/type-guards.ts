@@ -2,8 +2,8 @@
  * Type guard utilities to replace type assertions
  */
 
-import type { DocumentMetadata } from '../types/document.js';
 import type { AppConfig } from '../types/config.js';
+import type { DocumentMetadata } from '../types/document.js';
 
 /**
  * Safely parse JSON with validation

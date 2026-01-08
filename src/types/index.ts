@@ -9,15 +9,7 @@ export {
 } from './brands.js';
 
 // Result type
-export {
-  type Result,
-  ok,
-  err,
-  isOk,
-  isErr,
-  unwrap,
-  unwrapOr,
-} from './result.js';
+export { type Result, ok, err, isOk, isErr, unwrap, unwrapOr } from './result.js';
 
 // Store types
 export {
@@ -60,7 +52,4 @@ export {
 } from './config.js';
 
 // Progress types
-export {
-  type ProgressEvent,
-  type ProgressCallback,
-} from './progress.js';
+export { type ProgressEvent, type ProgressCallback } from './progress.js';

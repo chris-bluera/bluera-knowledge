@@ -121,9 +121,10 @@ export async function executeCommand(
 
   // Validate args if schema provided (Zod parse returns unknown, safe to cast after validation)
   /* eslint-disable @typescript-eslint/consistent-type-assertions */
-  const validatedArgs: Record<string, unknown> = command.argsSchema !== undefined
-    ? (command.argsSchema.parse(args) as Record<string, unknown>)
-    : args;
+  const validatedArgs: Record<string, unknown> =
+    command.argsSchema !== undefined
+      ? (command.argsSchema.parse(args) as Record<string, unknown>)
+      : args;
   /* eslint-enable @typescript-eslint/consistent-type-assertions */
 
   return command.handler(validatedArgs, context);
@@ -139,11 +140,7 @@ export function generateHelp(commandName?: string): string {
       throw new Error(`Unknown command: ${commandName}`);
     }
 
-    const lines = [
-      `Command: ${command.name}`,
-      `Description: ${command.description}`,
-      ''
-    ];
+    const lines = [`Command: ${command.name}`, `Description: ${command.description}`, ''];
 
     if (command.argsSchema !== undefined) {
       lines.push('Arguments:');

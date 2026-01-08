@@ -96,8 +96,8 @@ class ClientRequestImpl {
       ...(typeof opt?.headers === 'function'
         ? await opt.headers()
         : opt?.headers
-        ? opt.headers
-        : {}),
+          ? opt.headers
+          : {}),
     }
 
     if (args?.cookie) {

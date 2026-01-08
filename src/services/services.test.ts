@@ -62,7 +62,7 @@ describe('destroyServices', () => {
   it('waits for LanceStore async cleanup before returning', async () => {
     let closeCompleted = false;
     mockLance.closeAsync.mockImplementation(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       closeCompleted = true;
     });
 

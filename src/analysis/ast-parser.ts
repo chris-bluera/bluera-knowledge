@@ -1,7 +1,7 @@
 import { parse, type ParserPlugin } from '@babel/parser';
-import type { NodePath } from '@babel/traverse';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
+import type { NodePath } from '@babel/traverse';
 
 // Handle both ESM and CJS module formats
 type TraverseFunction = (ast: t.File, visitor: Record<string, unknown>) => void;
@@ -55,7 +55,7 @@ export class ASTParser {
 
       const ast = parse(code, {
         sourceType: 'module',
-        plugins
+        plugins,
       });
 
       const nodes: CodeNode[] = [];
@@ -65,8 +65,9 @@ export class ASTParser {
           const node = path.node;
           if (!node.id) return;
 
-          const exported = path.parent.type === 'ExportNamedDeclaration' ||
-                          path.parent.type === 'ExportDefaultDeclaration';
+          const exported =
+            path.parent.type === 'ExportNamedDeclaration' ||
+            path.parent.type === 'ExportDefaultDeclaration';
 
           nodes.push({
             type: 'function',
@@ -75,7 +76,7 @@ export class ASTParser {
             async: node.async,
             startLine: node.loc?.start.line ?? 0,
             endLine: node.loc?.end.line ?? 0,
-            signature: this.extractFunctionSignature(node)
+            signature: this.extractFunctionSignature(node),
           });
         },
 
@@ -83,8 +84,9 @@ export class ASTParser {
           const node = path.node;
           if (!node.id) return;
 
-          const exported = path.parent.type === 'ExportNamedDeclaration' ||
-                          path.parent.type === 'ExportDefaultDeclaration';
+          const exported =
+            path.parent.type === 'ExportNamedDeclaration' ||
+            path.parent.type === 'ExportDefaultDeclaration';
 
           const methods: CodeNode['methods'] = [];
 
@@ -95,7 +97,7 @@ export class ASTParser {
                 async: member.async,
                 signature: this.extractMethodSignature(member),
                 startLine: member.loc?.start.line ?? 0,
-                endLine: member.loc?.end.line ?? 0
+                endLine: member.loc?.end.line ?? 0,
               });
             }
           }
@@ -106,7 +108,7 @@ export class ASTParser {
             exported,
             startLine: node.loc?.start.line ?? 0,
             endLine: node.loc?.end.line ?? 0,
-            methods
+            methods,
           });
         },
 
@@ -120,9 +122,9 @@ export class ASTParser {
             name: node.id.name,
             exported,
             startLine: node.loc?.start.line ?? 0,
-            endLine: node.loc?.end.line ?? 0
+            endLine: node.loc?.end.line ?? 0,
           });
-        }
+        },
       });
 
       return nodes;
@@ -136,7 +138,7 @@ export class ASTParser {
     try {
       const ast = parse(code, {
         sourceType: 'module',
-        plugins: ['typescript', 'jsx']
+        plugins: ['typescript', 'jsx'],
       });
 
       const imports: ImportInfo[] = [];
@@ -159,9 +161,9 @@ export class ASTParser {
           imports.push({
             source: node.source.value,
             specifiers,
-            isType: node.importKind === 'type'
+            isType: node.importKind === 'type',
           });
-        }
+        },
       });
 
       return imports;
@@ -172,19 +174,23 @@ export class ASTParser {
   }
 
   private extractFunctionSignature(node: t.FunctionDeclaration): string {
-    const params = node.params.map(p => {
-      if (t.isIdentifier(p)) return p.name;
-      return 'param';
-    }).join(', ');
+    const params = node.params
+      .map((p) => {
+        if (t.isIdentifier(p)) return p.name;
+        return 'param';
+      })
+      .join(', ');
 
     return `${node.id?.name ?? 'anonymous'}(${params})`;
   }
 
   private extractMethodSignature(node: t.ClassMethod): string {
-    const params = node.params.map(p => {
-      if (t.isIdentifier(p)) return p.name;
-      return 'param';
-    }).join(', ');
+    const params = node.params
+      .map((p) => {
+        if (t.isIdentifier(p)) return p.name;
+        return 'param';
+      })
+      .join(', ');
 
     const name = t.isIdentifier(node.key) ? node.key.name : 'method';
     return `${name}(${params})`;

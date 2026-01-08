@@ -14,7 +14,7 @@ describe('GoASTParser', () => {
         type: 'function',
         name: 'hello',
         exported: false,
-        async: false
+        async: false,
       });
     });
 
@@ -68,9 +68,9 @@ func Third() int { return 3 }
       `.trim();
       const nodes = parser.parse(code, 'test.go');
 
-      const functions = nodes.filter(n => n.type === 'function');
+      const functions = nodes.filter((n) => n.type === 'function');
       expect(functions).toHaveLength(3);
-      expect(functions.map(f => f.name)).toEqual(['first', 'second', 'Third']);
+      expect(functions.map((f) => f.name)).toEqual(['first', 'second', 'Third']);
       expect(functions[2]?.exported).toBe(true);
     });
   });
@@ -84,7 +84,7 @@ func Third() int { return 3 }
       expect(nodes[0]).toMatchObject({
         type: 'class',
         name: 'user',
-        exported: false
+        exported: false,
       });
     });
 
@@ -139,7 +139,7 @@ type Data struct {
       expect(nodes[0]).toMatchObject({
         type: 'interface',
         name: 'drawable',
-        exported: false
+        exported: false,
       });
       expect(nodes[0]?.methods).toBeDefined();
     });
@@ -195,7 +195,7 @@ type Animal interface {
       expect(nodes[0]).toMatchObject({
         type: 'type',
         name: 'myInt',
-        exported: false
+        exported: false,
       });
     });
 
@@ -224,7 +224,7 @@ type Animal interface {
       expect(nodes[0]).toMatchObject({
         type: 'const',
         name: 'maxSize',
-        exported: false
+        exported: false,
       });
     });
 
@@ -254,9 +254,9 @@ const (
       `.trim();
       const nodes = parser.parse(code, 'test.go');
 
-      const constants = nodes.filter(n => n.type === 'const');
+      const constants = nodes.filter((n) => n.type === 'const');
       expect(constants).toHaveLength(3);
-      expect(constants.map(c => c.name)).toEqual(['Red', 'Green', 'Blue']);
+      expect(constants.map((c) => c.name)).toEqual(['Red', 'Green', 'Blue']);
     });
 
     it('parses var declaration', () => {
@@ -265,7 +265,7 @@ const (
 
       expect(nodes[0]).toMatchObject({
         type: 'const',
-        name: 'counter'
+        name: 'counter',
       });
     });
   });
@@ -281,7 +281,7 @@ func (u User) GetName() string {
       `.trim();
       const nodes = parser.parse(code, 'test.go');
 
-      const userStruct = nodes.find(n => n.name === 'User');
+      const userStruct = nodes.find((n) => n.name === 'User');
       expect(userStruct).toBeDefined();
       expect(userStruct?.methods).toHaveLength(1);
       expect(userStruct?.methods?.[0]?.name).toBe('GetName');
@@ -297,7 +297,7 @@ func (c *Counter) Increment() {
       `.trim();
       const nodes = parser.parse(code, 'test.go');
 
-      const counter = nodes.find(n => n.name === 'Counter');
+      const counter = nodes.find((n) => n.name === 'Counter');
       expect(counter?.methods).toHaveLength(1);
       expect(counter?.methods?.[0]?.name).toBe('Increment');
     });
@@ -318,9 +318,9 @@ func (s *Stack) Pop() int {
       `.trim();
       const nodes = parser.parse(code, 'test.go');
 
-      const stack = nodes.find(n => n.name === 'Stack');
+      const stack = nodes.find((n) => n.name === 'Stack');
       expect(stack?.methods).toHaveLength(2);
-      expect(stack?.methods?.map(m => m.name)).toEqual(['Push', 'Pop']);
+      expect(stack?.methods?.map((m) => m.name)).toEqual(['Push', 'Pop']);
     });
 
     it('does not count methods as standalone functions', () => {
@@ -332,7 +332,7 @@ func standalone() {}
       `.trim();
       const nodes = parser.parse(code, 'test.go');
 
-      const functions = nodes.filter(n => n.type === 'function');
+      const functions = nodes.filter((n) => n.type === 'function');
       expect(functions).toHaveLength(1);
       expect(functions[0]?.name).toBe('standalone');
     });
@@ -347,7 +347,7 @@ func standalone() {}
       expect(imports[0]).toMatchObject({
         source: 'fmt',
         specifiers: [],
-        isType: false
+        isType: false,
       });
     });
 
@@ -376,7 +376,7 @@ import (
       const imports = parser.extractImports(code);
 
       expect(imports).toHaveLength(3);
-      expect(imports.map(i => i.source)).toEqual(['fmt', 'os', 'net/http']);
+      expect(imports.map((i) => i.source)).toEqual(['fmt', 'os', 'net/http']);
     });
 
     it('extracts aliased import', () => {
@@ -470,10 +470,10 @@ type Handler interface {
 
       expect(nodes.length).toBeGreaterThan(0);
 
-      const structs = nodes.filter(n => n.type === 'class');
-      const functions = nodes.filter(n => n.type === 'function');
-      const interfaces = nodes.filter(n => n.type === 'interface');
-      const constants = nodes.filter(n => n.type === 'const');
+      const structs = nodes.filter((n) => n.type === 'class');
+      const functions = nodes.filter((n) => n.type === 'function');
+      const interfaces = nodes.filter((n) => n.type === 'interface');
+      const constants = nodes.filter((n) => n.type === 'const');
 
       expect(structs).toHaveLength(1);
       expect(functions).toHaveLength(1); // Only main, not the method
@@ -521,7 +521,7 @@ func (t Test) method() {
       `.trim();
       const nodes = parser.parse(code, 'test.go');
 
-      const test = nodes.find(n => n.name === 'Test');
+      const test = nodes.find((n) => n.name === 'Test');
       const method = test?.methods?.[0];
 
       expect(method?.startLine).toBe(3);

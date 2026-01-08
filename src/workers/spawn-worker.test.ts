@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mock child_process before importing spawn-worker
 const mockUnref = vi.fn();
 const mockSpawn = vi.fn(() => ({
-  unref: mockUnref
+  unref: mockUnref,
 }));
 
 vi.mock('child_process', () => ({
-  spawn: mockSpawn
+  spawn: mockSpawn,
 }));
 
 // Import after mocking
@@ -50,11 +50,15 @@ describe('spawnBackgroundWorker', () => {
     spawnBackgroundWorker('test-job', '/test/data/dir');
 
     expect(mockSpawn).toHaveBeenCalledTimes(1);
-    const [, , options] = mockSpawn.mock.calls[0] as [string, string[], { detached: boolean; stdio: string }];
+    const [, , options] = mockSpawn.mock.calls[0] as [
+      string,
+      string[],
+      { detached: boolean; stdio: string },
+    ];
 
     expect(options).toMatchObject({
       detached: true,
-      stdio: 'ignore'
+      stdio: 'ignore',
     });
   });
 
@@ -63,11 +67,15 @@ describe('spawnBackgroundWorker', () => {
     spawnBackgroundWorker('test-job', dataDir);
 
     expect(mockSpawn).toHaveBeenCalledTimes(1);
-    const [, , options] = mockSpawn.mock.calls[0] as [string, string[], { env: Record<string, string> }];
+    const [, , options] = mockSpawn.mock.calls[0] as [
+      string,
+      string[],
+      { env: Record<string, string> },
+    ];
 
     expect(options.env).toMatchObject({
       ...process.env,
-      BLUERA_DATA_DIR: dataDir
+      BLUERA_DATA_DIR: dataDir,
     });
   });
 
@@ -76,7 +84,11 @@ describe('spawnBackgroundWorker', () => {
     spawnBackgroundWorker('job-456', testDataDir);
 
     expect(mockSpawn).toHaveBeenCalledTimes(1);
-    const [, , options] = mockSpawn.mock.calls[0] as [string, string[], { env: Record<string, string> }];
+    const [, , options] = mockSpawn.mock.calls[0] as [
+      string,
+      string[],
+      { env: Record<string, string> },
+    ];
 
     expect(options.env.BLUERA_DATA_DIR).toBe(testDataDir);
   });
@@ -86,7 +98,7 @@ describe('spawnBackgroundWorker', () => {
 describe('spawnBackgroundWorker (production mode)', () => {
   const mockUnrefProd = vi.fn();
   const mockSpawnProd = vi.fn(() => ({
-    unref: mockUnrefProd
+    unref: mockUnrefProd,
   }));
 
   beforeEach(() => {
@@ -102,12 +114,12 @@ describe('spawnBackgroundWorker (production mode)', () => {
   it('should use Node.js directly in production mode (dist folder)', async () => {
     // Mock child_process
     vi.doMock('child_process', () => ({
-      spawn: mockSpawnProd
+      spawn: mockSpawnProd,
     }));
 
     // Mock url module to return a path containing /dist/
     vi.doMock('url', () => ({
-      fileURLToPath: () => '/app/dist/workers/spawn-worker.js'
+      fileURLToPath: () => '/app/dist/workers/spawn-worker.js',
     }));
 
     // Import fresh module with production path

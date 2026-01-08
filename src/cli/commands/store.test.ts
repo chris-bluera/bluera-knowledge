@@ -82,7 +82,7 @@ describe('store command execution', () => {
       mockServices.store.list.mockResolvedValue(mockStores);
 
       const command = createStoreCommand(getOptions);
-      const listCommand = command.commands.find(c => c.name() === 'list');
+      const listCommand = command.commands.find((c) => c.name() === 'list');
       const actionHandler = listCommand?._actionHandler;
 
       await actionHandler!([]);
@@ -109,7 +109,7 @@ describe('store command execution', () => {
       mockServices.store.list.mockResolvedValue(mockStores);
 
       const command = createStoreCommand(getOptions);
-      const listCommand = command.commands.find(c => c.name() === 'list');
+      const listCommand = command.commands.find((c) => c.name() === 'list');
       const actionHandler = listCommand?._actionHandler;
 
       listCommand.parseOptions(['--type', 'file']);
@@ -123,7 +123,7 @@ describe('store command execution', () => {
       mockServices.store.list.mockResolvedValue([]);
 
       const command = createStoreCommand(getOptions);
-      const listCommand = command.commands.find(c => c.name() === 'list');
+      const listCommand = command.commands.find((c) => c.name() === 'list');
       const actionHandler = listCommand?._actionHandler;
 
       await actionHandler!([]);
@@ -153,7 +153,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const listCommand = command.commands.find(c => c.name() === 'list');
+      const listCommand = command.commands.find((c) => c.name() === 'list');
       const actionHandler = listCommand?._actionHandler;
 
       await actionHandler!([]);
@@ -193,7 +193,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const listCommand = command.commands.find(c => c.name() === 'list');
+      const listCommand = command.commands.find((c) => c.name() === 'list');
       const actionHandler = listCommand?._actionHandler;
 
       await actionHandler!([]);
@@ -221,10 +221,17 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
-      createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files', '--description', 'My file store']);
+      createCommand.parseOptions([
+        '--type',
+        'file',
+        '--source',
+        '/path/to/files',
+        '--description',
+        'My file store',
+      ]);
       await actionHandler!(['my-files']);
 
       expect(mockServices.store.create).toHaveBeenCalledWith({
@@ -257,7 +264,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'repo', '--source', '/path/to/repo']);
@@ -271,9 +278,7 @@ describe('store command execution', () => {
         description: undefined,
         tags: undefined,
       });
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Created store: my-repo')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Created store: my-repo'));
     });
 
     it('creates a web store successfully', async () => {
@@ -293,7 +298,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'web', '--source', 'https://docs.example.com']);
@@ -307,9 +312,7 @@ describe('store command execution', () => {
         description: undefined,
         tags: undefined,
       });
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Created store: my-docs')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Created store: my-docs'));
     });
 
     it('creates store with tags', async () => {
@@ -329,10 +332,17 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
-      createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files', '--tags', 'typescript, react, frontend']);
+      createCommand.parseOptions([
+        '--type',
+        'file',
+        '--source',
+        '/path/to/files',
+        '--tags',
+        'typescript, react, frontend',
+      ]);
       await actionHandler!(['tagged-store']);
 
       expect(mockServices.store.create).toHaveBeenCalledWith({
@@ -368,7 +378,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files']);
@@ -388,7 +398,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files']);
@@ -414,7 +424,7 @@ describe('store command execution', () => {
       mockServices.store.getByIdOrName.mockResolvedValue(mockStore);
 
       const command = createStoreCommand(getOptions);
-      const infoCommand = command.commands.find(c => c.name() === 'info');
+      const infoCommand = command.commands.find((c) => c.name() === 'info');
       const actionHandler = infoCommand?._actionHandler;
 
       await actionHandler!(['my-store']);
@@ -449,7 +459,7 @@ describe('store command execution', () => {
       mockServices.store.getByIdOrName.mockResolvedValue(mockStore);
 
       const command = createStoreCommand(getOptions);
-      const infoCommand = command.commands.find(c => c.name() === 'info');
+      const infoCommand = command.commands.find((c) => c.name() === 'info');
       const actionHandler = infoCommand?._actionHandler;
 
       await actionHandler!(['my-repo']);
@@ -477,7 +487,7 @@ describe('store command execution', () => {
       mockServices.store.getByIdOrName.mockResolvedValue(mockStore);
 
       const command = createStoreCommand(getOptions);
-      const infoCommand = command.commands.find(c => c.name() === 'info');
+      const infoCommand = command.commands.find((c) => c.name() === 'info');
       const actionHandler = infoCommand?._actionHandler;
 
       await actionHandler!(['my-docs']);
@@ -509,7 +519,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const infoCommand = command.commands.find(c => c.name() === 'info');
+      const infoCommand = command.commands.find((c) => c.name() === 'info');
       const actionHandler = infoCommand?._actionHandler;
 
       await actionHandler!(['my-store']);
@@ -523,7 +533,7 @@ describe('store command execution', () => {
       mockServices.store.getByIdOrName.mockResolvedValue(undefined);
 
       const command = createStoreCommand(getOptions);
-      const infoCommand = command.commands.find(c => c.name() === 'info');
+      const infoCommand = command.commands.find((c) => c.name() === 'info');
       const actionHandler = infoCommand?._actionHandler;
 
       await expect(actionHandler!(['nonexistent'])).rejects.toThrow('process.exit: 3');
@@ -546,7 +556,7 @@ describe('store command execution', () => {
       mockServices.store.getByIdOrName.mockResolvedValue(mockStore);
 
       const command = createStoreCommand(getOptions);
-      const infoCommand = command.commands.find(c => c.name() === 'info');
+      const infoCommand = command.commands.find((c) => c.name() === 'info');
       const actionHandler = infoCommand?._actionHandler;
 
       await actionHandler!([storeId]);
@@ -573,7 +583,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
       deleteCommand.parseOptions(['--force']);
@@ -601,7 +611,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
       deleteCommand.parseOptions(['--yes']);
@@ -615,7 +625,7 @@ describe('store command execution', () => {
       mockServices.store.getByIdOrName.mockResolvedValue(undefined);
 
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
       deleteCommand.parseOptions(['--force']);
@@ -645,7 +655,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
       deleteCommand.parseOptions(['--force']);
@@ -675,7 +685,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
       await expect(actionHandler!(['my-store'])).rejects.toThrow('process.exit: 1');
@@ -728,7 +738,7 @@ describe('store command execution', () => {
       }));
 
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
       await actionHandler!(['my-store']);
@@ -775,7 +785,7 @@ describe('store command execution', () => {
       }));
 
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
       await expect(actionHandler!(['my-store'])).rejects.toThrow('process.exit: 0');
@@ -798,25 +808,25 @@ describe('store command execution', () => {
 
       expect(command.name()).toBe('store');
       expect(command.commands.length).toBe(4);
-      expect(command.commands.map(c => c.name())).toEqual(['list', 'create', 'info', 'delete']);
+      expect(command.commands.map((c) => c.name())).toEqual(['list', 'create', 'info', 'delete']);
     });
 
     it('list subcommand has type option', () => {
       const command = createStoreCommand(getOptions);
-      const listCommand = command.commands.find(c => c.name() === 'list');
-      const typeOption = listCommand?.options.find(o => o.long === '--type');
+      const listCommand = command.commands.find((c) => c.name() === 'list');
+      const typeOption = listCommand?.options.find((o) => o.long === '--type');
 
       expect(typeOption).toBeDefined();
     });
 
     it('create subcommand has required options', () => {
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
 
-      const typeOption = createCommand?.options.find(o => o.long === '--type');
-      const sourceOption = createCommand?.options.find(o => o.long === '--source');
-      const descriptionOption = createCommand?.options.find(o => o.long === '--description');
-      const tagsOption = createCommand?.options.find(o => o.long === '--tags');
+      const typeOption = createCommand?.options.find((o) => o.long === '--type');
+      const sourceOption = createCommand?.options.find((o) => o.long === '--source');
+      const descriptionOption = createCommand?.options.find((o) => o.long === '--description');
+      const tagsOption = createCommand?.options.find((o) => o.long === '--tags');
 
       expect(typeOption).toBeDefined();
       expect(typeOption?.mandatory).toBe(true);
@@ -830,10 +840,10 @@ describe('store command execution', () => {
 
     it('delete subcommand has force and yes options', () => {
       const command = createStoreCommand(getOptions);
-      const deleteCommand = command.commands.find(c => c.name() === 'delete');
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
 
-      const forceOption = deleteCommand?.options.find(o => o.long === '--force');
-      const yesOption = deleteCommand?.options.find(o => o.long === '--yes');
+      const forceOption = deleteCommand?.options.find((o) => o.long === '--force');
+      const yesOption = deleteCommand?.options.find((o) => o.long === '--yes');
 
       expect(forceOption).toBeDefined();
       expect(yesOption).toBeDefined();
@@ -858,10 +868,17 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
-      createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files', '--tags', 'tag1, tag2, tag3']);
+      createCommand.parseOptions([
+        '--type',
+        'file',
+        '--source',
+        '/path/to/files',
+        '--tags',
+        'tag1, tag2, tag3',
+      ]);
       await actionHandler!(['tagged-store']);
 
       expect(mockServices.store.create).toHaveBeenCalledWith(
@@ -888,10 +905,17 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
-      createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files', '--tags', '  tag1  ,  tag2  ']);
+      createCommand.parseOptions([
+        '--type',
+        'file',
+        '--source',
+        '/path/to/files',
+        '--tags',
+        '  tag1  ,  tag2  ',
+      ]);
       await actionHandler!(['tagged-store']);
 
       expect(mockServices.store.create).toHaveBeenCalledWith(
@@ -919,7 +943,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'file', '--source', '/local/path']);
@@ -951,7 +975,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'repo', '--source', '/repo/path']);
@@ -984,7 +1008,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'repo', '--source', 'https://github.com/user/repo']);
@@ -1018,10 +1042,15 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
-      createCommand.parseOptions(['--type', 'repo', '--source', 'http://internal-git.example.com/repo']);
+      createCommand.parseOptions([
+        '--type',
+        'repo',
+        '--source',
+        'http://internal-git.example.com/repo',
+      ]);
       await actionHandler!(['repo-http-store']);
 
       expect(mockServices.store.create).toHaveBeenCalledWith({
@@ -1051,7 +1080,7 @@ describe('store command execution', () => {
       });
 
       const command = createStoreCommand(getOptions);
-      const createCommand = command.commands.find(c => c.name() === 'create');
+      const createCommand = command.commands.find((c) => c.name() === 'create');
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'web', '--source', 'https://example.com']);

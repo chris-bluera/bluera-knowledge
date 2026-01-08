@@ -17,12 +17,12 @@ vi.mock('ora', () => ({
     stop: vi.fn(),
     succeed: vi.fn(),
     fail: vi.fn(),
-    text: ''
-  }))
+    text: '',
+  })),
 }));
 
 vi.mock('../../services/watch.service.js', () => ({
-  WatchService: vi.fn()
+  WatchService: vi.fn(),
 }));
 
 describe('createIndexCommand - Execution Tests', () => {
@@ -43,22 +43,22 @@ describe('createIndexCommand - Execution Tests', () => {
         getByIdOrName: vi.fn(),
         list: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
         initialize: vi.fn(),
         search: vi.fn(),
-        addDocuments: vi.fn()
+        addDocuments: vi.fn(),
       },
       search: {
-        search: vi.fn()
+        search: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
+        indexStore: vi.fn(),
       },
       embeddings: {
-        embed: vi.fn()
-      }
+        embed: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -74,14 +74,14 @@ describe('createIndexCommand - Execution Tests', () => {
     Object.defineProperty(process.stdout, 'isTTY', {
       value: false,
       writable: true,
-      configurable: true
+      configurable: true,
     });
 
     getOptions = (): GlobalOptions => ({
       config: undefined,
       dataDir: '/tmp/test-data',
       quiet: false,
-      format: undefined
+      format: undefined,
     });
   });
 
@@ -97,7 +97,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test/path',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -106,8 +106,8 @@ describe('createIndexCommand - Execution Tests', () => {
         data: {
           documentsIndexed: 10,
           chunksCreated: 25,
-          timeMs: 1500
-        }
+          timeMs: 1500,
+        },
       });
 
       const command = createIndexCommand(getOptions);
@@ -126,7 +126,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -135,8 +135,8 @@ describe('createIndexCommand - Execution Tests', () => {
         data: {
           documentsIndexed: 5,
           chunksCreated: 12,
-          timeMs: 800
-        }
+          timeMs: 800,
+        },
       });
 
       const command = createIndexCommand(getOptions);
@@ -151,7 +151,7 @@ describe('createIndexCommand - Execution Tests', () => {
         config: undefined,
         dataDir: '/tmp/test-data',
         quiet: false,
-        format: 'json'
+        format: 'json',
       });
 
       const mockStore: Store = {
@@ -160,7 +160,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -169,17 +169,15 @@ describe('createIndexCommand - Execution Tests', () => {
         data: {
           documentsIndexed: 3,
           chunksCreated: 7,
-          timeMs: 500
-        }
+          timeMs: 500,
+        },
       });
 
       const command = createIndexCommand(getOptions);
       const action = command._actionHandler;
       await action(['test']);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"documentsIndexed": 3')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"documentsIndexed": 3'));
 
       const jsonOutput = JSON.parse(consoleLogSpy.mock.calls[0]?.[0] as string);
       expect(jsonOutput.documentsIndexed).toBe(3);
@@ -192,7 +190,7 @@ describe('createIndexCommand - Execution Tests', () => {
         config: undefined,
         dataDir: '/tmp/test-data',
         quiet: true,
-        format: undefined
+        format: undefined,
       });
 
       const mockStore: Store = {
@@ -201,7 +199,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -210,8 +208,8 @@ describe('createIndexCommand - Execution Tests', () => {
         data: {
           documentsIndexed: 1,
           chunksCreated: 2,
-          timeMs: 100
-        }
+          timeMs: 100,
+        },
       });
 
       const command = createIndexCommand(getOptions);
@@ -231,7 +229,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -240,8 +238,8 @@ describe('createIndexCommand - Execution Tests', () => {
         data: {
           documentsIndexed: 1,
           chunksCreated: 2,
-          timeMs: 100
-        }
+          timeMs: 100,
+        },
       });
 
       const command = createIndexCommand(getOptions);
@@ -258,7 +256,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       let progressCallback: ((event: IndexEvent) => void) | undefined;
@@ -272,8 +270,8 @@ describe('createIndexCommand - Execution Tests', () => {
           data: {
             documentsIndexed: 5,
             chunksCreated: 10,
-            timeMs: 1000
-          }
+            timeMs: 1000,
+          },
         };
       });
 
@@ -291,7 +289,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'repo',
         url: 'https://github.com/test/repo',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -300,8 +298,8 @@ describe('createIndexCommand - Execution Tests', () => {
         data: {
           documentsIndexed: 1,
           chunksCreated: 1,
-          timeMs: 100
-        }
+          timeMs: 100,
+        },
       });
 
       const command = createIndexCommand(getOptions);
@@ -338,13 +336,13 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: false,
-        error: new Error('Failed to read files')
+        error: new Error('Failed to read files'),
       });
 
       const command = createIndexCommand(getOptions);
@@ -364,7 +362,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -386,21 +384,21 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test/path',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
 
       const mockWatchService = {
         watch: vi.fn(),
-        unwatchAll: vi.fn()
+        unwatchAll: vi.fn(),
       };
-      vi.mocked(WatchService).mockImplementation(function(this: any) {
+      vi.mocked(WatchService).mockImplementation(function (this: any) {
         return mockWatchService as any;
       } as any);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       expect(watchCmd).toBeDefined();
 
       const action = watchCmd!._actionHandler;
@@ -408,11 +406,7 @@ describe('createIndexCommand - Execution Tests', () => {
 
       expect(mockServices.store.getByIdOrName).toHaveBeenCalledWith('test-store');
       expect(WatchService).toHaveBeenCalledWith(mockServices.index, mockServices.lance);
-      expect(mockWatchService.watch).toHaveBeenCalledWith(
-        mockStore,
-        1000,
-        expect.any(Function)
-      );
+      expect(mockWatchService.watch).toHaveBeenCalledWith(mockStore, 1000, expect.any(Function));
     });
 
     it('watches a repo store successfully', async () => {
@@ -424,21 +418,21 @@ describe('createIndexCommand - Execution Tests', () => {
         url: 'https://github.com/test/repo',
         path: '/local/clone/path',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
 
       const mockWatchService = {
         watch: vi.fn(),
-        unwatchAll: vi.fn()
+        unwatchAll: vi.fn(),
       };
-      vi.mocked(WatchService).mockImplementation(function(this: any) {
+      vi.mocked(WatchService).mockImplementation(function (this: any) {
         return mockWatchService as any;
       } as any);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       const action = watchCmd!._actionHandler;
       await action(['repo-store']);
 
@@ -453,30 +447,26 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
 
       const mockWatchService = {
         watch: vi.fn(),
-        unwatchAll: vi.fn()
+        unwatchAll: vi.fn(),
       };
-      vi.mocked(WatchService).mockImplementation(function(this: any) {
+      vi.mocked(WatchService).mockImplementation(function (this: any) {
         return mockWatchService as any;
       } as any);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       watchCmd.parseOptions(['--debounce', '2500']);
       const action = watchCmd!._actionHandler;
       await action(['test']);
 
-      expect(mockWatchService.watch).toHaveBeenCalledWith(
-        mockStore,
-        2500,
-        expect.any(Function)
-      );
+      expect(mockWatchService.watch).toHaveBeenCalledWith(mockStore, 2500, expect.any(Function));
     });
 
     it('outputs watching message in normal mode', async () => {
@@ -487,21 +477,21 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
 
       const mockWatchService = {
         watch: vi.fn(),
-        unwatchAll: vi.fn()
+        unwatchAll: vi.fn(),
       };
-      vi.mocked(WatchService).mockImplementation(function(this: any) {
+      vi.mocked(WatchService).mockImplementation(function (this: any) {
         return mockWatchService as any;
       } as any);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       const action = watchCmd!._actionHandler;
       await action(['my-store']);
 
@@ -513,7 +503,7 @@ describe('createIndexCommand - Execution Tests', () => {
         config: undefined,
         dataDir: '/tmp/test-data',
         quiet: true,
-        format: undefined
+        format: undefined,
       });
 
       const { WatchService } = await import('../../services/watch.service.js');
@@ -523,21 +513,21 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
 
       const mockWatchService = {
         watch: vi.fn(),
-        unwatchAll: vi.fn()
+        unwatchAll: vi.fn(),
       };
-      vi.mocked(WatchService).mockImplementation(function(this: any) {
+      vi.mocked(WatchService).mockImplementation(function (this: any) {
         return mockWatchService as any;
       } as any);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       const action = watchCmd!._actionHandler;
       await action(['test']);
 
@@ -552,7 +542,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -562,14 +552,14 @@ describe('createIndexCommand - Execution Tests', () => {
         watch: vi.fn((store, debounce, callback) => {
           capturedCallback = callback;
         }),
-        unwatchAll: vi.fn()
+        unwatchAll: vi.fn(),
       };
-      vi.mocked(WatchService).mockImplementation(function(this: any) {
+      vi.mocked(WatchService).mockImplementation(function (this: any) {
         return mockWatchService as any;
       } as any);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       const action = watchCmd!._actionHandler;
       await action(['test']);
 
@@ -587,28 +577,30 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
 
       const mockWatchService = {
         watch: vi.fn(),
-        unwatchAll: vi.fn()
+        unwatchAll: vi.fn(),
       };
-      vi.mocked(WatchService).mockImplementation(function(this: any) {
+      vi.mocked(WatchService).mockImplementation(function (this: any) {
         return mockWatchService as any;
       } as any);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       const action = watchCmd!._actionHandler;
       await action(['test']);
 
       expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
 
       // Get the SIGINT handler and call it
-      const sigintHandler = processOnSpy.mock.calls.find(call => call[0] === 'SIGINT')?.[1] as () => void;
+      const sigintHandler = processOnSpy.mock.calls.find(
+        (call) => call[0] === 'SIGINT'
+      )?.[1] as () => void;
       expect(sigintHandler).toBeDefined();
 
       // Call the handler
@@ -624,7 +616,7 @@ describe('createIndexCommand - Execution Tests', () => {
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       const action = watchCmd!._actionHandler;
       await expect(action(['nonexistent'])).rejects.toThrow('process.exit: 3');
 
@@ -639,13 +631,13 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'web',
         url: 'https://example.com',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
 
       const command = createIndexCommand(getOptions);
-      const watchCmd = command.commands.find(c => c.name() === 'watch');
+      const watchCmd = command.commands.find((c) => c.name() === 'watch');
       const action = watchCmd!._actionHandler;
       await expect(action(['web-store'])).rejects.toThrow('process.exit: 3');
 
@@ -661,7 +653,7 @@ describe('createIndexCommand - Execution Tests', () => {
         config: '/custom/config.json',
         dataDir: '/custom/data',
         quiet: false,
-        format: undefined
+        format: undefined,
       });
 
       const mockStore: Store = {
@@ -670,7 +662,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -679,8 +671,8 @@ describe('createIndexCommand - Execution Tests', () => {
         data: {
           documentsIndexed: 1,
           chunksCreated: 1,
-          timeMs: 100
-        }
+          timeMs: 100,
+        },
       });
 
       const command = createIndexCommand(getOptions);
@@ -698,7 +690,7 @@ describe('createIndexCommand - Execution Tests', () => {
         type: 'file',
         path: '/test',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockServices.store.getByIdOrName).mockImplementation(async () => {
@@ -715,8 +707,8 @@ describe('createIndexCommand - Execution Tests', () => {
           data: {
             documentsIndexed: 1,
             chunksCreated: 1,
-            timeMs: 100
-          }
+            timeMs: 100,
+          },
         };
       });
 

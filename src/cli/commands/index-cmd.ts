@@ -13,19 +13,19 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
       let exitCode = 0;
       try {
-        // eslint-disable-next-line no-labels
         indexLogic: {
           const store = await services.store.getByIdOrName(storeIdOrName);
 
           if (store === undefined) {
             console.error(`Error: Store not found: ${storeIdOrName}`);
             exitCode = 3;
-            // eslint-disable-next-line no-labels
+
             break indexLogic;
           }
 
           // Use spinner in interactive mode (not quiet, not json output)
-          const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== 'json';
+          const isInteractive =
+            process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== 'json';
           let spinner: Ora | undefined;
 
           if (isInteractive) {
@@ -63,7 +63,7 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
               console.error(message);
             }
             exitCode = 4;
-            // eslint-disable-next-line no-labels
+
             break indexLogic;
           }
         }
@@ -79,7 +79,11 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
   index
     .command('watch <store>')
     .description('Watch store directory; re-index when files change')
-    .option('--debounce <ms>', 'Wait N ms after last change before re-indexing (default: 1000)', '1000')
+    .option(
+      '--debounce <ms>',
+      'Wait N ms after last change before re-indexing (default: 1000)',
+      '1000'
+    )
     .action(async (storeIdOrName: string, options: { debounce?: string }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);

@@ -13,7 +13,7 @@ function parseSearchResponse(text: string): { header: string; json: Record<strin
   const jsonStr = parts.slice(1).join('\n\n');
   return {
     header,
-    json: JSON.parse(jsonStr || '{}')
+    json: JSON.parse(jsonStr || '{}'),
   };
 }
 
@@ -28,18 +28,16 @@ describe('Search Handlers', () => {
     // Create mock services
     mockServices = {
       store: {
-        list: vi.fn().mockResolvedValue([
-          { id: 'store1', name: 'Test Store', type: 'file' }
-        ]),
+        list: vi.fn().mockResolvedValue([{ id: 'store1', name: 'Test Store', type: 'file' }]),
         getByIdOrName: vi.fn().mockResolvedValue({
           id: 'store1',
           name: 'Test Store',
           type: 'file',
-          path: '/test/path'
-        })
+          path: '/test/path',
+        }),
       },
       lance: {
-        initialize: vi.fn().mockResolvedValue(undefined)
+        initialize: vi.fn().mockResolvedValue(undefined),
       },
       search: {
         search: vi.fn().mockResolvedValue({
@@ -49,19 +47,19 @@ describe('Search Handlers', () => {
               score: 0.95,
               content: 'test content for search',
               metadata: { storeId: 'store1' },
-              summary: { file: 'test.ts', line: 1 }
-            }
+              summary: { file: 'test.ts', line: 1 },
+            },
           ],
           totalResults: 1,
           mode: 'hybrid',
-          timeMs: 50
-        })
-      }
+          timeMs: 50,
+        }),
+      },
     } as unknown as ServiceContainer;
 
     mockContext = {
       services: mockServices,
-      options: {}
+      options: {},
     };
   });
 
@@ -80,7 +78,7 @@ describe('Search Handlers', () => {
       expect(mockServices.search.search).toHaveBeenCalledWith(
         expect.objectContaining({
           query: 'test query',
-          stores: ['store1']
+          stores: ['store1'],
         })
       );
 
@@ -113,10 +111,7 @@ describe('Search Handlers', () => {
     });
 
     it('should initialize all stores', async () => {
-      await handleSearch(
-        { query: 'test', detail: 'minimal', limit: 10 },
-        mockContext
-      );
+      await handleSearch({ query: 'test', detail: 'minimal', limit: 10 }, mockContext);
 
       expect(mockServices.lance.initialize).toHaveBeenCalledWith('store1');
     });
@@ -127,18 +122,12 @@ describe('Search Handlers', () => {
       );
 
       await expect(
-        handleSearch(
-          { query: 'test', detail: 'minimal', limit: 10 },
-          mockContext
-        )
+        handleSearch({ query: 'test', detail: 'minimal', limit: 10 }, mockContext)
       ).rejects.toThrow('Failed to initialize vector stores');
     });
 
     it('should cache search results', async () => {
-      await handleSearch(
-        { query: 'test', detail: 'minimal', limit: 10 },
-        mockContext
-      );
+      await handleSearch({ query: 'test', detail: 'minimal', limit: 10 }, mockContext);
 
       // Verify cache was populated
       const cached = resultCache.get('doc1');
@@ -166,7 +155,7 @@ describe('Search Handlers', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         status: 'ready',
-        description: 'Test'
+        description: 'Test',
       });
 
       const result = await handleSearch(
@@ -221,7 +210,7 @@ describe('Search Handlers', () => {
         score: 0.95,
         content: 'test content for get full context',
         metadata: { storeId: 'store1', docId: 'doc1' },
-        summary: { file: 'test.ts', line: 1 }
+        summary: { file: 'test.ts', line: 1 },
       });
     });
 
@@ -233,13 +222,10 @@ describe('Search Handlers', () => {
         content: 'test content',
         metadata: { storeId: 'store1', docId: 'doc1' },
         summary: { file: 'test.ts', line: 1 },
-        full: { code: 'full code here' }
+        full: { code: 'full code here' },
       });
 
-      const result = await handleGetFullContext(
-        { resultId: 'doc1' },
-        mockContext
-      );
+      const result = await handleGetFullContext({ resultId: 'doc1' }, mockContext);
 
       const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.id).toBe('doc1');
@@ -251,12 +237,9 @@ describe('Search Handlers', () => {
     });
 
     it('should throw if result not in cache', async () => {
-      await expect(
-        handleGetFullContext(
-          { resultId: 'nonexistent' },
-          mockContext
-        )
-      ).rejects.toThrow('Result not found in cache');
+      await expect(handleGetFullContext({ resultId: 'nonexistent' }, mockContext)).rejects.toThrow(
+        'Result not found in cache'
+      );
     });
 
     it('should re-query for full context if not already full', async () => {
@@ -268,25 +251,22 @@ describe('Search Handlers', () => {
             content: 'test content',
             metadata: { storeId: 'store1', docId: 'doc1' },
             summary: { file: 'test.ts', line: 1 },
-            full: { code: 'full code from re-query' }
-          }
+            full: { code: 'full code from re-query' },
+          },
         ],
         totalResults: 1,
         mode: 'hybrid',
-        timeMs: 50
+        timeMs: 50,
       });
 
-      const result = await handleGetFullContext(
-        { resultId: 'doc1' },
-        mockContext
-      );
+      const result = await handleGetFullContext({ resultId: 'doc1' }, mockContext);
 
       expect(mockServices.store.getByIdOrName).toHaveBeenCalledWith('store1');
       expect(mockServices.lance.initialize).toHaveBeenCalledWith('store1');
       expect(mockServices.search.search).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: 'full',
-          limit: 1
+          limit: 1,
         })
       );
 
@@ -297,12 +277,9 @@ describe('Search Handlers', () => {
     it('should throw if store not found', async () => {
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
 
-      await expect(
-        handleGetFullContext(
-          { resultId: 'doc1' },
-          mockContext
-        )
-      ).rejects.toThrow('Store not found');
+      await expect(handleGetFullContext({ resultId: 'doc1' }, mockContext)).rejects.toThrow(
+        'Store not found'
+      );
     });
 
     it('should return cached result with warning if re-query fails', async () => {
@@ -310,13 +287,10 @@ describe('Search Handlers', () => {
         results: [], // No matching result found
         totalResults: 0,
         mode: 'hybrid',
-        timeMs: 50
+        timeMs: 50,
       });
 
-      const result = await handleGetFullContext(
-        { resultId: 'doc1' },
-        mockContext
-      );
+      const result = await handleGetFullContext({ resultId: 'doc1' }, mockContext);
 
       const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.id).toBe('doc1');
@@ -332,18 +306,15 @@ describe('Search Handlers', () => {
             content: 'test content',
             metadata: { storeId: 'store1', docId: 'doc1' },
             summary: { file: 'test.ts', line: 1 },
-            full: { code: 'full code from re-query' }
-          }
+            full: { code: 'full code from re-query' },
+          },
         ],
         totalResults: 1,
         mode: 'hybrid',
-        timeMs: 50
+        timeMs: 50,
       });
 
-      await handleGetFullContext(
-        { resultId: 'doc1' },
-        mockContext
-      );
+      await handleGetFullContext({ resultId: 'doc1' }, mockContext);
 
       const cached = resultCache.get('doc1');
       expect(cached?.full).toBeDefined();

@@ -50,7 +50,10 @@ describe('CLI Consistency', () => {
    * Helper to run CLI and capture output + exit code
    * Properly handles quoted arguments
    */
-  const runCli = (args: string, options: { expectError?: boolean; stdin?: string } = {}): {
+  const runCli = (
+    args: string,
+    options: { expectError?: boolean; stdin?: string } = {}
+  ): {
     stdout: string;
     stderr: string;
     exitCode: number;
@@ -133,7 +136,6 @@ describe('CLI Consistency', () => {
       expect(result.exitCode).not.toBe(0);
       expect(result.stderr).toContain('Error: Store not found');
     });
-
   });
 
   describe('--format json Support', () => {
@@ -291,6 +293,5 @@ describe('CLI Consistency', () => {
       expect(result.stdout).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/);
       expect(result.exitCode).toBe(0);
     }, 120000);
-
   });
 });

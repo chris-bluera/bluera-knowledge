@@ -4,7 +4,7 @@ import type { PythonBridge, ParsePythonResult } from '../crawl/bridge.js';
 
 function createMockBridge(result: ParsePythonResult): PythonBridge {
   return {
-    parsePython: vi.fn().mockResolvedValue(result)
+    parsePython: vi.fn().mockResolvedValue(result),
   } as unknown as PythonBridge;
 }
 
@@ -18,10 +18,10 @@ describe('PythonASTParser', () => {
             name: 'hello',
             exported: true,
             startLine: 1,
-            endLine: 2
-          }
+            endLine: 2,
+          },
         ],
-        imports: []
+        imports: [],
       };
 
       const bridge = createMockBridge(mockResult);
@@ -35,7 +35,7 @@ describe('PythonASTParser', () => {
         name: 'hello',
         exported: true,
         startLine: 1,
-        endLine: 2
+        endLine: 2,
       });
     });
 
@@ -48,10 +48,10 @@ describe('PythonASTParser', () => {
             exported: true,
             startLine: 1,
             endLine: 3,
-            async: true
-          }
+            async: true,
+          },
         ],
-        imports: []
+        imports: [],
       };
 
       const bridge = createMockBridge(mockResult);
@@ -71,10 +71,10 @@ describe('PythonASTParser', () => {
             exported: true,
             startLine: 1,
             endLine: 2,
-            signature: 'def greet(name: str) -> str'
-          }
+            signature: 'def greet(name: str) -> str',
+          },
         ],
-        imports: []
+        imports: [],
       };
 
       const bridge = createMockBridge(mockResult);
@@ -100,7 +100,7 @@ describe('PythonASTParser', () => {
                 signature: 'def add(self, a: int, b: int) -> int',
                 startLine: 2,
                 endLine: 3,
-                calls: []
+                calls: [],
               },
               {
                 name: 'subtract',
@@ -108,12 +108,12 @@ describe('PythonASTParser', () => {
                 signature: 'def subtract(self, a: int, b: int) -> int',
                 startLine: 4,
                 endLine: 5,
-                calls: []
-              }
-            ]
-          }
+                calls: [],
+              },
+            ],
+          },
         ],
-        imports: []
+        imports: [],
       };
 
       const bridge = createMockBridge(mockResult);
@@ -134,11 +134,11 @@ describe('PythonASTParser', () => {
             name: 'simple',
             exported: false,
             startLine: 1,
-            endLine: 1
+            endLine: 1,
             // No async, signature, or methods
-          }
+          },
         ],
-        imports: []
+        imports: [],
       };
 
       const bridge = createMockBridge(mockResult);
@@ -148,7 +148,7 @@ describe('PythonASTParser', () => {
       expect(nodes[0]).toMatchObject({
         type: 'function',
         name: 'simple',
-        exported: false
+        exported: false,
       });
       // Optional fields should not be present
       expect(nodes[0]?.async).toBeUndefined();
@@ -164,24 +164,24 @@ describe('PythonASTParser', () => {
             name: 'func1',
             exported: true,
             startLine: 1,
-            endLine: 2
+            endLine: 2,
           },
           {
             type: 'class',
             name: 'MyClass',
             exported: true,
             startLine: 3,
-            endLine: 10
+            endLine: 10,
           },
           {
             type: 'function',
             name: 'func2',
             exported: false,
             startLine: 11,
-            endLine: 12
-          }
+            endLine: 12,
+          },
         ],
-        imports: []
+        imports: [],
       };
 
       const bridge = createMockBridge(mockResult);
@@ -197,7 +197,7 @@ describe('PythonASTParser', () => {
     it('returns empty array when no nodes found', async () => {
       const mockResult: ParsePythonResult = {
         nodes: [],
-        imports: []
+        imports: [],
       };
 
       const bridge = createMockBridge(mockResult);

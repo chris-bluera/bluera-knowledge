@@ -80,11 +80,14 @@ describe('WatchService', () => {
 
       await watchService.watch(mockFileStore);
 
-      expect(watch).toHaveBeenCalledWith(mockFileStore.path, expect.objectContaining({
-        ignored: expect.any(RegExp),
-        persistent: true,
-        ignoreInitial: true,
-      }));
+      expect(watch).toHaveBeenCalledWith(
+        mockFileStore.path,
+        expect.objectContaining({
+          ignored: expect.any(RegExp),
+          persistent: true,
+          ignoreInitial: true,
+        })
+      );
     });
 
     it('starts watching a repo store', async () => {
@@ -343,10 +346,7 @@ describe('WatchService', () => {
       vi.advanceTimersByTime(1100);
       await vi.runAllTimersAsync();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error during reindexing:',
-        expect.any(Error)
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reindexing:', expect.any(Error));
 
       consoleErrorSpy.mockRestore();
     });
@@ -367,10 +367,7 @@ describe('WatchService', () => {
       vi.advanceTimersByTime(1100);
       await vi.runAllTimersAsync();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error during reindexing:',
-        expect.any(Error)
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reindexing:', expect.any(Error));
 
       consoleErrorSpy.mockRestore();
     });
@@ -397,7 +394,8 @@ describe('WatchService', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // First call fails
-      mockIndexService.indexStore = vi.fn()
+      mockIndexService.indexStore = vi
+        .fn()
         .mockRejectedValueOnce(new Error('First fail'))
         .mockResolvedValueOnce({ ok: true });
 

@@ -1,7 +1,7 @@
 import { watch, type FSWatcher } from 'chokidar';
-import type { FileStore, RepoStore } from '../types/store.js';
 import type { IndexService } from './index.service.js';
 import type { LanceStore } from '../db/lance.js';
+import type { FileStore, RepoStore } from '../types/store.js';
 
 export class WatchService {
   private readonly watchers: Map<string, FSWatcher> = new Map();

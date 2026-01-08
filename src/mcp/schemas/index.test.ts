@@ -9,7 +9,7 @@ import {
   DeleteStoreArgsSchema,
   CheckJobStatusArgsSchema,
   ListJobsArgsSchema,
-  CancelJobArgsSchema
+  CancelJobArgsSchema,
 } from './index.js';
 
 describe('MCP Schema Validation', () => {
@@ -18,7 +18,7 @@ describe('MCP Schema Validation', () => {
       const result = SearchArgsSchema.parse({
         query: 'test query',
         detail: 'minimal',
-        limit: 10
+        limit: 10,
       });
 
       expect(result.query).toBe('test query');
@@ -34,13 +34,13 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty query', () => {
-      expect(() => SearchArgsSchema.parse({ query: '' }))
-        .toThrow('Query must be a non-empty string');
+      expect(() => SearchArgsSchema.parse({ query: '' })).toThrow(
+        'Query must be a non-empty string'
+      );
     });
 
     it('should validate detail enum', () => {
-      expect(() => SearchArgsSchema.parse({ query: 'test', detail: 'invalid' }))
-        .toThrow();
+      expect(() => SearchArgsSchema.parse({ query: 'test', detail: 'invalid' })).toThrow();
 
       const minimal = SearchArgsSchema.parse({ query: 'test', detail: 'minimal' });
       expect(minimal.detail).toBe('minimal');
@@ -55,7 +55,7 @@ describe('MCP Schema Validation', () => {
     it('should validate intent enum', () => {
       const result = SearchArgsSchema.parse({
         query: 'test',
-        intent: 'find-implementation'
+        intent: 'find-implementation',
       });
 
       expect(result.intent).toBe('find-implementation');
@@ -64,21 +64,18 @@ describe('MCP Schema Validation', () => {
     it('should validate stores array', () => {
       const result = SearchArgsSchema.parse({
         query: 'test',
-        stores: ['store1', 'store2']
+        stores: ['store1', 'store2'],
       });
 
       expect(result.stores).toEqual(['store1', 'store2']);
     });
 
     it('should reject invalid limit', () => {
-      expect(() => SearchArgsSchema.parse({ query: 'test', limit: -1 }))
-        .toThrow();
+      expect(() => SearchArgsSchema.parse({ query: 'test', limit: -1 })).toThrow();
 
-      expect(() => SearchArgsSchema.parse({ query: 'test', limit: 0 }))
-        .toThrow();
+      expect(() => SearchArgsSchema.parse({ query: 'test', limit: 0 })).toThrow();
 
-      expect(() => SearchArgsSchema.parse({ query: 'test', limit: 1.5 }))
-        .toThrow();
+      expect(() => SearchArgsSchema.parse({ query: 'test', limit: 1.5 })).toThrow();
     });
   });
 
@@ -89,13 +86,13 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty resultId', () => {
-      expect(() => GetFullContextArgsSchema.parse({ resultId: '' }))
-        .toThrow('Result ID must be a non-empty string');
+      expect(() => GetFullContextArgsSchema.parse({ resultId: '' })).toThrow(
+        'Result ID must be a non-empty string'
+      );
     });
 
     it('should reject missing resultId', () => {
-      expect(() => GetFullContextArgsSchema.parse({}))
-        .toThrow();
+      expect(() => GetFullContextArgsSchema.parse({})).toThrow();
     });
   });
 
@@ -117,8 +114,7 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject invalid type', () => {
-      expect(() => ListStoresArgsSchema.parse({ type: 'invalid' }))
-        .toThrow();
+      expect(() => ListStoresArgsSchema.parse({ type: 'invalid' })).toThrow();
     });
   });
 
@@ -129,13 +125,13 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty store', () => {
-      expect(() => GetStoreInfoArgsSchema.parse({ store: '' }))
-        .toThrow('Store name or ID must be a non-empty string');
+      expect(() => GetStoreInfoArgsSchema.parse({ store: '' })).toThrow(
+        'Store name or ID must be a non-empty string'
+      );
     });
 
     it('should reject missing store', () => {
-      expect(() => GetStoreInfoArgsSchema.parse({}))
-        .toThrow();
+      expect(() => GetStoreInfoArgsSchema.parse({})).toThrow();
     });
   });
 
@@ -144,7 +140,7 @@ describe('MCP Schema Validation', () => {
       const result = CreateStoreArgsSchema.parse({
         name: 'test-store',
         type: 'file',
-        source: '/path/to/source'
+        source: '/path/to/source',
       });
 
       expect(result.name).toBe('test-store');
@@ -158,7 +154,7 @@ describe('MCP Schema Validation', () => {
         type: 'repo',
         source: 'https://github.com/test/repo',
         branch: 'main',
-        description: 'Test repository'
+        description: 'Test repository',
       });
 
       expect(result.name).toBe('test-repo');
@@ -169,36 +165,46 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty name', () => {
-      expect(() => CreateStoreArgsSchema.parse({
-        name: '',
-        type: 'file',
-        source: '/path'
-      })).toThrow('Store name must be a non-empty string');
+      expect(() =>
+        CreateStoreArgsSchema.parse({
+          name: '',
+          type: 'file',
+          source: '/path',
+        })
+      ).toThrow('Store name must be a non-empty string');
     });
 
     it('should reject invalid type', () => {
-      expect(() => CreateStoreArgsSchema.parse({
-        name: 'test',
-        type: 'invalid',
-        source: '/path'
-      })).toThrow();
+      expect(() =>
+        CreateStoreArgsSchema.parse({
+          name: 'test',
+          type: 'invalid',
+          source: '/path',
+        })
+      ).toThrow();
     });
 
     it('should reject missing required fields', () => {
-      expect(() => CreateStoreArgsSchema.parse({
-        name: 'test',
-        type: 'file'
-      })).toThrow();
+      expect(() =>
+        CreateStoreArgsSchema.parse({
+          name: 'test',
+          type: 'file',
+        })
+      ).toThrow();
 
-      expect(() => CreateStoreArgsSchema.parse({
-        name: 'test',
-        source: '/path'
-      })).toThrow();
+      expect(() =>
+        CreateStoreArgsSchema.parse({
+          name: 'test',
+          source: '/path',
+        })
+      ).toThrow();
 
-      expect(() => CreateStoreArgsSchema.parse({
-        type: 'file',
-        source: '/path'
-      })).toThrow();
+      expect(() =>
+        CreateStoreArgsSchema.parse({
+          type: 'file',
+          source: '/path',
+        })
+      ).toThrow();
     });
   });
 
@@ -209,13 +215,13 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty store', () => {
-      expect(() => IndexStoreArgsSchema.parse({ store: '' }))
-        .toThrow('Store name or ID must be a non-empty string');
+      expect(() => IndexStoreArgsSchema.parse({ store: '' })).toThrow(
+        'Store name or ID must be a non-empty string'
+      );
     });
 
     it('should reject missing store', () => {
-      expect(() => IndexStoreArgsSchema.parse({}))
-        .toThrow();
+      expect(() => IndexStoreArgsSchema.parse({})).toThrow();
     });
   });
 
@@ -231,13 +237,13 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty store', () => {
-      expect(() => DeleteStoreArgsSchema.parse({ store: '' }))
-        .toThrow('Store name or ID must be a non-empty string');
+      expect(() => DeleteStoreArgsSchema.parse({ store: '' })).toThrow(
+        'Store name or ID must be a non-empty string'
+      );
     });
 
     it('should reject missing store', () => {
-      expect(() => DeleteStoreArgsSchema.parse({}))
-        .toThrow();
+      expect(() => DeleteStoreArgsSchema.parse({})).toThrow();
     });
   });
 
@@ -248,13 +254,13 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty jobId', () => {
-      expect(() => CheckJobStatusArgsSchema.parse({ jobId: '' }))
-        .toThrow('Job ID must be a non-empty string');
+      expect(() => CheckJobStatusArgsSchema.parse({ jobId: '' })).toThrow(
+        'Job ID must be a non-empty string'
+      );
     });
 
     it('should reject missing jobId', () => {
-      expect(() => CheckJobStatusArgsSchema.parse({}))
-        .toThrow();
+      expect(() => CheckJobStatusArgsSchema.parse({})).toThrow();
     });
   });
 
@@ -291,8 +297,7 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject invalid status', () => {
-      expect(() => ListJobsArgsSchema.parse({ status: 'invalid' }))
-        .toThrow();
+      expect(() => ListJobsArgsSchema.parse({ status: 'invalid' })).toThrow();
     });
   });
 
@@ -303,13 +308,13 @@ describe('MCP Schema Validation', () => {
     });
 
     it('should reject empty jobId', () => {
-      expect(() => CancelJobArgsSchema.parse({ jobId: '' }))
-        .toThrow('Job ID must be a non-empty string');
+      expect(() => CancelJobArgsSchema.parse({ jobId: '' })).toThrow(
+        'Job ID must be a non-empty string'
+      );
     });
 
     it('should reject missing jobId', () => {
-      expect(() => CancelJobArgsSchema.parse({}))
-        .toThrow();
+      expect(() => CancelJobArgsSchema.parse({})).toThrow();
     });
   });
 });

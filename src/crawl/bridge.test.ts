@@ -81,7 +81,7 @@ describe('PythonBridge', () => {
         ['python/crawl_worker.py'],
         expect.objectContaining({
           stdio: ['pipe', 'pipe', 'pipe'],
-        }),
+        })
       );
     });
 
@@ -99,7 +99,7 @@ describe('PythonBridge', () => {
       expect(createInterface).toHaveBeenCalledWith(
         expect.objectContaining({
           input: mockProcess.stdout,
-        }),
+        })
       );
     });
 
@@ -109,7 +109,7 @@ describe('PythonBridge', () => {
       expect(createInterface).toHaveBeenCalledWith(
         expect.objectContaining({
           input: mockProcess.stderr,
-        }),
+        })
       );
     });
 
@@ -117,13 +117,16 @@ describe('PythonBridge', () => {
       const promise = bridge.crawl('https://example.com');
 
       // Wait for process to start and write
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await promise;
       expect(spawn).toHaveBeenCalled();
@@ -137,18 +140,21 @@ describe('PythonBridge', () => {
 
       // Emit response immediately
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await promise;
 
       expect(mockProcess.stdin.write).toHaveBeenCalledWith(
-        expect.stringContaining('"jsonrpc":"2.0"'),
+        expect.stringContaining('"jsonrpc":"2.0"')
       );
       expect(mockProcess.stdin.write).toHaveBeenCalledWith(
-        expect.stringContaining('"method":"crawl"'),
+        expect.stringContaining('"method":"crawl"')
       );
     });
 
@@ -157,14 +163,19 @@ describe('PythonBridge', () => {
       const promise = bridge.crawl('https://example.com/test');
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await promise;
 
-      expect(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0]).toContain('"url":"https://example.com/test"');
+      expect(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0]).toContain(
+        '"url":"https://example.com/test"'
+      );
     });
 
     it('should generate unique request IDs', async () => {
@@ -194,14 +205,28 @@ describe('PythonBridge', () => {
       const req2 = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[1]?.[0] as string);
 
       // Send responses in reverse order
-      mockReadline.emit('line', JSON.stringify({
-        id: req2.id,
-        result: { pages: [{ url: 'url2', title: 't2', content: 'c2', links: [], crawledAt: '2024-01-02' }] },
-      }));
-      mockReadline.emit('line', JSON.stringify({
-        id: req1.id,
-        result: { pages: [{ url: 'url1', title: 't1', content: 'c1', links: [], crawledAt: '2024-01-01' }] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: req2.id,
+          result: {
+            pages: [
+              { url: 'url2', title: 't2', content: 'c2', links: [], crawledAt: '2024-01-02' },
+            ],
+          },
+        })
+      );
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: req1.id,
+          result: {
+            pages: [
+              { url: 'url1', title: 't1', content: 'c1', links: [], crawledAt: '2024-01-01' },
+            ],
+          },
+        })
+      );
 
       const [result1, result2] = await Promise.all([promise1, promise2]);
 
@@ -214,18 +239,23 @@ describe('PythonBridge', () => {
       const promise = bridge.crawl('https://example.com');
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: {
-          pages: [{
-            url: 'https://example.com',
-            title: 'Test',
-            content: 'Content',
-            links: [],
-            crawledAt: '2024-01-01',
-          }],
-        },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: {
+            pages: [
+              {
+                url: 'https://example.com',
+                title: 'Test',
+                content: 'Content',
+                links: [],
+                crawledAt: '2024-01-01',
+              },
+            ],
+          },
+        })
+      );
 
       const result = await promise;
       expect(result.pages).toHaveLength(1);
@@ -237,10 +267,13 @@ describe('PythonBridge', () => {
       const promise = bridge.crawl('https://example.com');
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        error: { message: 'Crawl failed' },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          error: { message: 'Crawl failed' },
+        })
+      );
 
       await expect(promise).rejects.toThrow('Crawl failed');
     });
@@ -261,10 +294,13 @@ describe('PythonBridge', () => {
 
       // Should not timeout immediately - resolve quickly
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await expect(promise).resolves.toBeDefined();
     });
@@ -274,10 +310,13 @@ describe('PythonBridge', () => {
       const promise = bridge.crawl('https://example.com', 5000);
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await promise;
 
@@ -290,10 +329,13 @@ describe('PythonBridge', () => {
       const promise = bridge.crawl('https://example.com', 5000);
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        error: { message: 'Error' },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          error: { message: 'Error' },
+        })
+      );
 
       await expect(promise).rejects.toThrow();
     });
@@ -307,10 +349,13 @@ describe('PythonBridge', () => {
       // Try to send a late response - should be ignored
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
       expect(() => {
-        mockReadline.emit('line', JSON.stringify({
-          id: request.id,
-          result: { pages: [] },
-        }));
+        mockReadline.emit(
+          'line',
+          JSON.stringify({
+            id: request.id,
+            result: { pages: [] },
+          })
+        );
       }).not.toThrow();
     });
   });
@@ -321,10 +366,13 @@ describe('PythonBridge', () => {
       const promise = bridge.crawl('https://example.com');
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await expect(promise).resolves.toBeDefined();
     });
@@ -343,10 +391,13 @@ describe('PythonBridge', () => {
       await bridge.start();
       const promise = bridge.crawl('https://example.com', 100);
 
-      mockReadline.emit('line', JSON.stringify({
-        id: 'unknown-id',
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: 'unknown-id',
+          result: { pages: [] },
+        })
+      );
 
       // Should timeout since response wasn't matched
       await expect(promise).rejects.toThrow('timeout');
@@ -411,13 +462,18 @@ describe('PythonBridge', () => {
 
       const promise = bridge.crawl('https://example.com');
 
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
-      const request = JSON.parse(vi.mocked(newMockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      newMockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      const request = JSON.parse(
+        vi.mocked(newMockProcess.stdin.write).mock.calls[0]?.[0] as string
+      );
+      newMockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await promise;
       expect(spawn).toHaveBeenCalledTimes(2);
@@ -453,23 +509,29 @@ describe('PythonBridge', () => {
       let capturedId: string | undefined;
       const promise = bridge.crawl('https://example.com');
 
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
       capturedId = request.id;
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await promise;
 
       // Send same ID again - should be ignored (pending was cleared)
       expect(() => {
-        mockReadline.emit('line', JSON.stringify({
-          id: capturedId,
-          result: { pages: [] },
-        }));
+        mockReadline.emit(
+          'line',
+          JSON.stringify({
+            id: capturedId,
+            result: { pages: [] },
+          })
+        );
       }).not.toThrow();
     });
 
@@ -478,23 +540,29 @@ describe('PythonBridge', () => {
       let capturedId: string | undefined;
       const promise = bridge.crawl('https://example.com');
 
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
       capturedId = request.id;
-      mockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        error: { message: 'Error' },
-      }));
+      mockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          error: { message: 'Error' },
+        })
+      );
 
       await expect(promise).rejects.toThrow();
 
       // Pending should be cleared
       expect(() => {
-        mockReadline.emit('line', JSON.stringify({
-          id: capturedId,
-          result: { pages: [] },
-        }));
+        mockReadline.emit(
+          'line',
+          JSON.stringify({
+            id: capturedId,
+            result: { pages: [] },
+          })
+        );
       }).not.toThrow();
     });
 
@@ -507,10 +575,13 @@ describe('PythonBridge', () => {
       // Pending should be cleared, late response should be ignored
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
       expect(() => {
-        mockReadline.emit('line', JSON.stringify({
-          id: request.id,
-          result: { pages: [] },
-        }));
+        mockReadline.emit(
+          'line',
+          JSON.stringify({
+            id: request.id,
+            result: { pages: [] },
+          })
+        );
       }).not.toThrow();
     });
 
@@ -540,7 +611,7 @@ describe('PythonBridge', () => {
         bridge.crawl('https://example.com/3'),
       ];
 
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
       const req1 = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
       const req2 = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[1]?.[0] as string);
@@ -560,7 +631,7 @@ describe('PythonBridge', () => {
       const promise1 = bridge.crawl('https://example.com/1', 50);
       const promise2 = bridge.crawl('https://example.com/2', 1000);
 
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
       // Resolve second immediately
       const req2 = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[1]?.[0] as string);
@@ -669,13 +740,18 @@ describe('PythonBridge', () => {
 
       const promise = bridge.crawl('https://example.com');
 
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
-      const request = JSON.parse(vi.mocked(newMockProcess.stdin.write).mock.calls[0]?.[0] as string);
-      newMockReadline.emit('line', JSON.stringify({
-        id: request.id,
-        result: { pages: [] },
-      }));
+      const request = JSON.parse(
+        vi.mocked(newMockProcess.stdin.write).mock.calls[0]?.[0] as string
+      );
+      newMockReadline.emit(
+        'line',
+        JSON.stringify({
+          id: request.id,
+          result: { pages: [] },
+        })
+      );
 
       await expect(promise).resolves.toBeDefined();
     });
@@ -694,7 +770,7 @@ describe('PythonBridge', () => {
       await bridge.start();
       const promise = bridge.crawl('https://example.com', 100);
 
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
 
       const request = JSON.parse(vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string);
       mockReadline.emit('line', JSON.stringify({ id: request.id }));

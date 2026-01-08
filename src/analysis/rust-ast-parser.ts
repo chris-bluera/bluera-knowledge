@@ -1,4 +1,3 @@
-import type { CodeNode, ImportInfo } from './ast-parser.js';
 import {
   parseRustCode,
   queryNodesByType,
@@ -9,8 +8,9 @@ import {
   getFunctionSignature,
   extractImportPath,
   type TreeSitterNode,
-  type TreeSitterTree
+  type TreeSitterTree,
 } from './tree-sitter-parser.js';
+import type { CodeNode, ImportInfo } from './ast-parser.js';
 
 /**
  * Parser for Rust code using tree-sitter
@@ -90,7 +90,7 @@ export class RustASTParser {
         imports.push({
           source,
           specifiers,
-          isType: false // Rust doesn't distinguish type-only imports at syntax level
+          isType: false, // Rust doesn't distinguish type-only imports at syntax level
         });
       }
 
@@ -132,7 +132,7 @@ export class RustASTParser {
         async,
         startLine,
         endLine,
-        signature
+        signature,
       });
     }
 
@@ -173,9 +173,7 @@ export class RustASTParser {
 
       // Get type parameters (generics) if present
       const typeParamsNode = getChildByFieldName(structNode, 'type_parameters');
-      const signature = typeParamsNode !== null
-        ? `${name}${typeParamsNode.text}`
-        : name;
+      const signature = typeParamsNode !== null ? `${name}${typeParamsNode.text}` : name;
 
       nodes.push({
         type: 'class',
@@ -184,7 +182,7 @@ export class RustASTParser {
         startLine,
         endLine,
         signature,
-        methods: [] // Will be populated by parseImplBlocks
+        methods: [], // Will be populated by parseImplBlocks
       });
     }
 
@@ -211,9 +209,7 @@ export class RustASTParser {
 
       // Get type parameters (generics) if present
       const typeParamsNode = getChildByFieldName(traitNode, 'type_parameters');
-      const signature = typeParamsNode !== null
-        ? `${name}${typeParamsNode.text}`
-        : name;
+      const signature = typeParamsNode !== null ? `${name}${typeParamsNode.text}` : name;
 
       // Extract trait methods
       const methods = this.extractTraitMethods(traitNode);
@@ -225,7 +221,7 @@ export class RustASTParser {
         startLine,
         endLine,
         signature,
-        methods
+        methods,
       });
     }
 
@@ -252,9 +248,7 @@ export class RustASTParser {
 
       // Get the full type alias definition
       const valueNode = getChildByFieldName(typeNode, 'type');
-      const signature = valueNode !== null
-        ? `${name} = ${valueNode.text}`
-        : name;
+      const signature = valueNode !== null ? `${name} = ${valueNode.text}` : name;
 
       nodes.push({
         type: 'type',
@@ -262,7 +256,7 @@ export class RustASTParser {
         exported,
         startLine,
         endLine,
-        signature
+        signature,
       });
     }
 
@@ -289,9 +283,7 @@ export class RustASTParser {
 
       // Get type annotation
       const typeNode = getChildByFieldName(constNode, 'type');
-      const signature = typeNode !== null
-        ? `${name}: ${typeNode.text}`
-        : name;
+      const signature = typeNode !== null ? `${name}: ${typeNode.text}` : name;
 
       nodes.push({
         type: 'const',
@@ -299,7 +291,7 @@ export class RustASTParser {
         exported,
         startLine,
         endLine,
-        signature
+        signature,
       });
     }
 
@@ -325,11 +317,9 @@ export class RustASTParser {
       const methods = this.extractImplMethods(implNode);
 
       // Find the corresponding struct and attach methods
-      const structNode = nodes.find(
-        node => node.type === 'class' && node.name === typeName
-      );
+      const structNode = nodes.find((node) => node.type === 'class' && node.name === typeName);
 
-      if (structNode !== undefined && structNode.methods !== undefined) {
+      if (structNode?.methods !== undefined) {
         structNode.methods.push(...methods);
       }
     }
@@ -379,7 +369,7 @@ export class RustASTParser {
         async,
         signature,
         startLine,
-        endLine
+        endLine,
       });
     }
 
@@ -430,7 +420,7 @@ export class RustASTParser {
         async,
         signature,
         startLine,
-        endLine
+        endLine,
       });
     }
 
@@ -459,7 +449,7 @@ export class RustASTParser {
     if (scopedMatch !== null) {
       const source = scopedMatch[1] ?? '';
       const specifiersStr = scopedMatch[2] ?? '';
-      const specifiers = specifiersStr.split(',').map(s => s.trim());
+      const specifiers = specifiersStr.split(',').map((s) => s.trim());
       return { source, specifiers };
     }
 

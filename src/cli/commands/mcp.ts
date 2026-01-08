@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import type { GlobalOptions } from '../program.js';
 import { runMCPServer } from '../../mcp/server.js';
+import type { GlobalOptions } from '../program.js';
 
 export function createMCPCommand(getOptions: () => GlobalOptions): Command {
   const mcp = new Command('mcp')
@@ -10,7 +10,7 @@ export function createMCPCommand(getOptions: () => GlobalOptions): Command {
 
       await runMCPServer({
         dataDir: opts.dataDir,
-        config: opts.config
+        config: opts.config,
       });
     });
 

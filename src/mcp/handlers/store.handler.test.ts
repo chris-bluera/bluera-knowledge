@@ -4,7 +4,7 @@ import {
   handleGetStoreInfo,
   handleCreateStore,
   handleIndexStore,
-  handleDeleteStore
+  handleDeleteStore,
 } from './store.handler.js';
 import type { HandlerContext } from '../types.js';
 import type {
@@ -12,7 +12,7 @@ import type {
   GetStoreInfoArgs,
   CreateStoreArgs,
   IndexStoreArgs,
-  DeleteStoreArgs
+  DeleteStoreArgs,
 } from '../schemas/index.js';
 import { StoreService } from '../../services/store.service.js';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
@@ -21,7 +21,7 @@ import { tmpdir } from 'os';
 
 // Mock the worker spawn function
 vi.mock('../../workers/spawn-worker.js', () => ({
-  spawnBackgroundWorker: vi.fn()
+  spawnBackgroundWorker: vi.fn(),
 }));
 
 import { spawnBackgroundWorker } from '../../workers/spawn-worker.js';
@@ -40,10 +40,10 @@ describe('store.handler', () => {
       services: {
         store: storeService,
         lance: {
-          deleteStore: vi.fn().mockResolvedValue(undefined)
-        }
+          deleteStore: vi.fn().mockResolvedValue(undefined),
+        },
       } as any,
-      options: { dataDir: tempDir }
+      options: { dataDir: tempDir },
     };
 
     mockSpawnBackgroundWorker.mockClear();
@@ -63,13 +63,13 @@ describe('store.handler', () => {
         name: 'store1',
         type: 'file',
         path: path1,
-        description: 'Test store 1'
+        description: 'Test store 1',
       });
       await storeService.create({
         name: 'store2',
         type: 'file',
         path: path2,
-        description: 'Test store 2'
+        description: 'Test store 2',
       });
 
       const args: ListStoresArgs = {};
@@ -88,13 +88,13 @@ describe('store.handler', () => {
         name: 'file-store',
         type: 'file',
         path: tempDir,
-        description: 'File store'
+        description: 'File store',
       });
       await storeService.create({
         name: 'repo-store',
         type: 'repo',
         url: 'https://github.com/test/repo',
-        description: 'Repo store'
+        description: 'Repo store',
       });
 
       const args: ListStoresArgs = { type: 'file' };
@@ -110,7 +110,7 @@ describe('store.handler', () => {
         name: 'test-store',
         type: 'file',
         path: tempDir,
-        description: 'Test description'
+        description: 'Test description',
       });
 
       const args: ListStoresArgs = {};
@@ -132,7 +132,7 @@ describe('store.handler', () => {
         name: 'test-store',
         type: 'file',
         path: tempDir,
-        description: 'Test store'
+        description: 'Test store',
       });
 
       const args: GetStoreInfoArgs = { store: createResult.data.id };
@@ -148,7 +148,7 @@ describe('store.handler', () => {
         name: 'test-store',
         type: 'file',
         path: tempDir,
-        description: 'Test store'
+        description: 'Test store',
       });
 
       const args: GetStoreInfoArgs = { store: 'test-store' };
@@ -163,7 +163,7 @@ describe('store.handler', () => {
         name: 'file-store',
         type: 'file',
         path: tempDir,
-        description: 'Test description'
+        description: 'Test description',
       });
 
       const args: GetStoreInfoArgs = { store: 'file-store' };
@@ -183,9 +183,9 @@ describe('store.handler', () => {
     it('should throw if store not found', async () => {
       const args: GetStoreInfoArgs = { store: 'nonexistent' };
 
-      await expect(
-        handleGetStoreInfo(args, mockContext)
-      ).rejects.toThrow('Store not found: nonexistent');
+      await expect(handleGetStoreInfo(args, mockContext)).rejects.toThrow(
+        'Store not found: nonexistent'
+      );
     });
   });
 
@@ -198,7 +198,7 @@ describe('store.handler', () => {
         name: 'new-store',
         type: 'file',
         source: sourcePath,
-        description: 'New test store'
+        description: 'New test store',
       };
 
       const result = await handleCreateStore(args, mockContext);
@@ -219,16 +219,13 @@ describe('store.handler', () => {
       const args: CreateStoreArgs = {
         name: 'worker-test',
         type: 'file',
-        source: sourcePath
+        source: sourcePath,
       };
 
       const result = await handleCreateStore(args, mockContext);
       const data = JSON.parse(result.content[0].text);
 
-      expect(mockSpawnBackgroundWorker).toHaveBeenCalledWith(
-        data.job.id,
-        tempDir
-      );
+      expect(mockSpawnBackgroundWorker).toHaveBeenCalledWith(data.job.id, tempDir);
 
       rmSync(sourcePath, { recursive: true, force: true });
     });
@@ -239,17 +236,15 @@ describe('store.handler', () => {
         type: 'repo',
         source: 'https://github.com/test/repo.git',
         branch: 'main',
-        description: 'Git repo store'
+        description: 'Git repo store',
       };
 
       // This will fail to clone, but should still create the store record
-      await expect(
-        handleCreateStore(args, mockContext)
-      ).rejects.toThrow(/Git clone failed/);
+      await expect(handleCreateStore(args, mockContext)).rejects.toThrow(/Git clone failed/);
 
       // Verify store was NOT created since clone failed
       const stores = await storeService.list();
-      const found = stores.find(s => s.name === 'repo-store');
+      const found = stores.find((s) => s.name === 'repo-store');
       expect(found).toBeUndefined();
     });
 
@@ -257,13 +252,11 @@ describe('store.handler', () => {
       const httpArgs: CreateStoreArgs = {
         name: 'http-store',
         type: 'repo',
-        source: 'http://github.com/test/repo'
+        source: 'http://github.com/test/repo',
       };
 
       // Will fail to clone, which is expected
-      await expect(
-        handleCreateStore(httpArgs, mockContext)
-      ).rejects.toThrow(/Git clone failed/);
+      await expect(handleCreateStore(httpArgs, mockContext)).rejects.toThrow(/Git clone failed/);
     });
 
     it('should reject store with nonexistent path', async () => {
@@ -271,7 +264,7 @@ describe('store.handler', () => {
       const args: CreateStoreArgs = {
         name: 'bad-store',
         type: 'file',
-        source: '/nonexistent/path/that/does/not/exist'
+        source: '/nonexistent/path/that/does/not/exist',
       };
 
       await expect(handleCreateStore(args, mockContext)).rejects.toThrow(
@@ -286,7 +279,7 @@ describe('store.handler', () => {
         name: 'index-test',
         type: 'file',
         path: tempDir,
-        description: 'Test indexing'
+        description: 'Test indexing',
       });
 
       const args: IndexStoreArgs = { store: createResult.data.id };
@@ -304,17 +297,14 @@ describe('store.handler', () => {
       const createResult = await storeService.create({
         name: 'index-worker-test',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       const args: IndexStoreArgs = { store: createResult.data.id };
       const result = await handleIndexStore(args, mockContext);
       const data = JSON.parse(result.content[0].text);
 
-      expect(mockSpawnBackgroundWorker).toHaveBeenCalledWith(
-        data.job.id,
-        tempDir
-      );
+      expect(mockSpawnBackgroundWorker).toHaveBeenCalledWith(data.job.id, tempDir);
     });
 
     it('should work with store name', async () => {
@@ -322,7 +312,7 @@ describe('store.handler', () => {
         name: 'named-store',
         type: 'file',
         path: tempDir,
-        description: 'Test'
+        description: 'Test',
       });
 
       const args: IndexStoreArgs = { store: 'named-store' };
@@ -335,9 +325,9 @@ describe('store.handler', () => {
     it('should throw if store not found', async () => {
       const args: IndexStoreArgs = { store: 'nonexistent' };
 
-      await expect(
-        handleIndexStore(args, mockContext)
-      ).rejects.toThrow('Store not found: nonexistent');
+      await expect(handleIndexStore(args, mockContext)).rejects.toThrow(
+        'Store not found: nonexistent'
+      );
     });
   });
 
@@ -346,7 +336,7 @@ describe('store.handler', () => {
       await storeService.create({
         name: 'delete-test',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       const args: DeleteStoreArgs = { store: 'delete-test' };
@@ -359,14 +349,14 @@ describe('store.handler', () => {
 
       // Verify store is actually deleted
       const stores = await storeService.list();
-      expect(stores.find(s => s.name === 'delete-test')).toBeUndefined();
+      expect(stores.find((s) => s.name === 'delete-test')).toBeUndefined();
     });
 
     it('should delete store by ID', async () => {
       const createResult = await storeService.create({
         name: 'delete-by-id',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       const args: DeleteStoreArgs = { store: createResult.data.id };
@@ -381,7 +371,7 @@ describe('store.handler', () => {
       const createResult = await storeService.create({
         name: 'lance-delete-test',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       const args: DeleteStoreArgs = { store: 'lance-delete-test' };
@@ -393,16 +383,16 @@ describe('store.handler', () => {
     it('should throw if store not found', async () => {
       const args: DeleteStoreArgs = { store: 'nonexistent' };
 
-      await expect(
-        handleDeleteStore(args, mockContext)
-      ).rejects.toThrow('Store not found: nonexistent');
+      await expect(handleDeleteStore(args, mockContext)).rejects.toThrow(
+        'Store not found: nonexistent'
+      );
     });
 
     it('should include store type in response', async () => {
       await storeService.create({
         name: 'type-test',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       const args: DeleteStoreArgs = { store: 'type-test' };
@@ -411,6 +401,5 @@ describe('store.handler', () => {
       const data = JSON.parse(result.content[0].text);
       expect(data.store.type).toBe('file');
     });
-
   });
 });

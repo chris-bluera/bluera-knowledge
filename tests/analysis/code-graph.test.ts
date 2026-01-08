@@ -10,15 +10,15 @@ describe('CodeGraph', () => {
         name: 'validateToken',
         exported: true,
         startLine: 1,
-        endLine: 5
+        endLine: 5,
       },
       {
         type: 'function',
         name: 'parseToken',
         exported: false,
         startLine: 7,
-        endLine: 10
-      }
+        endLine: 10,
+      },
     ];
 
     const graph = new CodeGraph();
@@ -52,9 +52,9 @@ export function handler(req) {
     graph.analyzeCallRelationships(code, 'src/handler.ts', 'handler');
 
     const edges = graph.getEdges('src/handler.ts:handler');
-    const callEdges = edges.filter(e => e.type === 'calls');
+    const callEdges = edges.filter((e) => e.type === 'calls');
 
     expect(callEdges.length).toBeGreaterThan(0);
-    expect(callEdges.some(e => e.to.includes('validateToken'))).toBe(true);
+    expect(callEdges.some((e) => e.to.includes('validateToken'))).toBe(true);
   });
 });

@@ -85,10 +85,15 @@ describe('ClaudeClient', () => {
 
       // Simulate successful response
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/page1', 'https://example.com/page2'],
-          reasoning: 'Found documentation pages',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/page1', 'https://example.com/page2'],
+              reasoning: 'Found documentation pages',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -101,10 +106,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all docs');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/page1'],
-          reasoning: 'Test',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/page1'],
+              reasoning: 'Test',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -121,7 +131,7 @@ describe('ClaudeClient', () => {
         ]),
         expect.objectContaining({
           stdio: ['pipe', 'pipe', 'pipe'],
-        }),
+        })
       );
     });
 
@@ -129,16 +139,23 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html><body>Test</body></html>', 'Find tutorials');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/tutorial'],
-          reasoning: 'Found tutorial',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/tutorial'],
+              reasoning: 'Found tutorial',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
       await promise;
 
-      expect(mockProcess.stdin.write).toHaveBeenCalledWith(expect.stringContaining('Find tutorials'));
+      expect(mockProcess.stdin.write).toHaveBeenCalledWith(
+        expect.stringContaining('Find tutorials')
+      );
       expect(mockProcess.stdin.end).toHaveBeenCalled();
     });
 
@@ -146,9 +163,14 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          reasoning: 'No URLs found',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              reasoning: 'No URLs found',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -159,10 +181,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: [],
-          reasoning: 'No matching pages',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: [],
+              reasoning: 'No matching pages',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -173,9 +200,14 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/page1'],
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/page1'],
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -186,10 +218,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/page1', 123, null],
-          reasoning: 'Mixed types',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/page1', 123, null],
+              reasoning: 'Mixed types',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -223,10 +260,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls(longHtml, 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/page1'],
-          reasoning: 'Test',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/page1'],
+              reasoning: 'Test',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -242,10 +284,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls(shortHtml, 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/page1'],
-          reasoning: 'Test',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/page1'],
+              reasoning: 'Test',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -259,7 +306,10 @@ describe('ClaudeClient', () => {
 
   describe('extractContent', () => {
     it('should successfully extract content', async () => {
-      const promise = client.extractContent('# Documentation\n\nPricing: $10/month', 'Extract pricing info');
+      const promise = client.extractContent(
+        '# Documentation\n\nPricing: $10/month',
+        'Extract pricing info'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('The pricing is $10/month\n'));
@@ -285,7 +335,7 @@ describe('ClaudeClient', () => {
         ['-p'],
         expect.objectContaining({
           stdio: ['pipe', 'pipe', 'pipe'],
-        }),
+        })
       );
     });
 
@@ -515,12 +565,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(`
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(`
           {
             "urls": ["https://example.com/page1"],
             "reasoning": "Found page"
           }
-        `));
+        `)
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -556,10 +609,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: 'not an array',
-          reasoning: 'Test',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: 'not an array',
+              reasoning: 'Test',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -570,10 +628,15 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: ['https://example.com/page1'],
-          reasoning: 123,
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://example.com/page1'],
+              reasoning: 123,
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 
@@ -584,14 +647,19 @@ describe('ClaudeClient', () => {
       const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
 
       setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from(JSON.stringify({
-          urls: [
-            'https://example.com/page1',
-            'https://example.com/page2',
-            'https://example.com/page3',
-          ],
-          reasoning: 'Found 3 documentation pages',
-        })));
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: [
+                'https://example.com/page1',
+                'https://example.com/page2',
+                'https://example.com/page3',
+              ],
+              reasoning: 'Found 3 documentation pages',
+            })
+          )
+        );
         mockProcess.emit('close', 0);
       }, 10);
 

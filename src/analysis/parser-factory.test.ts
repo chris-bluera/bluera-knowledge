@@ -13,7 +13,7 @@ describe('ParserFactory', () => {
       expect(nodes[0]).toMatchObject({
         type: 'function',
         name: 'hello',
-        exported: true
+        exported: true,
       });
     });
 
@@ -35,7 +35,7 @@ describe('ParserFactory', () => {
       expect(nodes[0]).toMatchObject({
         type: 'function',
         name: 'add',
-        exported: true
+        exported: true,
       });
     });
 
@@ -57,13 +57,13 @@ describe('ParserFactory', () => {
             exported: true,
             startLine: 1,
             endLine: 2,
-            signature: 'def greet(name: str) -> str'
-          }
-        ]
+            signature: 'def greet(name: str) -> str',
+          },
+        ],
       };
 
       const mockBridge = {
-        parsePython: vi.fn().mockResolvedValue(mockResult)
+        parsePython: vi.fn().mockResolvedValue(mockResult),
       } as unknown as PythonBridge;
 
       const factory = new ParserFactory(mockBridge);
@@ -75,7 +75,7 @@ describe('ParserFactory', () => {
       expect(nodes[0]).toMatchObject({
         type: 'function',
         name: 'greet',
-        exported: true
+        exported: true,
       });
     });
 
@@ -97,7 +97,7 @@ describe('ParserFactory', () => {
       expect(nodes[0]).toMatchObject({
         type: 'function',
         name: 'calculate',
-        exported: true
+        exported: true,
       });
     });
 
@@ -110,7 +110,7 @@ describe('ParserFactory', () => {
       expect(nodes[0]).toMatchObject({
         type: 'function',
         name: 'Add',
-        exported: true
+        exported: true,
       });
     });
 

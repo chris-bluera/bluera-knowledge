@@ -1,11 +1,11 @@
-import type { ToolHandler, ToolResponse } from '../types.js';
-import type { SearchArgs, GetFullContextArgs } from '../schemas/index.js';
-import { SearchArgsSchema, GetFullContextArgsSchema } from '../schemas/index.js';
-import type { SearchQuery, DocumentId, StoreId } from '../../types/index.js';
-import { LRUCache } from '../cache.js';
-import type { SearchResult } from '../../types/search.js';
 import { createLogger, summarizePayload } from '../../logging/index.js';
 import { estimateTokens, formatTokenCount } from '../../services/token.service.js';
+import { LRUCache } from '../cache.js';
+import { SearchArgsSchema, GetFullContextArgsSchema } from '../schemas/index.js';
+import type { SearchQuery, DocumentId, StoreId } from '../../types/index.js';
+import type { SearchResult } from '../../types/search.js';
+import type { SearchArgs, GetFullContextArgs } from '../schemas/index.js';
+import type { ToolHandler, ToolResponse } from '../types.js';
 
 const logger = createLogger('mcp-search');
 
@@ -26,27 +26,33 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
   // Validate arguments with Zod
   const validated = SearchArgsSchema.parse(args);
 
-  logger.info({
-    query: validated.query,
-    stores: validated.stores,
-    detail: validated.detail,
-    limit: validated.limit,
-    intent: validated.intent,
-  }, 'Search started');
+  logger.info(
+    {
+      query: validated.query,
+      stores: validated.stores,
+      detail: validated.detail,
+      limit: validated.limit,
+      intent: validated.intent,
+    },
+    'Search started'
+  );
 
   const { services } = context;
 
   // Get all stores if none specified, resolve store names to IDs
-  const storeIds: StoreId[] = validated.stores !== undefined
-    ? await Promise.all(validated.stores.map(async (s) => {
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        const store = await services.store.getByIdOrName(s as StoreId);
-        if (!store) {
-          throw new Error(`Store not found: ${s}`);
-        }
-        return store.id;
-      }))
-    : (await services.store.list()).map(s => s.id);
+  const storeIds: StoreId[] =
+    validated.stores !== undefined
+      ? await Promise.all(
+          validated.stores.map(async (s) => {
+            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+            const store = await services.store.getByIdOrName(s as StoreId);
+            if (!store) {
+              throw new Error(`Store not found: ${s}`);
+            }
+            return store.id;
+          })
+        )
+      : (await services.store.list()).map((s) => s.id);
 
   // Initialize stores with error handling
   try {
@@ -65,7 +71,7 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
     stores: storeIds,
     mode: 'hybrid',
     limit: validated.limit,
-    detail: validated.detail
+    detail: validated.detail,
   };
 
   const results = await services.search.search(searchQuery);
@@ -76,29 +82,35 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
   }
 
   // Add repoRoot to results for cloned repos
-  const enhancedResults = await Promise.all(results.results.map(async (r) => {
-    const storeId = r.metadata.storeId;
-    const store = await services.store.getByIdOrName(storeId);
+  const enhancedResults = await Promise.all(
+    results.results.map(async (r) => {
+      const storeId = r.metadata.storeId;
+      const store = await services.store.getByIdOrName(storeId);
 
-    return {
-      id: r.id,
-      score: r.score,
-      summary: {
-        ...r.summary,
-        storeName: store?.name,
-        repoRoot: store !== undefined && store.type === 'repo' ? store.path : undefined
-      },
-      context: r.context,
-      full: r.full
-    };
-  }));
+      return {
+        id: r.id,
+        score: r.score,
+        summary: {
+          ...r.summary,
+          storeName: store?.name,
+          repoRoot: store?.type === 'repo' ? store.path : undefined,
+        },
+        context: r.context,
+        full: r.full,
+      };
+    })
+  );
 
-  const responseJson = JSON.stringify({
-    results: enhancedResults,
-    totalResults: results.totalResults,
-    mode: results.mode,
-    timeMs: results.timeMs
-  }, null, 2);
+  const responseJson = JSON.stringify(
+    {
+      results: enhancedResults,
+      totalResults: results.totalResults,
+      mode: results.mode,
+      timeMs: results.timeMs,
+    },
+    null,
+    2
+  );
 
   // Calculate actual token estimate based on response content
   const responseTokens = estimateTokens(responseJson);
@@ -107,21 +119,24 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
   const header = `Search: "${validated.query}" | Results: ${String(results.totalResults)} | ${formatTokenCount(responseTokens)} tokens | ${String(results.timeMs)}ms\n\n`;
 
   // Log the complete MCP response that will be sent to Claude Code
-  logger.info({
-    query: validated.query,
-    totalResults: results.totalResults,
-    responseTokens,
-    timeMs: results.timeMs,
-    ...summarizePayload(responseJson, 'mcp-response', validated.query),
-  }, 'Search complete - context sent to Claude Code');
+  logger.info(
+    {
+      query: validated.query,
+      totalResults: results.totalResults,
+      responseTokens,
+      timeMs: results.timeMs,
+      ...summarizePayload(responseJson, 'mcp-response', validated.query),
+    },
+    'Search complete - context sent to Claude Code'
+  );
 
   return {
     content: [
       {
         type: 'text',
-        text: header + responseJson
-      }
-    ]
+        text: header + responseJson,
+      },
+    ],
   };
 };
 
@@ -147,35 +162,40 @@ export const handleGetFullContext: ToolHandler<GetFullContextArgs> = async (
   const cachedResult = resultCache.get(resultId);
 
   if (!cachedResult) {
-    throw new Error(
-      `Result not found in cache: ${resultId}. Run a search first to cache results.`
-    );
+    throw new Error(`Result not found in cache: ${resultId}. Run a search first to cache results.`);
   }
 
   // If result already has full context, return it
   if (cachedResult.full) {
-    const responseJson = JSON.stringify({
-      id: cachedResult.id,
-      score: cachedResult.score,
-      summary: cachedResult.summary,
-      context: cachedResult.context,
-      full: cachedResult.full
-    }, null, 2);
+    const responseJson = JSON.stringify(
+      {
+        id: cachedResult.id,
+        score: cachedResult.score,
+        summary: cachedResult.summary,
+        context: cachedResult.context,
+        full: cachedResult.full,
+      },
+      null,
+      2
+    );
 
-    logger.info({
-      resultId,
-      cached: true,
-      hasFullContext: true,
-      ...summarizePayload(responseJson, 'mcp-full-context', resultId),
-    }, 'Full context retrieved from cache');
+    logger.info(
+      {
+        resultId,
+        cached: true,
+        hasFullContext: true,
+        ...summarizePayload(responseJson, 'mcp-full-context', resultId),
+      },
+      'Full context retrieved from cache'
+    );
 
     return {
       content: [
         {
           type: 'text',
-          text: responseJson
-        }
-      ]
+          text: responseJson,
+        },
+      ],
     };
   }
 
@@ -194,13 +214,13 @@ export const handleGetFullContext: ToolHandler<GetFullContextArgs> = async (
     stores: [store.id],
     mode: 'hybrid',
     limit: 1,
-    detail: 'full'
+    detail: 'full',
   };
 
   const results = await services.search.search(searchQuery);
 
   // Find matching result by ID
-  const fullResult = results.results.find(r => r.id === resultId);
+  const fullResult = results.results.find((r) => r.id === resultId);
 
   if (!fullResult) {
     // Return cached result even if we couldn't get full detail
@@ -208,42 +228,53 @@ export const handleGetFullContext: ToolHandler<GetFullContextArgs> = async (
       content: [
         {
           type: 'text',
-          text: JSON.stringify({
-            id: cachedResult.id,
-            score: cachedResult.score,
-            summary: cachedResult.summary,
-            context: cachedResult.context,
-            warning: 'Could not retrieve full context, returning cached minimal result'
-          }, null, 2)
-        }
-      ]
+          text: JSON.stringify(
+            {
+              id: cachedResult.id,
+              score: cachedResult.score,
+              summary: cachedResult.summary,
+              context: cachedResult.context,
+              warning: 'Could not retrieve full context, returning cached minimal result',
+            },
+            null,
+            2
+          ),
+        },
+      ],
     };
   }
 
   // Update cache with full result
   resultCache.set(resultId, fullResult);
 
-  const responseJson = JSON.stringify({
-    id: fullResult.id,
-    score: fullResult.score,
-    summary: fullResult.summary,
-    context: fullResult.context,
-    full: fullResult.full
-  }, null, 2);
+  const responseJson = JSON.stringify(
+    {
+      id: fullResult.id,
+      score: fullResult.score,
+      summary: fullResult.summary,
+      context: fullResult.context,
+      full: fullResult.full,
+    },
+    null,
+    2
+  );
 
-  logger.info({
-    resultId,
-    cached: false,
-    hasFullContext: true,
-    ...summarizePayload(responseJson, 'mcp-full-context', resultId),
-  }, 'Full context retrieved via re-query');
+  logger.info(
+    {
+      resultId,
+      cached: false,
+      hasFullContext: true,
+      ...summarizePayload(responseJson, 'mcp-full-context', resultId),
+    },
+    'Full context retrieved via re-query'
+  );
 
   return {
     content: [
       {
         type: 'text',
-        text: responseJson
-      }
-    ]
+        text: responseJson,
+      },
+    ],
   };
 };

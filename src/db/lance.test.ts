@@ -111,7 +111,7 @@ describe('LanceStore', () => {
       const results = await store.search(storeId, new Array(384).fill(1.0), 10, 0.9);
 
       // Should filter out low-similarity results
-      expect(results.every(r => r.score >= 0.9)).toBe(true);
+      expect(results.every((r) => r.score >= 0.9)).toBe(true);
     });
 
     it('sets cosine distance type when threshold is provided', async () => {
@@ -466,14 +466,14 @@ describe('LanceStore', () => {
       await store.addDocuments(multiDelStoreId, docs);
       await store.deleteDocuments(multiDelStoreId, [
         createDocumentId('del-1'),
-        createDocumentId('del-2')
+        createDocumentId('del-2'),
       ]);
 
       const results = await store.search(multiDelStoreId, new Array(384).fill(0.2), 10);
-      const deletedIds = results.filter(r => r.id === 'del-1' || r.id === 'del-2');
+      const deletedIds = results.filter((r) => r.id === 'del-1' || r.id === 'del-2');
       expect(deletedIds.length).toBe(0);
 
-      const kept = results.find(r => r.id === 'keep-3');
+      const kept = results.find((r) => r.id === 'keep-3');
       expect(kept).toBeDefined();
     });
   });

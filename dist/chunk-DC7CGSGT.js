@@ -3,11 +3,222 @@ import {
   createLogger,
   summarizePayload,
   truncateForLog
-} from "./chunk-RF4ITWO5.js";
+} from "./chunk-WFNPNAAP.js";
 
 // src/crawl/intelligent-crawler.ts
 import { EventEmitter } from "events";
 import axios from "axios";
+
+// src/crawl/article-converter.ts
+import { extractFromHtml } from "@extractus/article-extractor";
+import TurndownService from "turndown";
+import { gfm } from "turndown-plugin-gfm";
+
+// src/crawl/markdown-utils.ts
+import * as cheerio from "cheerio";
+function detectLanguageFromClass(className) {
+  if (className === void 0 || className === "") return "";
+  const patterns = [
+    /language-(\w+)/i,
+    /lang-(\w+)/i,
+    /highlight-(\w+)/i,
+    /hljs\s+(\w+)/i,
+    /^(\w+)$/i
+  ];
+  for (const pattern of patterns) {
+    const match = className.match(pattern);
+    if (match?.[1] !== void 0) {
+      const lang = match[1].toLowerCase();
+      if (!["hljs", "highlight", "code", "pre", "block", "inline"].includes(lang)) {
+        return lang;
+      }
+    }
+  }
+  return "";
+}
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function preprocessHtmlForCodeBlocks(html) {
+  if (!html || typeof html !== "string") return html;
+  const $ = cheerio.load(html);
+  $("table").each((_i, table) => {
+    const $table = $(table);
+    const $codeCell = $table.find("td pre code, td div pre code");
+    if ($codeCell.length > 0) {
+      const $pre = $codeCell.closest("pre");
+      const $code = $codeCell.first();
+      let language = detectLanguageFromClass($code.attr("class"));
+      if (!language) {
+        language = detectLanguageFromClass($pre.attr("class"));
+      }
+      const codeText = $code.text();
+      const cleanPre = `<pre><code class="language-${language}">${escapeHtml(codeText)}</code></pre>`;
+      $table.replaceWith(cleanPre);
+    }
+  });
+  $("pre a, code a").each((_i, anchor) => {
+    const $anchor = $(anchor);
+    if (!$anchor.text().trim()) {
+      $anchor.remove();
+    }
+  });
+  $("pre span, code span").each((_i, span) => {
+    const $span = $(span);
+    $span.replaceWith($span.text());
+  });
+  $("pre").each((_i, pre) => {
+    const $pre = $(pre);
+    if ($pre.find("code").length === 0) {
+      const text = $pre.text();
+      const lang = detectLanguageFromClass($pre.attr("class"));
+      $pre.html(`<code class="language-${lang}">${escapeHtml(text)}</code>`);
+    }
+  });
+  return $.html();
+}
+function cleanupMarkdown(markdown) {
+  if (!markdown) return "";
+  const trimmed = markdown.trim();
+  if (trimmed === "") return "";
+  let result = trimmed;
+  result = result.replace(/^(#{1,6})\s*\n\n+(\S[^\n]*)/gm, "$1 $2");
+  result = result.replace(/(#{1,6})\s{2,}/g, "$1 ");
+  result = result.replace(/\*\s+\[\s*([^\n]+?)\s*\]\(([^)]+)\)/g, "* [$1]($2)");
+  result = result.replace(/([^\n])\n\n+(#\s)/g, "$1\n$2");
+  result = result.replace(/(Some text\.)\n(##\s)/g, "$1\n\n$2");
+  result = result.replace(/(#{1,6}\s[^\n]+)\n([^#\n])/g, "$1\n\n$2");
+  result = result.replace(/(#{1,6}\s[^\n]+)\n(#{1,6}\s)/g, "$1\n\n$2");
+  result = result.replace(/(\* Item 1)\n\n+(\* Item 2)\n\n+(\* Item 3)/g, "$1\n$2\n$3");
+  result = result.replace(/(^\*\s[^\n]+)\n{2,}(^\*\s)/gm, "$1\n$2");
+  result = result.replace(/\n{3,}/g, "\n\n");
+  result = result.replace(/(```[^\n]*)\n\n+/g, "$1\n");
+  result = result.replace(/\n\n+```/g, "\n```");
+  result = result.replace(/\*\s*\n\s*\*/g, "*");
+  result = result.replace(/<\/?table[^>]*>/gi, "");
+  result = result.replace(/<\/?tbody[^>]*>/gi, "");
+  result = result.replace(/<\/?thead[^>]*>/gi, "");
+  result = result.replace(/<\/?tr[^>]*>/gi, "");
+  result = result.replace(/<\/?td[^>]*>/gi, "");
+  result = result.replace(/<\/?th[^>]*>/gi, "");
+  result = result.replace(/<a[^>]*><\/a>/gi, "");
+  result = result.replace(/<\/?span[^>]*>/gi, "");
+  result = result.replace(/<\/?div[^>]*>/gi, "");
+  result = result.replace(/<\/?pre[^>]*>/gi, "");
+  result = result.replace(/<\/?code[^>]*>/gi, "");
+  result = result.replace(/\[\]\([^)]*\)/g, "");
+  result = result.replace(/\[\]\([^)]*#__codelineno-[^)]+\)/g, "");
+  result = result.replace(/\[?\]?\([^)]*#__codelineno-[^)]*\)/g, "");
+  result = result.replace(/&amp;lt;/g, "&lt;");
+  result = result.replace(/&amp;gt;/g, "&gt;");
+  result = result.replace(/&amp;amp;/g, "&amp;");
+  result = result.replace(/\n{3,}/g, "\n\n");
+  result = result.replace(/[ \t]+\n/g, "\n");
+  return result;
+}
+
+// src/crawl/article-converter.ts
+var logger = createLogger("article-converter");
+async function convertHtmlToMarkdown(html, url) {
+  logger.debug({ url, htmlLength: html.length }, "Starting HTML conversion");
+  try {
+    let articleHtml;
+    let title;
+    try {
+      const article = await extractFromHtml(html, url);
+      if (article?.content !== void 0 && article.content !== "") {
+        articleHtml = article.content;
+        title = article.title !== void 0 && article.title !== "" ? article.title : void 0;
+        logger.debug(
+          {
+            url,
+            title,
+            extractedLength: articleHtml.length,
+            usedFullHtml: false
+          },
+          "Article content extracted"
+        );
+      } else {
+        articleHtml = html;
+        logger.debug(
+          { url, usedFullHtml: true },
+          "Article extraction returned empty, using full HTML"
+        );
+      }
+    } catch (extractError) {
+      articleHtml = html;
+      logger.debug(
+        {
+          url,
+          usedFullHtml: true,
+          error: extractError instanceof Error ? extractError.message : String(extractError)
+        },
+        "Article extraction failed, using full HTML"
+      );
+    }
+    const preprocessed = preprocessHtmlForCodeBlocks(articleHtml);
+    const turndownService = new TurndownService({
+      headingStyle: "atx",
+      // Use # style headings
+      codeBlockStyle: "fenced",
+      // Use ``` style code blocks
+      fence: "```",
+      emDelimiter: "*",
+      strongDelimiter: "**",
+      linkStyle: "inlined"
+    });
+    turndownService.use(gfm);
+    turndownService.addRule("headingsWithAnchors", {
+      filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
+      replacement(content, node) {
+        const level = Number(node.nodeName.charAt(1));
+        const hashes = "#".repeat(level);
+        const cleanContent = content.replace(/\[\]\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+        return cleanContent !== "" ? `
+
+${hashes} ${cleanContent}
+
+` : "";
+      }
+    });
+    const rawMarkdown = turndownService.turndown(preprocessed);
+    const markdown = cleanupMarkdown(rawMarkdown);
+    logger.debug(
+      {
+        url,
+        title,
+        rawMarkdownLength: rawMarkdown.length,
+        finalMarkdownLength: markdown.length
+      },
+      "HTML to markdown conversion complete"
+    );
+    logger.trace(
+      {
+        url,
+        markdownPreview: truncateForLog(markdown, 1e3)
+      },
+      "Markdown content preview"
+    );
+    return {
+      markdown,
+      ...title !== void 0 && { title },
+      success: true
+    };
+  } catch (error) {
+    logger.error(
+      {
+        url,
+        error: error instanceof Error ? error.message : String(error)
+      },
+      "HTML to markdown conversion failed"
+    );
+    return {
+      markdown: "",
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
 
 // src/crawl/claude-client.ts
 import { spawn, execSync } from "child_process";
@@ -150,9 +361,7 @@ ${this.truncateMarkdown(markdown, 1e5)}`;
           resolve(stdout.trim());
         } else {
           reject(
-            new Error(
-              `Claude CLI exited with code ${String(code)}${stderr ? `: ${stderr}` : ""}`
-            )
+            new Error(`Claude CLI exited with code ${String(code)}${stderr ? `: ${stderr}` : ""}`)
           );
         }
       });
@@ -171,212 +380,20 @@ ${this.truncateMarkdown(markdown, 1e5)}`;
    */
   truncateHtml(html, maxLength) {
     if (html.length <= maxLength) return html;
-    return html.substring(0, maxLength) + "\n\n[... HTML truncated ...]";
+    return `${html.substring(0, maxLength)}
+
+[... HTML truncated ...]`;
   }
   /**
    * Truncate markdown to a maximum length
    */
   truncateMarkdown(markdown, maxLength) {
     if (markdown.length <= maxLength) return markdown;
-    return markdown.substring(0, maxLength) + "\n\n[... content truncated ...]";
+    return `${markdown.substring(0, maxLength)}
+
+[... content truncated ...]`;
   }
 };
-
-// src/crawl/article-converter.ts
-import { extractFromHtml } from "@extractus/article-extractor";
-import TurndownService from "turndown";
-import { gfm } from "turndown-plugin-gfm";
-
-// src/crawl/markdown-utils.ts
-import * as cheerio from "cheerio";
-function detectLanguageFromClass(className) {
-  if (className === void 0 || className === "") return "";
-  const patterns = [
-    /language-(\w+)/i,
-    /lang-(\w+)/i,
-    /highlight-(\w+)/i,
-    /hljs\s+(\w+)/i,
-    /^(\w+)$/i
-  ];
-  for (const pattern of patterns) {
-    const match = className.match(pattern);
-    if (match?.[1] !== void 0) {
-      const lang = match[1].toLowerCase();
-      if (!["hljs", "highlight", "code", "pre", "block", "inline"].includes(lang)) {
-        return lang;
-      }
-    }
-  }
-  return "";
-}
-function escapeHtml(text) {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-function preprocessHtmlForCodeBlocks(html) {
-  if (!html || typeof html !== "string") return html;
-  const $ = cheerio.load(html);
-  $("table").each((_i, table) => {
-    const $table = $(table);
-    const $codeCell = $table.find("td pre code, td div pre code");
-    if ($codeCell.length > 0) {
-      const $pre = $codeCell.closest("pre");
-      const $code = $codeCell.first();
-      let language = detectLanguageFromClass($code.attr("class"));
-      if (!language) {
-        language = detectLanguageFromClass($pre.attr("class"));
-      }
-      const codeText = $code.text();
-      const cleanPre = `<pre><code class="language-${language}">${escapeHtml(codeText)}</code></pre>`;
-      $table.replaceWith(cleanPre);
-    }
-  });
-  $("pre a, code a").each((_i, anchor) => {
-    const $anchor = $(anchor);
-    if (!$anchor.text().trim()) {
-      $anchor.remove();
-    }
-  });
-  $("pre span, code span").each((_i, span) => {
-    const $span = $(span);
-    $span.replaceWith($span.text());
-  });
-  $("pre").each((_i, pre) => {
-    const $pre = $(pre);
-    if ($pre.find("code").length === 0) {
-      const text = $pre.text();
-      const lang = detectLanguageFromClass($pre.attr("class"));
-      $pre.html(`<code class="language-${lang}">${escapeHtml(text)}</code>`);
-    }
-  });
-  return $.html();
-}
-function cleanupMarkdown(markdown) {
-  if (!markdown) return "";
-  const trimmed = markdown.trim();
-  if (trimmed === "") return "";
-  let result = trimmed;
-  result = result.replace(/^(#{1,6})\s*\n\n+(\S[^\n]*)/gm, "$1 $2");
-  result = result.replace(/(#{1,6})\s{2,}/g, "$1 ");
-  result = result.replace(/\*\s+\[\s*([^\n]+?)\s*\]\(([^)]+)\)/g, "* [$1]($2)");
-  result = result.replace(/([^\n])\n\n+(#\s)/g, "$1\n$2");
-  result = result.replace(/(Some text\.)\n(##\s)/g, "$1\n\n$2");
-  result = result.replace(/(#{1,6}\s[^\n]+)\n([^#\n])/g, "$1\n\n$2");
-  result = result.replace(/(#{1,6}\s[^\n]+)\n(#{1,6}\s)/g, "$1\n\n$2");
-  result = result.replace(
-    /(\* Item 1)\n\n+(\* Item 2)\n\n+(\* Item 3)/g,
-    "$1\n$2\n$3"
-  );
-  result = result.replace(/(^\*\s[^\n]+)\n{2,}(^\*\s)/gm, "$1\n$2");
-  result = result.replace(/\n{3,}/g, "\n\n");
-  result = result.replace(/(```[^\n]*)\n\n+/g, "$1\n");
-  result = result.replace(/\n\n+```/g, "\n```");
-  result = result.replace(/\*\s*\n\s*\*/g, "*");
-  result = result.replace(/<\/?table[^>]*>/gi, "");
-  result = result.replace(/<\/?tbody[^>]*>/gi, "");
-  result = result.replace(/<\/?thead[^>]*>/gi, "");
-  result = result.replace(/<\/?tr[^>]*>/gi, "");
-  result = result.replace(/<\/?td[^>]*>/gi, "");
-  result = result.replace(/<\/?th[^>]*>/gi, "");
-  result = result.replace(/<a[^>]*><\/a>/gi, "");
-  result = result.replace(/<\/?span[^>]*>/gi, "");
-  result = result.replace(/<\/?div[^>]*>/gi, "");
-  result = result.replace(/<\/?pre[^>]*>/gi, "");
-  result = result.replace(/<\/?code[^>]*>/gi, "");
-  result = result.replace(/\[\]\([^)]*\)/g, "");
-  result = result.replace(/\[\]\([^)]*#__codelineno-[^)]+\)/g, "");
-  result = result.replace(/\[?\]?\([^)]*#__codelineno-[^)]*\)/g, "");
-  result = result.replace(/&amp;lt;/g, "&lt;");
-  result = result.replace(/&amp;gt;/g, "&gt;");
-  result = result.replace(/&amp;amp;/g, "&amp;");
-  result = result.replace(/\n{3,}/g, "\n\n");
-  result = result.replace(/[ \t]+\n/g, "\n");
-  return result;
-}
-
-// src/crawl/article-converter.ts
-var logger = createLogger("article-converter");
-async function convertHtmlToMarkdown(html, url) {
-  logger.debug({ url, htmlLength: html.length }, "Starting HTML conversion");
-  try {
-    let articleHtml;
-    let title;
-    try {
-      const article = await extractFromHtml(html, url);
-      if (article !== null && article.content !== void 0 && article.content !== "") {
-        articleHtml = article.content;
-        title = article.title !== void 0 && article.title !== "" ? article.title : void 0;
-        logger.debug({
-          url,
-          title,
-          extractedLength: articleHtml.length,
-          usedFullHtml: false
-        }, "Article content extracted");
-      } else {
-        articleHtml = html;
-        logger.debug({ url, usedFullHtml: true }, "Article extraction returned empty, using full HTML");
-      }
-    } catch (extractError) {
-      articleHtml = html;
-      logger.debug({
-        url,
-        usedFullHtml: true,
-        error: extractError instanceof Error ? extractError.message : String(extractError)
-      }, "Article extraction failed, using full HTML");
-    }
-    const preprocessed = preprocessHtmlForCodeBlocks(articleHtml);
-    const turndownService = new TurndownService({
-      headingStyle: "atx",
-      // Use # style headings
-      codeBlockStyle: "fenced",
-      // Use ``` style code blocks
-      fence: "```",
-      emDelimiter: "*",
-      strongDelimiter: "**",
-      linkStyle: "inlined"
-    });
-    turndownService.use(gfm);
-    turndownService.addRule("headingsWithAnchors", {
-      filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
-      replacement(content, node) {
-        const level = Number(node.nodeName.charAt(1));
-        const hashes = "#".repeat(level);
-        const cleanContent = content.replace(/\[\]\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
-        return cleanContent !== "" ? `
-
-${hashes} ${cleanContent}
-
-` : "";
-      }
-    });
-    const rawMarkdown = turndownService.turndown(preprocessed);
-    const markdown = cleanupMarkdown(rawMarkdown);
-    logger.debug({
-      url,
-      title,
-      rawMarkdownLength: rawMarkdown.length,
-      finalMarkdownLength: markdown.length
-    }, "HTML to markdown conversion complete");
-    logger.trace({
-      url,
-      markdownPreview: truncateForLog(markdown, 1e3)
-    }, "Markdown content preview");
-    return {
-      markdown,
-      ...title !== void 0 && { title },
-      success: true
-    };
-  } catch (error) {
-    logger.error({
-      url,
-      error: error instanceof Error ? error.message : String(error)
-    }, "HTML to markdown conversion failed");
-    return {
-      markdown: "",
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    };
-  }
-}
 
 // src/crawl/intelligent-crawler.ts
 var logger2 = createLogger("crawler");
@@ -396,20 +413,18 @@ var IntelligentCrawler = class extends EventEmitter {
    * Crawl a website with intelligent or simple mode
    */
   async *crawl(seedUrl, options = {}) {
-    const {
-      crawlInstruction,
-      extractInstruction,
-      maxPages = 50,
-      simple = false
-    } = options;
+    const { crawlInstruction, extractInstruction, maxPages = 50, simple = false } = options;
     this.visited.clear();
     this.stopped = false;
-    logger2.info({
-      seedUrl,
-      maxPages,
-      mode: simple ? "simple" : crawlInstruction !== void 0 && crawlInstruction !== "" ? "intelligent" : "simple",
-      hasExtractInstruction: extractInstruction !== void 0
-    }, "Starting crawl");
+    logger2.info(
+      {
+        seedUrl,
+        maxPages,
+        mode: simple ? "simple" : crawlInstruction !== void 0 && crawlInstruction !== "" ? "intelligent" : "simple",
+        hasExtractInstruction: extractInstruction !== void 0
+      },
+      "Starting crawl"
+    );
     const startProgress = {
       type: "start",
       pagesVisited: 0,
@@ -418,14 +433,23 @@ var IntelligentCrawler = class extends EventEmitter {
     this.emit("progress", startProgress);
     const useIntelligentMode = !simple && crawlInstruction !== void 0 && crawlInstruction !== "";
     if (useIntelligentMode) {
-      yield* this.crawlIntelligent(seedUrl, crawlInstruction, extractInstruction, maxPages, options.useHeadless ?? false);
+      yield* this.crawlIntelligent(
+        seedUrl,
+        crawlInstruction,
+        extractInstruction,
+        maxPages,
+        options.useHeadless ?? false
+      );
     } else {
       yield* this.crawlSimple(seedUrl, extractInstruction, maxPages, options.useHeadless ?? false);
     }
-    logger2.info({
-      seedUrl,
-      pagesVisited: this.visited.size
-    }, "Crawl complete");
+    logger2.info(
+      {
+        seedUrl,
+        pagesVisited: this.visited.size
+      },
+      "Crawl complete"
+    );
     const completeProgress = {
       type: "complete",
       pagesVisited: this.visited.size,
@@ -485,7 +509,12 @@ var IntelligentCrawler = class extends EventEmitter {
       if (this.stopped || pagesVisited >= maxPages) break;
       if (this.visited.has(url)) continue;
       try {
-        const result = await this.crawlSinglePage(url, extractInstruction, pagesVisited, useHeadless);
+        const result = await this.crawlSinglePage(
+          url,
+          extractInstruction,
+          pagesVisited,
+          useHeadless
+        );
         pagesVisited++;
         yield result;
       } catch (error) {
@@ -528,7 +557,10 @@ var IntelligentCrawler = class extends EventEmitter {
             if (links.length === 0) {
               logger2.debug({ url: current.url }, "No links found - page may be a leaf node");
             } else {
-              logger2.debug({ url: current.url, linkCount: links.length }, "Links extracted from page");
+              logger2.debug(
+                { url: current.url, linkCount: links.length },
+                "Links extracted from page"
+              );
             }
             for (const link of links) {
               if (!this.visited.has(link) && this.isSameDomain(seedUrl, link)) {
@@ -577,11 +609,14 @@ var IntelligentCrawler = class extends EventEmitter {
       logger2.error({ url, error: conversion.error }, "HTML to markdown conversion failed");
       throw new Error(`Failed to convert HTML: ${conversion.error ?? "Unknown error"}`);
     }
-    logger2.debug({
-      url,
-      title: conversion.title,
-      markdownLength: conversion.markdown.length
-    }, "Article converted to markdown");
+    logger2.debug(
+      {
+        url,
+        title: conversion.title,
+        markdownLength: conversion.markdown.length
+      },
+      "Article converted to markdown"
+    );
     let extracted;
     if (extractInstruction !== void 0 && extractInstruction !== "") {
       if (!ClaudeClient.isAvailable()) {
@@ -637,15 +672,21 @@ var IntelligentCrawler = class extends EventEmitter {
       try {
         const result = await this.pythonBridge.fetchHeadless(url);
         const durationMs = Date.now() - startTime;
-        logger2.info({
-          url,
-          useHeadless: true,
-          durationMs,
-          ...summarizePayload(result.html, "raw-html", url)
-        }, "Raw HTML fetched");
+        logger2.info(
+          {
+            url,
+            useHeadless: true,
+            durationMs,
+            ...summarizePayload(result.html, "raw-html", url)
+          },
+          "Raw HTML fetched"
+        );
         return result.html;
       } catch (error) {
-        logger2.warn({ url, error: error instanceof Error ? error.message : String(error) }, "Headless fetch failed, falling back to axios");
+        logger2.warn(
+          { url, error: error instanceof Error ? error.message : String(error) },
+          "Headless fetch failed, falling back to axios"
+        );
       }
     }
     try {
@@ -656,15 +697,21 @@ var IntelligentCrawler = class extends EventEmitter {
         }
       });
       const durationMs = Date.now() - startTime;
-      logger2.info({
-        url,
-        useHeadless: false,
-        durationMs,
-        ...summarizePayload(response.data, "raw-html", url)
-      }, "Raw HTML fetched");
+      logger2.info(
+        {
+          url,
+          useHeadless: false,
+          durationMs,
+          ...summarizePayload(response.data, "raw-html", url)
+        },
+        "Raw HTML fetched"
+      );
       return response.data;
     } catch (error) {
-      logger2.error({ url, error: error instanceof Error ? error.message : String(error) }, "Failed to fetch HTML");
+      logger2.error(
+        { url, error: error instanceof Error ? error.message : String(error) },
+        "Failed to fetch HTML"
+      );
       throw new Error(
         `Failed to fetch ${url}: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -718,4 +765,4 @@ var IntelligentCrawler = class extends EventEmitter {
 export {
   IntelligentCrawler
 };
-//# sourceMappingURL=chunk-I2TGFERH.js.map
+//# sourceMappingURL=chunk-DC7CGSGT.js.map

@@ -71,7 +71,9 @@ export function parseSearchOutput(output: string): SearchResult[] {
       const headerContent = headerMatch[3].trim();
 
       // Check if this is new format (contains type prefix like "function:", "class:", etc.)
-      const typeMatch = headerContent.match(/^(function|class|interface|type|const|documentation):\s+(.+)$/);
+      const typeMatch = headerContent.match(
+        /^(function|class|interface|type|const|documentation):\s+(.+)$/
+      );
       if (typeMatch) {
         // New format - next line should contain the location
         currentResult = {
@@ -140,18 +142,13 @@ export function parseSearchOutput(output: string): SearchResult[] {
  * @param expected - Expected match criteria
  * @returns true if result matches all criteria
  */
-export function matchesExpectation(
-  result: SearchResult,
-  expected: ExpectedMatch
-): boolean {
+export function matchesExpectation(result: SearchResult, expected: ExpectedMatch): boolean {
   const contentLower = result.content.toLowerCase();
   const sourceLower = result.source.toLowerCase();
 
   // Check keywords (any match)
   if (expected.keywords && expected.keywords.length > 0) {
-    const hasKeyword = expected.keywords.some((kw) =>
-      contentLower.includes(kw.toLowerCase())
-    );
+    const hasKeyword = expected.keywords.some((kw) => contentLower.includes(kw.toLowerCase()));
     if (!hasKeyword) return false;
   }
 
@@ -190,16 +187,11 @@ export function matchesExpectation(
  * @param expected - Expected match criteria
  * @returns The first matching result, or throws if none found
  */
-export function assertHasMatch(
-  results: SearchResult[],
-  expected: ExpectedMatch
-): SearchResult {
+export function assertHasMatch(results: SearchResult[], expected: ExpectedMatch): SearchResult {
   const match = results.find((r) => matchesExpectation(r, expected));
   if (!match) {
     const criteria = JSON.stringify(expected, null, 2);
-    const resultsSummary = results
-      .map((r) => `  ${r.rank}. [${r.score}] ${r.source}`)
-      .join('\n');
+    const resultsSummary = results.map((r) => `  ${r.rank}. [${r.score}] ${r.source}`).join('\n');
     throw new Error(
       `No result matches expected criteria:\n${criteria}\n\nResults:\n${resultsSummary}`
     );
@@ -256,9 +248,7 @@ export function calculateRelevanceMetrics(
     relevantCount: relevant.length,
     totalCount: results.length,
     averageScore:
-      results.length > 0
-        ? results.reduce((sum, r) => sum + r.score, 0) / results.length
-        : 0,
+      results.length > 0 ? results.reduce((sum, r) => sum + r.score, 0) / results.length : 0,
     topScore: results.length > 0 ? results[0].score : 0,
   };
 }
@@ -298,10 +288,7 @@ export function compareRelevance(
  * @param results - Search results
  * @param minScore - Minimum acceptable score
  */
-export function assertMinimumScores(
-  results: SearchResult[],
-  minScore: number
-): void {
+export function assertMinimumScores(results: SearchResult[], minScore: number): void {
   for (const result of results) {
     if (result.score < minScore) {
       throw new Error(
@@ -330,52 +317,10 @@ export function assertProperOrdering(results: SearchResult[]): void {
  * Common keyword sets for testing
  */
 export const CommonKeywords = {
-  AUTHENTICATION: [
-    'auth',
-    'login',
-    'jwt',
-    'token',
-    'password',
-    'session',
-    'oauth',
-    'credential',
-  ],
-  API: [
-    'endpoint',
-    'request',
-    'response',
-    'rest',
-    'http',
-    'route',
-    'controller',
-    'middleware',
-  ],
-  DATABASE: [
-    'query',
-    'database',
-    'repository',
-    'entity',
-    'model',
-    'schema',
-    'sql',
-    'orm',
-  ],
-  TYPESCRIPT: [
-    'typescript',
-    'type',
-    'interface',
-    'generic',
-    'compiler',
-    'tsc',
-  ],
+  AUTHENTICATION: ['auth', 'login', 'jwt', 'token', 'password', 'session', 'oauth', 'credential'],
+  API: ['endpoint', 'request', 'response', 'rest', 'http', 'route', 'controller', 'middleware'],
+  DATABASE: ['query', 'database', 'repository', 'entity', 'model', 'schema', 'sql', 'orm'],
+  TYPESCRIPT: ['typescript', 'type', 'interface', 'generic', 'compiler', 'tsc'],
   REACT: ['react', 'component', 'jsx', 'hook', 'state', 'props', 'render'],
-  ERROR_HANDLING: [
-    'error',
-    'exception',
-    'catch',
-    'throw',
-    'try',
-    'handler',
-    'validation',
-  ],
+  ERROR_HANDLING: ['error', 'exception', 'catch', 'throw', 'try', 'handler', 'validation'],
 } as const;

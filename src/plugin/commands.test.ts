@@ -5,13 +5,13 @@ import {
   handleAddFolder,
   handleIndex,
   handleStores,
-  handleSuggest
+  handleSuggest,
 } from './commands.js';
 import type { ServiceContainer } from '../services/index.js';
 
 // Mock the createServices function
 vi.mock('../services/index.js', () => ({
-  createServices: vi.fn()
+  createServices: vi.fn(),
 }));
 
 // Mock extractRepoName
@@ -19,7 +19,7 @@ vi.mock('./git-clone.js', () => ({
   extractRepoName: vi.fn((url: string) => {
     const match = /\/([^/]+?)(\.git)?$/.exec(url);
     return match?.[1] ?? 'repository';
-  })
+  }),
 }));
 
 // Mock DependencyUsageAnalyzer
@@ -41,8 +41,8 @@ vi.mock('ora', () => ({
   default: vi.fn(() => ({
     start: vi.fn().mockReturnThis(),
     stop: vi.fn(),
-    text: ''
-  }))
+    text: '',
+  })),
 }));
 
 describe('Commands - handleSearch', () => {
@@ -59,17 +59,17 @@ describe('Commands - handleSearch', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
+        search: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -86,13 +86,13 @@ describe('Commands - handleSearch', () => {
   it('searches all stores when no stores specified', async () => {
     const mockStores = [
       { id: 'store-1', name: 'test1', type: 'file' as const },
-      { id: 'store-2', name: 'test2', type: 'repo' as const }
+      { id: 'store-2', name: 'test2', type: 'repo' as const },
     ];
 
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     await handleSearch({ query: 'test query' });
@@ -102,7 +102,7 @@ describe('Commands - handleSearch', () => {
     expect(mockServices.search.search).toHaveBeenCalledWith(
       expect.objectContaining({
         query: 'test query',
-        stores: ['store-1', 'store-2']
+        stores: ['store-1', 'store-2'],
       })
     );
   });
@@ -111,20 +111,20 @@ describe('Commands - handleSearch', () => {
     const mockStores = [
       { id: 'store-1', name: 'test1', type: 'file' as const },
       { id: 'store-2', name: 'test2', type: 'repo' as const },
-      { id: 'store-3', name: 'other', type: 'file' as const }
+      { id: 'store-3', name: 'other', type: 'file' as const },
     ];
 
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     await handleSearch({ query: 'test', stores: 'test1,test2' });
 
     expect(mockServices.search.search).toHaveBeenCalledWith(
       expect.objectContaining({
-        stores: ['store-1', 'store-2']
+        stores: ['store-1', 'store-2'],
       })
     );
   });
@@ -135,14 +135,14 @@ describe('Commands - handleSearch', () => {
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     await handleSearch({ query: 'test', limit: '25' });
 
     expect(mockServices.search.search).toHaveBeenCalledWith(
       expect.objectContaining({
-        limit: 25
+        limit: 25,
       })
     );
   });
@@ -153,14 +153,14 @@ describe('Commands - handleSearch', () => {
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     await handleSearch({ query: 'test' });
 
     expect(mockServices.search.search).toHaveBeenCalledWith(
       expect.objectContaining({
-        limit: 10
+        limit: 10,
       })
     );
   });
@@ -187,11 +187,11 @@ describe('Commands - handleSearch', () => {
           score: 0.95,
           summary: {
             location: 'test.ts:10-20',
-            purpose: 'Test function'
-          }
-        }
+            purpose: 'Test function',
+          },
+        },
       ],
-      totalResults: 1
+      totalResults: 1,
     };
 
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
@@ -208,7 +208,7 @@ describe('Commands - handleSearch', () => {
     const mockStores = [{ id: 'store-1', name: 'test', type: 'file' as const }];
     const mockResults = {
       results: [{ score: 0.5 }],
-      totalResults: 1
+      totalResults: 1,
     };
 
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
@@ -234,11 +234,11 @@ describe('Commands - handleAddRepo', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -255,11 +255,18 @@ describe('Commands - handleAddRepo', () => {
   it('creates repo store with extracted name', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: { id: 'store-1', name: 'test-repo', type: 'repo', path: '/tmp/test-repo', createdAt: new Date(), updatedAt: new Date() }
+      data: {
+        id: 'store-1',
+        name: 'test-repo',
+        type: 'repo',
+        path: '/tmp/test-repo',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
     });
 
     await handleAddRepo({ url: 'https://github.com/user/test-repo.git' });
@@ -267,18 +274,25 @@ describe('Commands - handleAddRepo', () => {
     expect(mockServices.store.create).toHaveBeenCalledWith({
       name: 'test-repo',
       type: 'repo',
-      url: 'https://github.com/user/test-repo.git'
+      url: 'https://github.com/user/test-repo.git',
     });
   });
 
   it('uses custom name when provided', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: { id: 'store-1', name: 'my-name', type: 'repo', path: '/tmp/my-name', createdAt: new Date(), updatedAt: new Date() }
+      data: {
+        id: 'store-1',
+        name: 'my-name',
+        type: 'repo',
+        path: '/tmp/my-name',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
     });
 
     await handleAddRepo({ url: 'https://github.com/user/repo.git', name: 'my-name' });
@@ -286,18 +300,26 @@ describe('Commands - handleAddRepo', () => {
     expect(mockServices.store.create).toHaveBeenCalledWith({
       name: 'my-name',
       type: 'repo',
-      url: 'https://github.com/user/repo.git'
+      url: 'https://github.com/user/repo.git',
     });
   });
 
   it('includes branch when provided', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: { id: 'store-1', name: 'test-repo', type: 'repo', path: '/tmp/test-repo', branch: 'develop', createdAt: new Date(), updatedAt: new Date() }
+      data: {
+        id: 'store-1',
+        name: 'test-repo',
+        type: 'repo',
+        path: '/tmp/test-repo',
+        branch: 'develop',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
     });
 
     await handleAddRepo({ url: 'https://github.com/user/repo.git', branch: 'develop' });
@@ -306,20 +328,27 @@ describe('Commands - handleAddRepo', () => {
       name: 'repo',
       type: 'repo',
       url: 'https://github.com/user/repo.git',
-      branch: 'develop'
+      branch: 'develop',
     });
   });
 
   it('auto-indexes after creation', async () => {
-    const mockStore = { id: 'store-1', name: 'test', type: 'repo' as const, path: '/tmp/test', createdAt: new Date(), updatedAt: new Date() };
+    const mockStore = {
+      id: 'store-1',
+      name: 'test',
+      type: 'repo' as const,
+      path: '/tmp/test',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: mockStore
+      data: mockStore,
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
     });
 
     await handleAddRepo({ url: 'https://github.com/user/test.git' });
@@ -330,7 +359,7 @@ describe('Commands - handleAddRepo', () => {
   it('exits on store creation failure', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: false,
-      error: new Error('Clone failed')
+      error: new Error('Clone failed'),
     });
 
     try {
@@ -346,11 +375,18 @@ describe('Commands - handleAddRepo', () => {
   it('reports indexing failure without exiting', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: { id: 'store-1', name: 'test', type: 'repo', path: '/tmp/test', createdAt: new Date(), updatedAt: new Date() }
+      data: {
+        id: 'store-1',
+        name: 'test',
+        type: 'repo',
+        path: '/tmp/test',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: false,
-      error: new Error('Indexing failed')
+      error: new Error('Indexing failed'),
     });
 
     await handleAddRepo({ url: 'https://github.com/user/repo.git' });
@@ -371,11 +407,11 @@ describe('Commands - handleAddFolder', () => {
 
     mockServices = {
       store: {
-        create: vi.fn()
+        create: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -392,11 +428,18 @@ describe('Commands - handleAddFolder', () => {
   it('creates file store with basename when no name provided', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: { id: 'store-1', name: 'my-folder', type: 'file', path: '/path/to/my-folder', createdAt: new Date(), updatedAt: new Date() }
+      data: {
+        id: 'store-1',
+        name: 'my-folder',
+        type: 'file',
+        path: '/path/to/my-folder',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 5, chunksCreated: 20, timeMs: 500 }
+      data: { documentsIndexed: 5, chunksCreated: 20, timeMs: 500 },
     });
 
     await handleAddFolder({ path: '/path/to/my-folder' });
@@ -404,18 +447,25 @@ describe('Commands - handleAddFolder', () => {
     expect(mockServices.store.create).toHaveBeenCalledWith({
       name: 'my-folder',
       type: 'file',
-      path: '/path/to/my-folder'
+      path: '/path/to/my-folder',
     });
   });
 
   it('uses custom name when provided', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: { id: 'store-1', name: 'custom', type: 'file', path: '/path/folder', createdAt: new Date(), updatedAt: new Date() }
+      data: {
+        id: 'store-1',
+        name: 'custom',
+        type: 'file',
+        path: '/path/folder',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 5, chunksCreated: 20, timeMs: 500 }
+      data: { documentsIndexed: 5, chunksCreated: 20, timeMs: 500 },
     });
 
     await handleAddFolder({ path: '/path/folder', name: 'custom' });
@@ -423,20 +473,27 @@ describe('Commands - handleAddFolder', () => {
     expect(mockServices.store.create).toHaveBeenCalledWith({
       name: 'custom',
       type: 'file',
-      path: '/path/folder'
+      path: '/path/folder',
     });
   });
 
   it('auto-indexes after folder store creation', async () => {
-    const mockStore = { id: 'store-1', name: 'test', type: 'file' as const, path: '/tmp/test', createdAt: new Date(), updatedAt: new Date() };
+    const mockStore = {
+      id: 'store-1',
+      name: 'test',
+      type: 'file' as const,
+      path: '/tmp/test',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: mockStore
+      data: mockStore,
     });
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 5, chunksCreated: 20, timeMs: 500 }
+      data: { documentsIndexed: 5, chunksCreated: 20, timeMs: 500 },
     });
 
     await handleAddFolder({ path: '/tmp/test' });
@@ -447,7 +504,7 @@ describe('Commands - handleAddFolder', () => {
   it('exits on folder store creation failure', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: false,
-      error: new Error('Path not found')
+      error: new Error('Path not found'),
     });
 
     try {
@@ -472,11 +529,11 @@ describe('Commands - handleIndex', () => {
 
     mockServices = {
       store: {
-        getByIdOrName: vi.fn()
+        getByIdOrName: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -491,12 +548,19 @@ describe('Commands - handleIndex', () => {
   });
 
   it('indexes store by id', async () => {
-    const mockStore = { id: 'store-1', name: 'test', type: 'file' as const, path: '/tmp/test', createdAt: new Date(), updatedAt: new Date() };
+    const mockStore = {
+      id: 'store-1',
+      name: 'test',
+      type: 'file' as const,
+      path: '/tmp/test',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
     });
 
     await handleIndex({ store: 'store-1' });
@@ -506,12 +570,19 @@ describe('Commands - handleIndex', () => {
   });
 
   it('indexes store by name', async () => {
-    const mockStore = { id: 'store-1', name: 'my-store', type: 'file' as const, path: '/tmp/test', createdAt: new Date(), updatedAt: new Date() };
+    const mockStore = {
+      id: 'store-1',
+      name: 'my-store',
+      type: 'file' as const,
+      path: '/tmp/test',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+      data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
     });
 
     await handleIndex({ store: 'my-store' });
@@ -520,12 +591,19 @@ describe('Commands - handleIndex', () => {
   });
 
   it('displays indexing statistics on success', async () => {
-    const mockStore = { id: 'store-1', name: 'test', type: 'file' as const, path: '/tmp/test', createdAt: new Date(), updatedAt: new Date() };
+    const mockStore = {
+      id: 'store-1',
+      name: 'test',
+      type: 'file' as const,
+      path: '/tmp/test',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: true,
-      data: { documentsIndexed: 25, chunksCreated: 100, timeMs: 2000 }
+      data: { documentsIndexed: 25, chunksCreated: 100, timeMs: 2000 },
     });
 
     await handleIndex({ store: 'test' });
@@ -548,12 +626,19 @@ describe('Commands - handleIndex', () => {
   });
 
   it('exits on indexing failure', async () => {
-    const mockStore = { id: 'store-1', name: 'test', type: 'file' as const, path: '/tmp/test', createdAt: new Date(), updatedAt: new Date() };
+    const mockStore = {
+      id: 'store-1',
+      name: 'test',
+      type: 'file' as const,
+      path: '/tmp/test',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: false,
-      error: new Error('Indexing error')
+      error: new Error('Indexing error'),
     });
 
     try {
@@ -576,8 +661,8 @@ describe('Commands - handleStores', () => {
 
     mockServices = {
       store: {
-        list: vi.fn()
-      }
+        list: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -598,7 +683,7 @@ describe('Commands - handleStores', () => {
         path: '/tmp/test',
         description: 'Test store',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       {
         id: 'store-2',
@@ -607,8 +692,8 @@ describe('Commands - handleStores', () => {
         path: '/tmp/repo',
         url: 'https://github.com/user/repo.git',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ];
 
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
@@ -647,8 +732,8 @@ describe('Commands - handleSuggest', () => {
 
     mockServices = {
       store: {
-        list: vi.fn()
-      }
+        list: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -667,7 +752,7 @@ describe('Commands - handleSuggest', () => {
 
     DependencyUsageAnalyzer.prototype.analyze = vi.fn().mockResolvedValue({
       success: false,
-      error: new Error('Analysis failed')
+      error: new Error('Analysis failed'),
     });
 
     try {
@@ -689,13 +774,15 @@ describe('Commands - handleSuggest', () => {
         usages: [],
         totalFilesScanned: 10,
         skippedFiles: 0,
-        analysisTimeMs: 100
-      }
+        analysisTimeMs: 100,
+      },
     });
 
     await handleSuggest();
 
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('No external dependencies found'));
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No external dependencies found')
+    );
   });
 
   it('filters out packages already in stores', async () => {
@@ -706,23 +793,42 @@ describe('Commands - handleSuggest', () => {
       success: true,
       data: {
         usages: [
-          { packageName: 'react', importCount: 50, fileCount: 10, files: [], isDevDependency: false },
-          { packageName: 'lodash', importCount: 30, fileCount: 5, files: [], isDevDependency: false }
+          {
+            packageName: 'react',
+            importCount: 50,
+            fileCount: 10,
+            files: [],
+            isDevDependency: false,
+          },
+          {
+            packageName: 'lodash',
+            importCount: 30,
+            fileCount: 5,
+            files: [],
+            isDevDependency: false,
+          },
         ],
         totalFilesScanned: 20,
         skippedFiles: 0,
-        analysisTimeMs: 200
-      }
+        analysisTimeMs: 200,
+      },
     });
 
     RepoUrlResolver.prototype.findRepoUrl = vi.fn().mockResolvedValue({
       url: 'https://github.com/lodash/lodash',
       confidence: 'high',
-      source: 'registry'
+      source: 'registry',
     });
 
     vi.mocked(mockServices.store.list).mockResolvedValue([
-      { id: 'store-1', name: 'react', type: 'repo', path: '/tmp/react', createdAt: new Date(), updatedAt: new Date() }
+      {
+        id: 'store-1',
+        name: 'react',
+        type: 'repo',
+        path: '/tmp/react',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ]);
 
     await handleSuggest();
@@ -738,21 +844,36 @@ describe('Commands - handleSuggest', () => {
       success: true,
       data: {
         usages: [
-          { packageName: 'react', importCount: 50, fileCount: 10, files: [], isDevDependency: false }
+          {
+            packageName: 'react',
+            importCount: 50,
+            fileCount: 10,
+            files: [],
+            isDevDependency: false,
+          },
         ],
         totalFilesScanned: 20,
         skippedFiles: 0,
-        analysisTimeMs: 200
-      }
+        analysisTimeMs: 200,
+      },
     });
 
     vi.mocked(mockServices.store.list).mockResolvedValue([
-      { id: 'store-1', name: 'react', type: 'repo', path: '/tmp/react', createdAt: new Date(), updatedAt: new Date() }
+      {
+        id: 'store-1',
+        name: 'react',
+        type: 'repo',
+        path: '/tmp/react',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ]);
 
     await handleSuggest();
 
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('All dependencies are already in knowledge stores'));
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('All dependencies are already in knowledge stores')
+    );
   });
 
   it('displays top 5 suggestions with repo URLs', async () => {
@@ -763,19 +884,31 @@ describe('Commands - handleSuggest', () => {
       success: true,
       data: {
         usages: [
-          { packageName: 'react', importCount: 100, fileCount: 20, files: [], isDevDependency: false },
-          { packageName: 'lodash', importCount: 80, fileCount: 15, files: [], isDevDependency: false }
+          {
+            packageName: 'react',
+            importCount: 100,
+            fileCount: 20,
+            files: [],
+            isDevDependency: false,
+          },
+          {
+            packageName: 'lodash',
+            importCount: 80,
+            fileCount: 15,
+            files: [],
+            isDevDependency: false,
+          },
         ],
         totalFilesScanned: 30,
         skippedFiles: 0,
-        analysisTimeMs: 300
-      }
+        analysisTimeMs: 300,
+      },
     });
 
     RepoUrlResolver.prototype.findRepoUrl = vi.fn().mockResolvedValue({
       url: 'https://github.com/facebook/react',
       confidence: 'high',
-      source: 'registry'
+      source: 'registry',
     });
 
     vi.mocked(mockServices.store.list).mockResolvedValue([]);
@@ -784,6 +917,8 @@ describe('Commands - handleSuggest', () => {
 
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('react'));
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('100 imports'));
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('https://github.com/facebook/react'));
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('https://github.com/facebook/react')
+    );
   });
 });

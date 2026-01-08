@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
-import { JobService } from '../services/job.service.js';
 import { BackgroundWorker } from './background-worker.js';
 import { createServices } from '../services/index.js';
+import { JobService } from '../services/job.service.js';
 
 /**
  * Background worker CLI entry point
@@ -44,7 +44,7 @@ async function main(): Promise<void> {
     console.log(`[${jobId}] Received SIGTERM, cancelling job...`);
     jobService.updateJob(jobId, {
       status: 'cancelled',
-      message: 'Job cancelled by user'
+      message: 'Job cancelled by user',
     });
 
     // Clean up PID file

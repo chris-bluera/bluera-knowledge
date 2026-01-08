@@ -154,7 +154,8 @@ export class ChunkingService {
    */
   private chunkCode(text: string): Chunk[] {
     // Match top-level declarations with optional JSDoc/comments before them
-    const declarationRegex = /^(?:\/\*\*[\s\S]*?\*\/\s*)?(?:export\s+)?(?:async\s+)?(?:function|class|interface|type|const|let|var|enum)\s+(\w+)/gm;
+    const declarationRegex =
+      /^(?:\/\*\*[\s\S]*?\*\/\s*)?(?:export\s+)?(?:async\s+)?(?:function|class|interface|type|const|let|var|enum)\s+(\w+)/gm;
     const declarations: Array<{ startOffset: number; endOffset: number; name?: string }> = [];
 
     let match: RegExpExecArray | null;
@@ -184,7 +185,11 @@ export class ChunkingService {
       // For declarations that likely have braces (functions, classes, enums)
       // use smart boundary detection
       const declText = text.slice(currentDecl.startOffset);
-      if (/^(?:\/\*\*[\s\S]*?\*\/\s*)?(?:export\s+)?(?:async\s+)?(?:function|class|enum)\s+/m.test(declText)) {
+      if (
+        /^(?:\/\*\*[\s\S]*?\*\/\s*)?(?:export\s+)?(?:async\s+)?(?:function|class|enum)\s+/m.test(
+          declText
+        )
+      ) {
         const boundary = this.findDeclarationEnd(declText);
         if (boundary > 0) {
           currentDecl.endOffset = currentDecl.startOffset + boundary;
@@ -337,13 +342,15 @@ export class ChunkingService {
    */
   private chunkSlidingWindow(text: string): Chunk[] {
     if (text.length <= this.chunkSize) {
-      return [{
-        content: text,
-        chunkIndex: 0,
-        totalChunks: 1,
-        startOffset: 0,
-        endOffset: text.length,
-      }];
+      return [
+        {
+          content: text,
+          chunkIndex: 0,
+          totalChunks: 1,
+          startOffset: 0,
+          endOffset: text.length,
+        },
+      ];
     }
 
     const chunks: Chunk[] = [];

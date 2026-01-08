@@ -8,10 +8,10 @@
  * - Child loggers per module for context
  */
 
-import pino, { type Logger, type LoggerOptions } from 'pino';
-import { homedir } from 'node:os';
 import { mkdirSync, existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
+import pino, { type Logger, type LoggerOptions } from 'pino';
 
 /** Valid log levels */
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
@@ -47,9 +47,7 @@ function getLogLevel(): LogLevel {
   }
 
   if (!isValidLogLevel(level)) {
-    throw new Error(
-      `Invalid LOG_LEVEL: "${level}". Valid values: ${VALID_LEVELS.join(', ')}`
-    );
+    throw new Error(`Invalid LOG_LEVEL: "${level}". Valid values: ${VALID_LEVELS.join(', ')}`);
   }
 
   return level;

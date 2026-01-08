@@ -9,7 +9,7 @@ describe('ChunkingService', () => {
       const text = 'A'.repeat(250);
       const chunks = chunker.chunk(text);
       expect(chunks.length).toBeGreaterThan(1);
-      expect(chunks.every(c => c.content.length <= 100)).toBe(true);
+      expect(chunks.every((c) => c.content.length <= 100)).toBe(true);
     });
 
     it('preserves overlap between chunks', () => {
@@ -34,7 +34,7 @@ describe('ChunkingService', () => {
       const chunks = chunker.chunk(text);
       expect(chunks[0]!.chunkIndex).toBe(0);
       expect(chunks[1]!.chunkIndex).toBe(1);
-      expect(chunks.every(c => c.totalChunks === chunks.length)).toBe(true);
+      expect(chunks.every((c) => c.totalChunks === chunks.length)).toBe(true);
     });
 
     it('handles empty text', () => {
@@ -66,9 +66,9 @@ Content for section 3`;
 
       const chunks = chunker.chunk(markdown, 'test.md');
       expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks.some(c => c.sectionHeader === 'Header 1')).toBe(true);
-      expect(chunks.some(c => c.sectionHeader === 'Header 2')).toBe(true);
-      expect(chunks.some(c => c.sectionHeader === 'Header 3')).toBe(true);
+      expect(chunks.some((c) => c.sectionHeader === 'Header 1')).toBe(true);
+      expect(chunks.some((c) => c.sectionHeader === 'Header 2')).toBe(true);
+      expect(chunks.some((c) => c.sectionHeader === 'Header 3')).toBe(true);
     });
 
     it('handles markdown with no headers', () => {
@@ -91,7 +91,7 @@ Content for section 3`;
       const chunks = chunker.chunk(markdown, 'test.md');
       // Large section should be split
       expect(chunks.length).toBeGreaterThan(2);
-      expect(chunks.filter(c => c.sectionHeader === 'Header 1').length).toBeGreaterThan(1);
+      expect(chunks.filter((c) => c.sectionHeader === 'Header 1').length).toBeGreaterThan(1);
     });
 
     it('preserves markdown section headers in metadata', () => {
@@ -121,9 +121,9 @@ Content 3
 Content 2`;
 
       const chunks = chunker.chunk(markdown, 'test.md');
-      expect(chunks.some(c => c.sectionHeader === 'H1')).toBe(true);
-      expect(chunks.some(c => c.sectionHeader === 'H3')).toBe(true);
-      expect(chunks.some(c => c.sectionHeader === 'H2')).toBe(true);
+      expect(chunks.some((c) => c.sectionHeader === 'H1')).toBe(true);
+      expect(chunks.some((c) => c.sectionHeader === 'H3')).toBe(true);
+      expect(chunks.some((c) => c.sectionHeader === 'H2')).toBe(true);
     });
   });
 
@@ -139,8 +139,8 @@ function bar() {
 
       const chunks = chunker.chunk(code, 'test.ts');
       expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks.some(c => c.functionName === 'foo')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'bar')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'foo')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'bar')).toBe(true);
     });
 
     it('handles class declarations', () => {
@@ -153,8 +153,8 @@ class AnotherClass {
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'MyClass')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'AnotherClass')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'MyClass')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'AnotherClass')).toBe(true);
     });
 
     it('handles exported declarations', () => {
@@ -165,8 +165,8 @@ class AnotherClass {
 export class ExportedClass {}`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'exportedFn')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'ExportedClass')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'exportedFn')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'ExportedClass')).toBe(true);
     });
 
     it('handles async functions', () => {
@@ -175,7 +175,7 @@ export class ExportedClass {}`;
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'asyncFn')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'asyncFn')).toBe(true);
     });
 
     it('handles const/let/var declarations', () => {
@@ -186,9 +186,9 @@ let myLet = 'test';
 var myVar = true;`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'myConst')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'myLet')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'myVar')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'myConst')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'myLet')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'myVar')).toBe(true);
     });
 
     it('handles interface and type declarations', () => {
@@ -201,8 +201,8 @@ type MyType = {
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'MyInterface')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'MyType')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'MyInterface')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'MyType')).toBe(true);
     });
 
     it('handles enum declarations', () => {
@@ -213,7 +213,7 @@ type MyType = {
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'Color')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'Color')).toBe(true);
     });
 
     it('handles code with no declarations', () => {
@@ -252,7 +252,7 @@ function smallFn() {
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'withNested')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'withNested')).toBe(true);
     });
 
     it('exposes brace counting bug - braces in strings', () => {
@@ -269,8 +269,8 @@ function nextFn() {
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'withString')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'nextFn')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'withString')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'nextFn')).toBe(true);
       // The bug: braces in strings should be ignored for boundary detection
     });
 
@@ -290,8 +290,8 @@ function nextFn() {
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'withComments')).toBe(true);
-      expect(chunks.some(c => c.functionName === 'nextFn')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'withComments')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'nextFn')).toBe(true);
       // The bug: braces in comments should be ignored for boundary detection
     });
 
@@ -305,7 +305,7 @@ function myFn() {
 }`;
 
       const chunks = chunker.chunk(code, 'test.ts');
-      expect(chunks.some(c => c.functionName === 'myFn')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'myFn')).toBe(true);
       expect(chunks[0]!.content).toContain('Documentation');
     });
   });
@@ -326,25 +326,25 @@ function myFn() {
     it('uses code chunking for .ts files', () => {
       const code = 'function test() {}\nfunction test2() {}';
       const chunks = chunker.chunk(code, 'file.ts');
-      expect(chunks.some(c => c.functionName === 'test')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'test')).toBe(true);
     });
 
     it('uses code chunking for .tsx files', () => {
       const code = 'function Component() {}\nfunction Other() {}';
       const chunks = chunker.chunk(code, 'component.tsx');
-      expect(chunks.some(c => c.functionName === 'Component')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'Component')).toBe(true);
     });
 
     it('uses code chunking for .js files', () => {
       const code = 'function test() {}\nfunction test2() {}';
       const chunks = chunker.chunk(code, 'file.js');
-      expect(chunks.some(c => c.functionName === 'test')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'test')).toBe(true);
     });
 
     it('uses code chunking for .jsx files', () => {
       const code = 'function Component() {}\nfunction Other() {}';
       const chunks = chunker.chunk(code, 'component.jsx');
-      expect(chunks.some(c => c.functionName === 'Component')).toBe(true);
+      expect(chunks.some((c) => c.functionName === 'Component')).toBe(true);
     });
 
     it('uses sliding window for unknown file types', () => {

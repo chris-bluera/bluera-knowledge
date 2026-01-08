@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export interface DependencySuggestion {
@@ -14,22 +14,85 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 // Map of important libraries to their repos
-const KNOWN_REPOS: Record<string, { url: string; importance: 'critical' | 'high' | 'medium'; reason: string }> = {
-  'vue': { url: 'https://github.com/vuejs/core', importance: 'critical', reason: 'Core framework - essential for Vue.js development' },
-  'react': { url: 'https://github.com/facebook/react', importance: 'critical', reason: 'Core framework - essential for React development' },
-  'pydantic': { url: 'https://github.com/pydantic/pydantic', importance: 'critical', reason: 'Core validation library - heavily used' },
-  'fastapi': { url: 'https://github.com/tiangolo/fastapi', importance: 'critical', reason: 'Core web framework - central to this project' },
-  'hono': { url: 'https://github.com/honojs/hono', importance: 'critical', reason: 'Core web framework - central to this project' },
-  'express': { url: 'https://github.com/expressjs/express', importance: 'high', reason: 'Web framework - frequently referenced' },
-  'pinia': { url: 'https://github.com/vuejs/pinia', importance: 'high', reason: 'State management - frequently used' },
-  'pino': { url: 'https://github.com/pinojs/pino', importance: 'medium', reason: 'Logging library - commonly used' },
-  'zod': { url: 'https://github.com/colinhacks/zod', importance: 'high', reason: 'Schema validation - frequently used' },
-  'next': { url: 'https://github.com/vercel/next.js', importance: 'critical', reason: 'Core framework - essential for Next.js development' },
-  'nuxt': { url: 'https://github.com/nuxt/nuxt', importance: 'critical', reason: 'Core framework - essential for Nuxt development' },
-  'svelte': { url: 'https://github.com/sveltejs/svelte', importance: 'critical', reason: 'Core framework - essential for Svelte development' },
-  'django': { url: 'https://github.com/django/django', importance: 'critical', reason: 'Core framework - essential for Django development' },
-  'flask': { url: 'https://github.com/pallets/flask', importance: 'critical', reason: 'Core framework - essential for Flask development' },
-  'prisma': { url: 'https://github.com/prisma/prisma', importance: 'high', reason: 'ORM - database interactions' },
+const KNOWN_REPOS: Record<
+  string,
+  { url: string; importance: 'critical' | 'high' | 'medium'; reason: string }
+> = {
+  vue: {
+    url: 'https://github.com/vuejs/core',
+    importance: 'critical',
+    reason: 'Core framework - essential for Vue.js development',
+  },
+  react: {
+    url: 'https://github.com/facebook/react',
+    importance: 'critical',
+    reason: 'Core framework - essential for React development',
+  },
+  pydantic: {
+    url: 'https://github.com/pydantic/pydantic',
+    importance: 'critical',
+    reason: 'Core validation library - heavily used',
+  },
+  fastapi: {
+    url: 'https://github.com/tiangolo/fastapi',
+    importance: 'critical',
+    reason: 'Core web framework - central to this project',
+  },
+  hono: {
+    url: 'https://github.com/honojs/hono',
+    importance: 'critical',
+    reason: 'Core web framework - central to this project',
+  },
+  express: {
+    url: 'https://github.com/expressjs/express',
+    importance: 'high',
+    reason: 'Web framework - frequently referenced',
+  },
+  pinia: {
+    url: 'https://github.com/vuejs/pinia',
+    importance: 'high',
+    reason: 'State management - frequently used',
+  },
+  pino: {
+    url: 'https://github.com/pinojs/pino',
+    importance: 'medium',
+    reason: 'Logging library - commonly used',
+  },
+  zod: {
+    url: 'https://github.com/colinhacks/zod',
+    importance: 'high',
+    reason: 'Schema validation - frequently used',
+  },
+  next: {
+    url: 'https://github.com/vercel/next.js',
+    importance: 'critical',
+    reason: 'Core framework - essential for Next.js development',
+  },
+  nuxt: {
+    url: 'https://github.com/nuxt/nuxt',
+    importance: 'critical',
+    reason: 'Core framework - essential for Nuxt development',
+  },
+  svelte: {
+    url: 'https://github.com/sveltejs/svelte',
+    importance: 'critical',
+    reason: 'Core framework - essential for Svelte development',
+  },
+  django: {
+    url: 'https://github.com/django/django',
+    importance: 'critical',
+    reason: 'Core framework - essential for Django development',
+  },
+  flask: {
+    url: 'https://github.com/pallets/flask',
+    importance: 'critical',
+    reason: 'Core framework - essential for Flask development',
+  },
+  prisma: {
+    url: 'https://github.com/prisma/prisma',
+    importance: 'high',
+    reason: 'ORM - database interactions',
+  },
 };
 
 export async function analyzeDependencies(
@@ -62,7 +125,7 @@ export async function analyzeDependencies(
   }
 
   // Remove duplicates and sort by importance
-  const unique = Array.from(new Map(suggestions.map(s => [s.name, s])).values());
+  const unique = Array.from(new Map(suggestions.map((s) => [s.name, s])).values());
   return unique.sort((a, b) => {
     const order = { critical: 0, high: 1, medium: 2 };
     return order[a.importance] - order[b.importance];
@@ -87,7 +150,7 @@ function analyzeNodeDependencies(pkg: Record<string, unknown>): DependencySugges
         name,
         url: known.url,
         importance: known.importance,
-        reason: known.reason
+        reason: known.reason,
       });
     }
   }
@@ -105,7 +168,7 @@ function analyzePythonDependencies(content: string): DependencySuggestion[] {
 
     // Parse package name (before ==, >=, etc.)
     const match = /^([a-zA-Z0-9_-]+)/.exec(trimmed);
-    if (match !== null && match[1] !== undefined) {
+    if (match?.[1] !== undefined) {
       const name = match[1].toLowerCase();
       const known = KNOWN_REPOS[name];
       if (known !== undefined) {
@@ -113,7 +176,7 @@ function analyzePythonDependencies(content: string): DependencySuggestion[] {
           name,
           url: known.url,
           importance: known.importance,
-          reason: known.reason
+          reason: known.reason,
         });
       }
     }
@@ -137,7 +200,7 @@ function analyzePyProjectDependencies(content: string): DependencySuggestion[] {
           name,
           url: known.url,
           importance: known.importance,
-          reason: known.reason
+          reason: known.reason,
         });
       }
     }

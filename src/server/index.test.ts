@@ -13,17 +13,17 @@ describe('Server Integration - Full App Creation', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
+        search: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -62,17 +62,17 @@ describe('Server Integration - Store CRUD Flow', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
+        search: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -93,12 +93,12 @@ describe('Server Integration - Store CRUD Flow', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: newStore
+      data: newStore,
     });
 
     res = await app.request('/api/stores', {
@@ -107,8 +107,8 @@ describe('Server Integration - Store CRUD Flow', () => {
       body: JSON.stringify({
         name: 'test-store',
         type: 'file',
-        path: '/tmp/test'
-      })
+        path: '/tmp/test',
+      }),
     });
 
     expect(res.status).toBe(201);
@@ -123,11 +123,11 @@ describe('Server Integration - Store CRUD Flow', () => {
     // 4. Delete store
     vi.mocked(mockServices.store.delete).mockResolvedValue({
       success: true,
-      data: undefined
+      data: undefined,
     });
 
     res = await app.request('/api/stores/new-store', {
-      method: 'DELETE'
+      method: 'DELETE',
     });
 
     expect(res.status).toBe(200);
@@ -140,14 +140,14 @@ describe('Server Integration - Search Flow', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        list: vi.fn()
+        list: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
-      }
+        search: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -161,7 +161,7 @@ describe('Server Integration - Search Flow', () => {
         type: 'file',
         path: '/tmp/1',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       {
         id: createStoreId('store-2'),
@@ -169,22 +169,20 @@ describe('Server Integration - Search Flow', () => {
         type: 'file',
         path: '/tmp/2',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ];
 
     vi.mocked(mockServices.store.list).mockResolvedValue(stores);
     vi.mocked(mockServices.search.search).mockResolvedValue({
-      results: [
-        { score: 0.9, summary: { location: 'file1.ts', purpose: 'Test' } }
-      ],
-      totalResults: 1
+      results: [{ score: 0.9, summary: { location: 'file1.ts', purpose: 'Test' } }],
+      totalResults: 1,
     });
 
     const res = await app.request('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: 'test query' })
+      body: JSON.stringify({ query: 'test query' }),
     });
 
     expect(res.status).toBe(200);
@@ -199,14 +197,14 @@ describe('Server Integration - Index Flow', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        getByIdOrName: vi.fn()
+        getByIdOrName: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -219,7 +217,7 @@ describe('Server Integration - Index Flow', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(store);
@@ -228,12 +226,12 @@ describe('Server Integration - Index Flow', () => {
       data: {
         documentsIndexed: 5,
         chunksCreated: 25,
-        timeMs: 500
-      }
+        timeMs: 500,
+      },
     });
 
     const res = await app.request('/api/stores/store-1/index', {
-      method: 'POST'
+      method: 'POST',
     });
 
     expect(res.status).toBe(200);
@@ -250,14 +248,14 @@ describe('Server Integration - Error Handling', () => {
       store: {
         create: vi.fn(),
         getByIdOrName: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
+        indexStore: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
-      }
+        initialize: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -266,7 +264,7 @@ describe('Server Integration - Error Handling', () => {
 
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: false,
-      error: new Error('Service error')
+      error: new Error('Service error'),
     });
 
     const res = await app.request('/api/stores', {
@@ -275,8 +273,8 @@ describe('Server Integration - Error Handling', () => {
       body: JSON.stringify({
         name: 'test',
         type: 'file',
-        path: '/tmp/test'
-      })
+        path: '/tmp/test',
+      }),
     });
 
     expect(res.status).toBe(400);
@@ -301,14 +299,14 @@ describe('Server Integration - Content Negotiation', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        list: vi.fn()
+        list: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
-      }
+        search: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -328,13 +326,13 @@ describe('Server Integration - Content Negotiation', () => {
     vi.mocked(mockServices.store.list).mockResolvedValue([]);
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     const res = await app.request('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: 'test' })
+      body: JSON.stringify({ query: 'test' }),
     });
 
     expect(res.status).toBe(200);
@@ -347,14 +345,14 @@ describe('Server Integration - Route Parameters', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        getByIdOrName: vi.fn()
+        getByIdOrName: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -367,7 +365,7 @@ describe('Server Integration - Route Parameters', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(store);
@@ -386,7 +384,7 @@ describe('Server Integration - Route Parameters', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(store);
@@ -406,17 +404,17 @@ describe('Server Integration - HTTP Methods', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
+        search: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -426,7 +424,7 @@ describe('Server Integration - HTTP Methods', () => {
     vi.mocked(mockServices.store.list).mockResolvedValue([]);
 
     const res = await app.request('/api/stores', {
-      method: 'GET'
+      method: 'GET',
     });
 
     expect(res.status).toBe(200);
@@ -438,13 +436,13 @@ describe('Server Integration - HTTP Methods', () => {
     vi.mocked(mockServices.store.list).mockResolvedValue([]);
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     const res = await app.request('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: 'test' })
+      body: JSON.stringify({ query: 'test' }),
     });
 
     expect(res.status).toBe(200);
@@ -459,17 +457,17 @@ describe('Server Integration - HTTP Methods', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(store);
     vi.mocked(mockServices.store.delete).mockResolvedValue({
       success: true,
-      data: undefined
+      data: undefined,
     });
 
     const res = await app.request('/api/stores/store-1', {
-      method: 'DELETE'
+      method: 'DELETE',
     });
 
     expect(res.status).toBe(200);

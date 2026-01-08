@@ -35,7 +35,9 @@ describe('IntelligentCrawler', () => {
       determineCrawlUrls: vi.fn(),
       extractContent: vi.fn(),
     };
-    vi.mocked(ClaudeClient).mockImplementation(function() { return mockClaudeClient; });
+    vi.mocked(ClaudeClient).mockImplementation(function () {
+      return mockClaudeClient;
+    });
     // Mock static isAvailable to return true (Claude CLI is available in tests)
     vi.mocked(ClaudeClient.isAvailable).mockReturnValue(true);
 
@@ -45,7 +47,9 @@ describe('IntelligentCrawler', () => {
       fetchHeadless: vi.fn(),
       stop: vi.fn().mockResolvedValue(undefined),
     };
-    vi.mocked(PythonBridge).mockImplementation(function() { return mockPythonBridge; });
+    vi.mocked(PythonBridge).mockImplementation(function () {
+      return mockPythonBridge;
+    });
 
     // Setup axios mock
     vi.mocked(axios.get).mockResolvedValue({
@@ -228,8 +232,9 @@ describe('IntelligentCrawler', () => {
         pages: [{ links: [circular] }], // Link back to itself
       });
 
-      vi.mocked(axios.get)
-        .mockResolvedValueOnce({ data: `<html><body><a href="${circular}">Self</a></body></html>` });
+      vi.mocked(axios.get).mockResolvedValueOnce({
+        data: `<html><body><a href="${circular}">Self</a></body></html>`,
+      });
 
       const results = [];
       for await (const result of crawler.crawl(circular, { simple: true, maxPages: 10 })) {
@@ -324,7 +329,10 @@ describe('IntelligentCrawler', () => {
       mockPythonBridge.crawl.mockResolvedValue({ pages: [{ links: [] }] });
 
       const results = [];
-      for await (const result of crawler.crawl('https://example.com', { simple: true, maxPages: 10 })) {
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 10,
+      })) {
         results.push(result);
       }
 
@@ -418,7 +426,10 @@ describe('IntelligentCrawler', () => {
 
       const results = [];
       const crawlPromise = (async () => {
-        for await (const result of crawler.crawl('https://example.com', { simple: true, maxPages: 100 })) {
+        for await (const result of crawler.crawl('https://example.com', {
+          simple: true,
+          maxPages: 100,
+        })) {
           results.push(result);
         }
       })();
@@ -455,7 +466,10 @@ describe('IntelligentCrawler', () => {
       mockPythonBridge.crawl.mockResolvedValue({ pages: [{ links }] });
 
       const results = [];
-      for await (const result of crawler.crawl('https://example.com', { simple: true, maxPages: 3 })) {
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 3,
+      })) {
         results.push(result);
       }
 
@@ -513,7 +527,10 @@ describe('IntelligentCrawler', () => {
         .mockResolvedValueOnce({ data: '<html><body>Page1</body></html>' });
 
       const results = [];
-      for await (const result of crawler.crawl('https://example.com', { simple: true, maxPages: 10 })) {
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 10,
+      })) {
         results.push(result);
       }
 
@@ -534,7 +551,10 @@ describe('IntelligentCrawler', () => {
         .mockResolvedValueOnce({ data: '<html><body>Page1</body></html>' });
 
       const results = [];
-      for await (const result of crawler.crawl('https://example.com', { simple: true, maxPages: 10 })) {
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 10,
+      })) {
         results.push(result);
       }
 
@@ -546,11 +566,7 @@ describe('IntelligentCrawler', () => {
       mockPythonBridge.crawl.mockResolvedValue({
         pages: [
           {
-            links: [
-              'not-a-valid-url',
-              'javascript:void(0)',
-              'mailto:test@example.com',
-            ],
+            links: ['not-a-valid-url', 'javascript:void(0)', 'mailto:test@example.com'],
           },
         ],
       });
@@ -580,7 +596,9 @@ describe('IntelligentCrawler', () => {
       // Should still crawl using simple mode
       expect(results).toHaveLength(1);
       const errorEvents = progressEvents.filter((e) => e.type === 'error');
-      expect(errorEvents.some((e) => e.message?.includes('falling back to simple mode'))).toBe(true);
+      expect(errorEvents.some((e) => e.message?.includes('falling back to simple mode'))).toBe(
+        true
+      );
     });
   });
 
@@ -601,7 +619,7 @@ describe('IntelligentCrawler', () => {
       expect(results[0]?.extracted).toBe('Extracted pricing info');
       expect(mockClaudeClient.extractContent).toHaveBeenCalledWith(
         expect.any(String),
-        'Extract pricing',
+        'Extract pricing'
       );
     });
 
@@ -700,8 +718,30 @@ describe('IntelligentCrawler', () => {
         html: '<html/>',
         markdown: 'test',
         links: [
-          { href: 'https://example.com/page1', text: 'Page 1', title: '', base_domain: 'example.com', head_data: null, head_extraction_status: null, head_extraction_error: null, intrinsic_score: 0, contextual_score: null, total_score: null },
-          { href: 'https://example.com/page2', text: 'Page 2', title: '', base_domain: 'example.com', head_data: null, head_extraction_status: null, head_extraction_error: null, intrinsic_score: 0, contextual_score: null, total_score: null },
+          {
+            href: 'https://example.com/page1',
+            text: 'Page 1',
+            title: '',
+            base_domain: 'example.com',
+            head_data: null,
+            head_extraction_status: null,
+            head_extraction_error: null,
+            intrinsic_score: 0,
+            contextual_score: null,
+            total_score: null,
+          },
+          {
+            href: 'https://example.com/page2',
+            text: 'Page 2',
+            title: '',
+            base_domain: 'example.com',
+            head_data: null,
+            head_extraction_status: null,
+            head_extraction_error: null,
+            intrinsic_score: 0,
+            contextual_score: null,
+            total_score: null,
+          },
           'https://example.com/page3', // Also support plain strings
         ],
       };
@@ -776,7 +816,7 @@ describe('IntelligentCrawler', () => {
 
       expect(vi.mocked(articleConverter.convertHtmlToMarkdown)).toHaveBeenCalledWith(
         expect.any(String),
-        'https://example.com',
+        'https://example.com'
       );
       expect(results[0]?.markdown).toBe('# Test\n\nContent');
     });
@@ -827,7 +867,10 @@ describe('IntelligentCrawler', () => {
       vi.mocked(axios.get).mockResolvedValue({ data: '<html><body>Test</body></html>' });
 
       const results = [];
-      for await (const result of crawler.crawl('https://example.com', { simple: true, maxPages: 10 })) {
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 10,
+      })) {
         results.push(result);
       }
 
@@ -887,7 +930,7 @@ describe('IntelligentCrawler', () => {
 
       // Should have emitted progress event about mode switch
       const modeEvent = progressEvents.find(
-        e => e.type === 'error' && e.message?.includes('Claude CLI not found')
+        (e) => e.type === 'error' && e.message?.includes('Claude CLI not found')
       );
       expect(modeEvent).toBeDefined();
       expect(modeEvent?.message).toContain('using simple crawl mode');
@@ -920,7 +963,7 @@ describe('IntelligentCrawler', () => {
 
       // Should have emitted skip extraction progress event
       const skipEvent = progressEvents.find(
-        e => e.type === 'error' && e.message?.includes('Skipping extraction')
+        (e) => e.type === 'error' && e.message?.includes('Skipping extraction')
       );
       expect(skipEvent).toBeDefined();
 

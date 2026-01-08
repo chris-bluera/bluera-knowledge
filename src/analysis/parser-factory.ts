@@ -1,9 +1,9 @@
 import path from 'node:path';
-import type { PythonBridge } from '../crawl/bridge.js';
 import { ASTParser, type CodeNode } from './ast-parser.js';
+import { GoASTParser } from './go-ast-parser.js';
 import { PythonASTParser } from './python-ast-parser.js';
 import { RustASTParser } from './rust-ast-parser.js';
-import { GoASTParser } from './go-ast-parser.js';
+import type { PythonBridge } from '../crawl/bridge.js';
 
 export class ParserFactory {
   constructor(private readonly pythonBridge?: PythonBridge) {}
@@ -26,7 +26,7 @@ export class ParserFactory {
         throw new Error('Python bridge not available for parsing Python files');
       }
       const parser = new PythonASTParser(this.pythonBridge);
-      return await parser.parse(code, filePath);
+      return parser.parse(code, filePath);
     }
 
     if (ext === '.rs') {

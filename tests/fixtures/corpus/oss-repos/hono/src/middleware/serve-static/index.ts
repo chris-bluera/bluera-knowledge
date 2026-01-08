@@ -97,7 +97,7 @@ export const serveStatic = <E extends Env = Env>(
     }
 
     const mimeType = options.mimes
-      ? getMimeType(path, options.mimes) ?? getMimeType(path)
+      ? (getMimeType(path, options.mimes) ?? getMimeType(path))
       : getMimeType(path)
 
     if (mimeType) {

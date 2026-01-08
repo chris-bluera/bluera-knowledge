@@ -1,9 +1,9 @@
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
-import type { AppConfig } from '../types/config.js';
-import { DEFAULT_CONFIG } from '../types/config.js';
+import { dirname, resolve } from 'node:path';
 import { ProjectRootService } from './project-root.service.js';
+import { DEFAULT_CONFIG } from '../types/config.js';
+import type { AppConfig } from '../types/config.js';
 
 /**
  * Check if a file exists
@@ -59,7 +59,9 @@ export class ConfigService {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       this.config = { ...DEFAULT_CONFIG, ...JSON.parse(content) } as AppConfig;
     } catch (error) {
-      throw new Error(`Failed to parse config file at ${this.configPath}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to parse config file at ${this.configPath}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
 
     return this.config;

@@ -57,7 +57,7 @@ describe('crawl command execution', () => {
     };
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
-    vi.mocked(IntelligentCrawler).mockImplementation(function(this: any) {
+    vi.mocked(IntelligentCrawler).mockImplementation(function (this: any) {
       return mockCrawler as any;
     } as any);
 
@@ -278,7 +278,14 @@ describe('crawl command execution', () => {
       );
 
       const command = createCrawlCommand(getOptions);
-      command.parseOptions(['--crawl', 'all Getting Started pages', '--extract', 'code examples', '--max-pages', '100']);
+      command.parseOptions([
+        '--crawl',
+        'all Getting Started pages',
+        '--extract',
+        'code examples',
+        '--max-pages',
+        '100',
+      ]);
       const actionHandler = command._actionHandler;
 
       await actionHandler(['https://example.com', 'test-store']);
@@ -337,7 +344,10 @@ describe('crawl command execution', () => {
 
     it('throws error when store creation fails', async () => {
       mockServices.store.getByIdOrName.mockResolvedValue(undefined);
-      mockServices.store.create.mockResolvedValue({ success: false, error: new Error('Name already exists') });
+      mockServices.store.create.mockResolvedValue({
+        success: false,
+        error: new Error('Name already exists'),
+      });
 
       const command = createCrawlCommand(getOptions);
       const actionHandler = command._actionHandler;
@@ -388,9 +398,7 @@ describe('crawl command execution', () => {
 
       await actionHandler(['https://example.com', 'new-store']);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"storeCreated": true')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"storeCreated": true'));
     });
   });
 
@@ -439,7 +447,9 @@ describe('crawl command execution', () => {
       const command = createCrawlCommand(getOptions);
       const actionHandler = command._actionHandler;
 
-      await expect(actionHandler(['https://example.com', 'test-store'])).rejects.toThrow('process.exit: 6');
+      await expect(actionHandler(['https://example.com', 'test-store'])).rejects.toThrow(
+        'process.exit: 6'
+      );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Crawl failed: Network timeout');
       expect(processExitSpy).toHaveBeenCalledWith(6);
@@ -475,7 +485,9 @@ describe('crawl command execution', () => {
       const command = createCrawlCommand(getOptions);
       const actionHandler = command._actionHandler;
 
-      await expect(actionHandler(['https://example.com', 'test-store'])).rejects.toThrow('process.exit: 6');
+      await expect(actionHandler(['https://example.com', 'test-store'])).rejects.toThrow(
+        'process.exit: 6'
+      );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Error: Crawl failed: Embedding service unavailable'
@@ -514,7 +526,9 @@ describe('crawl command execution', () => {
       const command = createCrawlCommand(getOptions);
       const actionHandler = command._actionHandler;
 
-      await expect(actionHandler(['https://example.com', 'test-store'])).rejects.toThrow('process.exit: 6');
+      await expect(actionHandler(['https://example.com', 'test-store'])).rejects.toThrow(
+        'process.exit: 6'
+      );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Crawl failed: Database write error');
       expect(processExitSpy).toHaveBeenCalledWith(6);
@@ -592,18 +606,10 @@ describe('crawl command execution', () => {
 
       await actionHandler(['https://example.com', 'test-store']);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"success": true')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"store": "test-store"')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"pagesCrawled": 1')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"mode": "intelligent"')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"success": true'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"store": "test-store"'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"pagesCrawled": 1'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"mode": "intelligent"'));
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('"hadCrawlInstruction": true')
       );
@@ -950,7 +956,11 @@ describe('crawl command execution', () => {
           if (progressCallback) {
             progressCallback({ type: 'strategy', message: 'Planning crawl...' });
             progressCallback({ type: 'strategy', message: undefined }); // Test fallback
-            progressCallback({ type: 'page', pagesVisited: 0, currentUrl: 'https://example.com/page1' });
+            progressCallback({
+              type: 'page',
+              pagesVisited: 0,
+              currentUrl: 'https://example.com/page1',
+            });
             progressCallback({ type: 'page', pagesVisited: 1, currentUrl: undefined }); // Test fallback
             progressCallback({ type: 'extraction', currentUrl: 'https://example.com/page1' });
             progressCallback({ type: 'extraction', currentUrl: undefined }); // Test fallback
@@ -978,7 +988,10 @@ describe('crawl command execution', () => {
 
         expect(mockCrawler.on).toHaveBeenCalledWith('progress', expect.any(Function));
       } finally {
-        Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true });
+        Object.defineProperty(process.stdout, 'isTTY', {
+          value: originalIsTTY,
+          configurable: true,
+        });
       }
     });
 
@@ -1022,7 +1035,10 @@ describe('crawl command execution', () => {
         expect(consoleLogSpy).toHaveBeenCalledWith('Crawling https://example.com');
         expect(consoleLogSpy).toHaveBeenCalledWith('Crawled 1 pages, indexed 1 chunks');
       } finally {
-        Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true });
+        Object.defineProperty(process.stdout, 'isTTY', {
+          value: originalIsTTY,
+          configurable: true,
+        });
       }
     });
   });

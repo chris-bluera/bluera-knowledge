@@ -13,17 +13,17 @@ describe('Server App - Health Check', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
+        search: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -51,11 +51,11 @@ describe('Server App - CORS', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        list: vi.fn()
+        list: vi.fn(),
       },
       lance: {},
       search: {},
-      index: {}
+      index: {},
     } as unknown as ServiceContainer;
   });
 
@@ -77,8 +77,8 @@ describe('Server App - CORS', () => {
       headers: {
         'Access-Control-Request-Method': 'POST',
         'Access-Control-Request-Headers': 'content-type',
-        'Origin': 'http://localhost:3000'
-      }
+        Origin: 'http://localhost:3000',
+      },
     });
 
     expect(res.status).toBe(204);
@@ -92,8 +92,8 @@ describe('Server App - GET /api/stores', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        list: vi.fn()
-      }
+        list: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -105,8 +105,8 @@ describe('Server App - GET /api/stores', () => {
         type: 'file',
         path: '/tmp/test',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ];
 
     vi.mocked(mockServices.store.list).mockResolvedValue(mockStores);
@@ -120,7 +120,7 @@ describe('Server App - GET /api/stores', () => {
     expect(json[0]).toMatchObject({
       id: 'store-1',
       name: 'test-store',
-      type: 'file'
+      type: 'file',
     });
   });
 
@@ -142,8 +142,8 @@ describe('Server App - POST /api/stores', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        create: vi.fn()
-      }
+        create: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -154,25 +154,25 @@ describe('Server App - POST /api/stores', () => {
       type: 'file',
       path: '/tmp/new',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: newStore
+      data: newStore,
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         name: 'new-store',
         type: 'file',
-        path: '/tmp/new'
-      })
+        path: '/tmp/new',
+      }),
     });
 
     expect(res.status).toBe(201);
@@ -180,7 +180,7 @@ describe('Server App - POST /api/stores', () => {
     expect(json).toMatchObject({
       id: 'new-store',
       name: 'new-store',
-      type: 'file'
+      type: 'file',
     });
   });
 
@@ -192,25 +192,25 @@ describe('Server App - POST /api/stores', () => {
       path: '/tmp/repo',
       url: 'https://github.com/user/repo.git',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: newStore
+      data: newStore,
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         name: 'repo-store',
         type: 'repo',
-        url: 'https://github.com/user/repo.git'
-      })
+        url: 'https://github.com/user/repo.git',
+      }),
     });
 
     expect(res.status).toBe(201);
@@ -219,26 +219,26 @@ describe('Server App - POST /api/stores', () => {
   it('returns 400 on store creation failure', async () => {
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: false,
-      error: new Error('Invalid path')
+      error: new Error('Invalid path'),
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         name: 'bad-store',
         type: 'file',
-        path: '/invalid'
-      })
+        path: '/invalid',
+      }),
     });
 
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json).toMatchObject({
-      error: 'Invalid path'
+      error: 'Invalid path',
     });
   });
 
@@ -249,9 +249,9 @@ describe('Server App - POST /api/stores', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'bad-file-store',
-        type: 'file'
+        type: 'file',
         // missing path
-      })
+      }),
     });
 
     expect(res.status).toBe(400);
@@ -266,9 +266,9 @@ describe('Server App - POST /api/stores', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'bad-web-store',
-        type: 'web'
+        type: 'web',
         // missing url
-      })
+      }),
     });
 
     expect(res.status).toBe(400);
@@ -283,9 +283,9 @@ describe('Server App - POST /api/stores', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'bad-repo-store',
-        type: 'repo'
+        type: 'repo',
         // missing both path and url
-      })
+      }),
     });
 
     expect(res.status).toBe(400);
@@ -301,12 +301,12 @@ describe('Server App - POST /api/stores', () => {
       url: 'https://example.com',
       depth: 1,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.create).mockResolvedValue({
       success: true,
-      data: newStore
+      data: newStore,
     });
 
     const app = createApp(mockServices);
@@ -316,8 +316,8 @@ describe('Server App - POST /api/stores', () => {
       body: JSON.stringify({
         name: 'web-store',
         type: 'web',
-        url: 'https://example.com'
-      })
+        url: 'https://example.com',
+      }),
     });
 
     expect(res.status).toBe(201);
@@ -330,8 +330,8 @@ describe('Server App - GET /api/stores/:id', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        getByIdOrName: vi.fn()
-      }
+        getByIdOrName: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -342,7 +342,7 @@ describe('Server App - GET /api/stores/:id', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -354,7 +354,7 @@ describe('Server App - GET /api/stores/:id', () => {
     expect(res.status).toBe(200);
     expect(json).toMatchObject({
       id: 'store-1',
-      name: 'test-store'
+      name: 'test-store',
     });
   });
 
@@ -365,7 +365,7 @@ describe('Server App - GET /api/stores/:id', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -385,7 +385,7 @@ describe('Server App - GET /api/stores/:id', () => {
     expect(res.status).toBe(404);
     const json = await res.json();
     expect(json).toMatchObject({
-      error: 'Not found'
+      error: 'Not found',
     });
   });
 });
@@ -397,8 +397,8 @@ describe('Server App - DELETE /api/stores/:id', () => {
     mockServices = {
       store: {
         getByIdOrName: vi.fn(),
-        delete: vi.fn()
-      }
+        delete: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -409,24 +409,24 @@ describe('Server App - DELETE /api/stores/:id', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
     vi.mocked(mockServices.store.delete).mockResolvedValue({
       success: true,
-      data: undefined
+      data: undefined,
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores/store-1', {
-      method: 'DELETE'
+      method: 'DELETE',
     });
 
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toMatchObject({
-      deleted: true
+      deleted: true,
     });
   });
 
@@ -435,7 +435,7 @@ describe('Server App - DELETE /api/stores/:id', () => {
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores/nonexistent', {
-      method: 'DELETE'
+      method: 'DELETE',
     });
 
     expect(res.status).toBe(404);
@@ -448,24 +448,24 @@ describe('Server App - DELETE /api/stores/:id', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
     vi.mocked(mockServices.store.delete).mockResolvedValue({
       success: false,
-      error: new Error('Deletion failed')
+      error: new Error('Deletion failed'),
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores/store-1', {
-      method: 'DELETE'
+      method: 'DELETE',
     });
 
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json).toMatchObject({
-      error: 'Deletion failed'
+      error: 'Deletion failed',
     });
   });
 });
@@ -476,14 +476,14 @@ describe('Server App - POST /api/search', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        list: vi.fn()
+        list: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
-      }
+        search: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -495,30 +495,30 @@ describe('Server App - POST /api/search', () => {
         type: 'file',
         path: '/tmp/test',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ]);
 
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/search', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: 'test query'
-      })
+        query: 'test query',
+      }),
     });
 
     expect(res.status).toBe(200);
     expect(mockServices.search.search).toHaveBeenCalledWith(
       expect.objectContaining({
-        query: 'test query'
+        query: 'test query',
       })
     );
   });
@@ -531,7 +531,7 @@ describe('Server App - POST /api/search', () => {
         type: 'file',
         path: '/tmp/test1',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       {
         id: createStoreId('store-2'),
@@ -539,24 +539,24 @@ describe('Server App - POST /api/search', () => {
         type: 'file',
         path: '/tmp/test2',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ]);
 
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     const app = createApp(mockServices);
     await app.request('/api/search', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: 'test'
-      })
+        query: 'test',
+      }),
     });
 
     expect(mockServices.lance.initialize).toHaveBeenCalledTimes(2);
@@ -572,30 +572,30 @@ describe('Server App - POST /api/search', () => {
         type: 'file',
         path: '/tmp/test',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ]);
 
     vi.mocked(mockServices.search.search).mockResolvedValue({
       results: [],
-      totalResults: 0
+      totalResults: 0,
     });
 
     const app = createApp(mockServices);
     await app.request('/api/search', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         query: 'test',
-        stores: [createStoreId('custom-store')]
-      })
+        stores: [createStoreId('custom-store')],
+      }),
     });
 
     expect(mockServices.search.search).toHaveBeenCalledWith(
       expect.objectContaining({
-        stores: [createStoreId('custom-store')]
+        stores: [createStoreId('custom-store')],
       })
     );
   });
@@ -608,22 +608,22 @@ describe('Server App - POST /api/search', () => {
           score: 0.95,
           summary: {
             location: 'test.ts:10-20',
-            purpose: 'Test function'
-          }
-        }
+            purpose: 'Test function',
+          },
+        },
       ],
-      totalResults: 1
+      totalResults: 1,
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/search', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: 'test'
-      })
+        query: 'test',
+      }),
     });
 
     const json = await res.json();
@@ -638,14 +638,14 @@ describe('Server App - POST /api/stores/:id/index', () => {
   beforeEach(() => {
     mockServices = {
       store: {
-        getByIdOrName: vi.fn()
+        getByIdOrName: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
   });
 
@@ -656,7 +656,7 @@ describe('Server App - POST /api/stores/:id/index', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -665,13 +665,13 @@ describe('Server App - POST /api/stores/:id/index', () => {
       data: {
         documentsIndexed: 10,
         chunksCreated: 50,
-        timeMs: 1000
-      }
+        timeMs: 1000,
+      },
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores/store-1/index', {
-      method: 'POST'
+      method: 'POST',
     });
 
     expect(res.status).toBe(200);
@@ -679,7 +679,7 @@ describe('Server App - POST /api/stores/:id/index', () => {
     expect(json).toMatchObject({
       documentsIndexed: 10,
       chunksCreated: 50,
-      timeMs: 1000
+      timeMs: 1000,
     });
   });
 
@@ -690,7 +690,7 @@ describe('Server App - POST /api/stores/:id/index', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
@@ -699,13 +699,13 @@ describe('Server App - POST /api/stores/:id/index', () => {
       data: {
         documentsIndexed: 0,
         chunksCreated: 0,
-        timeMs: 0
-      }
+        timeMs: 0,
+      },
     });
 
     const app = createApp(mockServices);
     await app.request('/api/stores/store-1/index', {
-      method: 'POST'
+      method: 'POST',
     });
 
     expect(mockServices.lance.initialize).toHaveBeenCalledWith(createStoreId('store-1'));
@@ -716,7 +716,7 @@ describe('Server App - POST /api/stores/:id/index', () => {
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores/nonexistent/index', {
-      method: 'POST'
+      method: 'POST',
     });
 
     expect(res.status).toBe(404);
@@ -729,24 +729,24 @@ describe('Server App - POST /api/stores/:id/index', () => {
       type: 'file',
       path: '/tmp/test',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(mockStore);
     vi.mocked(mockServices.index.indexStore).mockResolvedValue({
       success: false,
-      error: new Error('Indexing failed')
+      error: new Error('Indexing failed'),
     });
 
     const app = createApp(mockServices);
     const res = await app.request('/api/stores/store-1/index', {
-      method: 'POST'
+      method: 'POST',
     });
 
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json).toMatchObject({
-      error: 'Indexing failed'
+      error: 'Indexing failed',
     });
   });
 });

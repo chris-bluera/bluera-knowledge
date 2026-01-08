@@ -1,6 +1,6 @@
-import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/transformers';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/transformers';
 
 // Set cache directory to ~/.cache/huggingface-transformers (outside node_modules)
 // This allows CI caching and prevents model re-downloads on each npm install
@@ -37,7 +37,7 @@ export class EmbeddingEngine {
       normalize: true,
     });
     const result = Array.from(output.data);
-    return result.map(v => Number(v));
+    return result.map((v) => Number(v));
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
@@ -48,15 +48,13 @@ export class EmbeddingEngine {
       const batch = texts.slice(i, i + BATCH_SIZE);
 
       // Process batch in parallel using Promise.all
-      const batchResults = await Promise.all(
-        batch.map(text => this.embed(text))
-      );
+      const batchResults = await Promise.all(batch.map((text) => this.embed(text)));
 
       results.push(...batchResults);
 
       // Small delay between batches to prevent memory issues
       if (i + BATCH_SIZE < texts.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 

@@ -117,13 +117,33 @@ describe('SearchService - RRF Ranking Algorithm', () => {
 
   it('combines vector and FTS results with RRF', async () => {
     const vectorResults = [
-      { id: createDocumentId('doc1'), score: 0.9, content: 'result 1', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
-      { id: createDocumentId('doc2'), score: 0.8, content: 'result 2', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.8,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ];
 
     const ftsResults = [
-      { id: createDocumentId('doc2'), score: 0.95, content: 'result 2', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
-      { id: createDocumentId('doc3'), score: 0.85, content: 'result 3', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.95,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc3'),
+        score: 0.85,
+        content: 'result 3',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ];
 
     vi.mocked(mockLanceStore.search).mockResolvedValue(vectorResults);
@@ -138,16 +158,36 @@ describe('SearchService - RRF Ranking Algorithm', () => {
 
     expect(results.results.length).toBeGreaterThan(0);
     // doc2 should rank higher as it appears in both results
-    expect(results.results.some(r => r.id === createDocumentId('doc2'))).toBe(true);
+    expect(results.results.some((r) => r.id === createDocumentId('doc2'))).toBe(true);
   });
 
   it('uses web RRF preset for web content (url metadata)', async () => {
     // Web content has url in metadata - should use web preset (k=30)
     vi.mocked(mockLanceStore.search).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.9, content: 'result 1', metadata: { type: 'web' as const, storeId, indexedAt: new Date(), url: 'https://example.com/docs' } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: {
+          type: 'web' as const,
+          storeId,
+          indexedAt: new Date(),
+          url: 'https://example.com/docs',
+        },
+      },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.95, content: 'result 1', metadata: { type: 'web' as const, storeId, indexedAt: new Date(), url: 'https://example.com/docs' } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.95,
+        content: 'result 1',
+        metadata: {
+          type: 'web' as const,
+          storeId,
+          indexedAt: new Date(),
+          url: 'https://example.com/docs',
+        },
+      },
     ]);
 
     const results = await searchService.search({
@@ -164,10 +204,25 @@ describe('SearchService - RRF Ranking Algorithm', () => {
   it('uses code RRF preset for file content (path metadata)', async () => {
     // File content has path, no url - should use code preset (k=20)
     vi.mocked(mockLanceStore.search).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.9, content: 'function test() {}', metadata: { type: 'file' as const, storeId, indexedAt: new Date(), path: '/src/test.ts' } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'function test() {}',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date(), path: '/src/test.ts' },
+      },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([
-      { id: createDocumentId('doc2'), score: 0.95, content: 'class Example {}', metadata: { type: 'file' as const, storeId, indexedAt: new Date(), path: '/src/example.ts' } },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.95,
+        content: 'class Example {}',
+        metadata: {
+          type: 'file' as const,
+          storeId,
+          indexedAt: new Date(),
+          path: '/src/example.ts',
+        },
+      },
     ]);
 
     const results = await searchService.search({
@@ -182,7 +237,12 @@ describe('SearchService - RRF Ranking Algorithm', () => {
 
   it('handles documents appearing only in vector results', async () => {
     vi.mocked(mockLanceStore.search).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.9, content: 'vector only', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'vector only',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
 
@@ -200,7 +260,12 @@ describe('SearchService - RRF Ranking Algorithm', () => {
   it('handles documents appearing only in FTS results', async () => {
     vi.mocked(mockLanceStore.search).mockResolvedValue([]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.9, content: 'fts only', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'fts only',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ]);
 
     const results = await searchService.search({
@@ -216,11 +281,26 @@ describe('SearchService - RRF Ranking Algorithm', () => {
 
   it('normalizes scores to 0-1 range', async () => {
     vi.mocked(mockLanceStore.search).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.9, content: 'result 1', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
-      { id: createDocumentId('doc2'), score: 0.5, content: 'result 2', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.5,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.95, content: 'result 1', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.95,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ]);
 
     const results = await searchService.search({
@@ -231,7 +311,7 @@ describe('SearchService - RRF Ranking Algorithm', () => {
     });
 
     // Scores should be normalized
-    results.results.forEach(r => {
+    results.results.forEach((r) => {
       expect(r.score).toBeGreaterThanOrEqual(0);
       expect(r.score).toBeLessThanOrEqual(1);
     });
@@ -239,8 +319,18 @@ describe('SearchService - RRF Ranking Algorithm', () => {
 
   it('handles identical scores correctly', async () => {
     vi.mocked(mockLanceStore.search).mockResolvedValue([
-      { id: createDocumentId('doc1'), score: 0.9, content: 'result 1', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
-      { id: createDocumentId('doc2'), score: 0.9, content: 'result 2', metadata: { type: 'file' as const, storeId, indexedAt: new Date() } },
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.9,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
 
@@ -294,8 +384,8 @@ describe('SearchService - Query Intent Classification', () => {
             type: 'file' as const,
             storeId,
             indexedAt: new Date(),
-            fileType: 'example'
-          }
+            fileType: 'example',
+          },
         },
       ]);
       vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -330,8 +420,8 @@ describe('SearchService - Query Intent Classification', () => {
             type: 'file' as const,
             storeId,
             indexedAt: new Date(),
-            fileType: 'source-internal'
-          }
+            fileType: 'source-internal',
+          },
         },
       ]);
       vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -365,8 +455,8 @@ describe('SearchService - Query Intent Classification', () => {
             type: 'file' as const,
             storeId,
             indexedAt: new Date(),
-            fileType: 'documentation'
-          }
+            fileType: 'documentation',
+          },
         },
       ]);
       vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -400,8 +490,8 @@ describe('SearchService - Query Intent Classification', () => {
             type: 'file' as const,
             storeId,
             indexedAt: new Date(),
-            fileType: 'documentation-primary'
-          }
+            fileType: 'documentation-primary',
+          },
         },
       ]);
       vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -435,8 +525,8 @@ describe('SearchService - Query Intent Classification', () => {
             type: 'file' as const,
             storeId,
             indexedAt: new Date(),
-            fileType: 'test'
-          }
+            fileType: 'test',
+          },
         },
       ]);
       vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -462,8 +552,8 @@ describe('SearchService - Query Intent Classification', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          fileType: 'documentation'
-        }
+          fileType: 'documentation',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -508,8 +598,8 @@ describe('SearchService - Framework Context Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/docs/react/components.md'
-        }
+          path: '/docs/react/components.md',
+        },
       },
       {
         id: createDocumentId('vue-doc'),
@@ -519,8 +609,8 @@ describe('SearchService - Framework Context Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/docs/vue/components.md'
-        }
+          path: '/docs/vue/components.md',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -546,8 +636,8 @@ describe('SearchService - Framework Context Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/node_modules/express/README.md'
-        }
+          path: '/node_modules/express/README.md',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -572,8 +662,8 @@ describe('SearchService - Framework Context Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/docs/vue3/api.md'
-        }
+          path: '/docs/vue3/api.md',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -598,8 +688,8 @@ describe('SearchService - Framework Context Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/docs/typescript/generics.md'
-        }
+          path: '/docs/typescript/generics.md',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -624,8 +714,8 @@ describe('SearchService - Framework Context Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/docs/general.md'
-        }
+          path: '/docs/general.md',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -672,8 +762,8 @@ describe('SearchService - Deduplication Logic', () => {
           indexedAt: new Date(),
           path: '/src/file.ts',
           chunkIndex: 0,
-          totalChunks: 2
-        }
+          totalChunks: 2,
+        },
       },
       {
         id: createDocumentId('chunk2'),
@@ -685,8 +775,8 @@ describe('SearchService - Deduplication Logic', () => {
           indexedAt: new Date(),
           path: '/src/file.ts',
           chunkIndex: 1,
-          totalChunks: 2
-        }
+          totalChunks: 2,
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -714,8 +804,8 @@ describe('SearchService - Deduplication Logic', () => {
           indexedAt: new Date(),
           path: '/src/file.ts',
           chunkIndex: 0,
-          totalChunks: 2
-        }
+          totalChunks: 2,
+        },
       },
       {
         id: createDocumentId('chunk2'),
@@ -727,8 +817,8 @@ describe('SearchService - Deduplication Logic', () => {
           indexedAt: new Date(),
           path: '/src/file.ts',
           chunkIndex: 1,
-          totalChunks: 2
-        }
+          totalChunks: 2,
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -754,8 +844,8 @@ describe('SearchService - Deduplication Logic', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/file1.ts'
-        }
+          path: '/src/file1.ts',
+        },
       },
       {
         id: createDocumentId('file2'),
@@ -765,8 +855,8 @@ describe('SearchService - Deduplication Logic', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/file2.ts'
-        }
+          path: '/src/file2.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -812,8 +902,8 @@ describe('SearchService - Progressive Context Enhancement', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/example.ts'
-        }
+          path: '/src/example.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -841,8 +931,8 @@ describe('SearchService - Progressive Context Enhancement', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/Component.tsx'
-        }
+          path: '/src/Component.tsx',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -872,8 +962,8 @@ describe('SearchService - Progressive Context Enhancement', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/example.ts'
-        }
+          path: '/src/example.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -903,8 +993,8 @@ describe('SearchService - Progressive Context Enhancement', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/api.ts'
-        }
+          path: '/src/api.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -929,8 +1019,8 @@ describe('SearchService - Progressive Context Enhancement', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/Component.ts'
-        }
+          path: '/src/Component.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1003,8 +1093,8 @@ describe('SearchService - Edge Cases', () => {
         type: 'file' as const,
         storeId,
         indexedAt: new Date(),
-        path: `/src/file${i}.ts`
-      }
+        path: `/src/file${i}.ts`,
+      },
     }));
 
     vi.mocked(mockLanceStore.search).mockResolvedValue(manyResults);
@@ -1026,19 +1116,23 @@ describe('SearchService - Edge Cases', () => {
 
     vi.mocked(mockLanceStore.search).mockImplementation(async (storeId) => {
       if (storeId === store1) {
-        return [{
-          id: createDocumentId('doc1'),
-          score: 0.9,
-          content: 'from store 1',
-          metadata: { type: 'file' as const, storeId: store1, indexedAt: new Date() }
-        }];
+        return [
+          {
+            id: createDocumentId('doc1'),
+            score: 0.9,
+            content: 'from store 1',
+            metadata: { type: 'file' as const, storeId: store1, indexedAt: new Date() },
+          },
+        ];
       }
-      return [{
-        id: createDocumentId('doc2'),
-        score: 0.8,
-        content: 'from store 2',
-        metadata: { type: 'file' as const, storeId: store2, indexedAt: new Date() }
-      }];
+      return [
+        {
+          id: createDocumentId('doc2'),
+          score: 0.8,
+          content: 'from store 2',
+          metadata: { type: 'file' as const, storeId: store2, indexedAt: new Date() },
+        },
+      ];
     });
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
 
@@ -1072,7 +1166,7 @@ describe('SearchService - Edge Cases', () => {
         id: createDocumentId('doc1'),
         score: 0.95,
         content: 'high score',
-        metadata: { type: 'file' as const, storeId, indexedAt: new Date() }
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
       },
     ]);
 
@@ -1123,8 +1217,8 @@ describe('SearchService - Path Keyword Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils/helpers.py'
-        }
+          path: '/src/utils/helpers.py',
+        },
       },
       {
         id: createDocumentId('dispatcher-file'),
@@ -1134,8 +1228,8 @@ describe('SearchService - Path Keyword Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/async_dispatcher.py'
-        }
+          path: '/src/async_dispatcher.py',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1161,8 +1255,8 @@ describe('SearchService - Path Keyword Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/crawler.py'
-        }
+          path: '/src/crawler.py',
+        },
       },
       {
         id: createDocumentId('double-match'),
@@ -1172,8 +1266,8 @@ describe('SearchService - Path Keyword Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/deep_crawling/crawler.py'
-        }
+          path: '/src/deep_crawling/crawler.py',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1199,8 +1293,8 @@ describe('SearchService - Path Keyword Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/config.ts'
-        }
+          path: '/src/config.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1226,8 +1320,8 @@ describe('SearchService - Path Keyword Boosting', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils/helpers.ts'
-        }
+          path: '/src/utils/helpers.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1293,8 +1387,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils.ts'
-        }
+          path: '/src/utils.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1336,8 +1430,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/readme.md'
-        }
+          path: '/src/readme.md',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1377,8 +1471,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/empty.ts'
-        }
+          path: '/src/empty.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1400,11 +1494,26 @@ describe('SearchService - Code Graph Integration', () => {
       getCalledByCount: vi.fn().mockReturnValue(2),
       getCallsCount: vi.fn().mockReturnValue(1),
       getIncomingEdges: vi.fn().mockReturnValue([
-        { from: '/src/caller.ts:callerFunction', to: '/src/utils.ts:myFunction', type: 'calls', confidence: 0.8 },
-        { from: '/src/main.ts:init', to: '/src/utils.ts:myFunction', type: 'calls', confidence: 0.9 },
+        {
+          from: '/src/caller.ts:callerFunction',
+          to: '/src/utils.ts:myFunction',
+          type: 'calls',
+          confidence: 0.8,
+        },
+        {
+          from: '/src/main.ts:init',
+          to: '/src/utils.ts:myFunction',
+          type: 'calls',
+          confidence: 0.9,
+        },
       ]),
       getEdges: vi.fn().mockReturnValue([
-        { from: '/src/utils.ts:myFunction', to: '/src/helper.ts:helperFn', type: 'calls', confidence: 0.8 },
+        {
+          from: '/src/utils.ts:myFunction',
+          to: '/src/helper.ts:helperFn',
+          type: 'calls',
+          confidence: 0.8,
+        },
       ]),
     };
 
@@ -1414,13 +1523,14 @@ describe('SearchService - Code Graph Integration', () => {
       {
         id: createDocumentId('doc1'),
         score: 0.9,
-        content: '/** My function does stuff */\nexport function myFunction() { return helperFn(); }',
+        content:
+          '/** My function does stuff */\nexport function myFunction() { return helperFn(); }',
         metadata: {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils.ts'
-        }
+          path: '/src/utils.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1439,13 +1549,19 @@ describe('SearchService - Code Graph Integration', () => {
     expect(results.results[0]?.full?.relatedCode?.length).toBe(3);
 
     // Check incoming (callers)
-    const callers = results.results[0]?.full?.relatedCode?.filter(r => r.relationship === 'calls this');
+    const callers = results.results[0]?.full?.relatedCode?.filter(
+      (r) => r.relationship === 'calls this'
+    );
     expect(callers?.length).toBe(2);
-    expect(callers?.some(c => c.file === '/src/caller.ts' && c.summary === 'callerFunction()')).toBe(true);
-    expect(callers?.some(c => c.file === '/src/main.ts' && c.summary === 'init()')).toBe(true);
+    expect(
+      callers?.some((c) => c.file === '/src/caller.ts' && c.summary === 'callerFunction()')
+    ).toBe(true);
+    expect(callers?.some((c) => c.file === '/src/main.ts' && c.summary === 'init()')).toBe(true);
 
     // Check outgoing (callees)
-    const callees = results.results[0]?.full?.relatedCode?.filter(r => r.relationship === 'called by this');
+    const callees = results.results[0]?.full?.relatedCode?.filter(
+      (r) => r.relationship === 'called by this'
+    );
     expect(callees?.length).toBe(1);
     expect(callees?.[0]?.file).toBe('/src/helper.ts');
     expect(callees?.[0]?.summary).toBe('helperFn()');
@@ -1470,8 +1586,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/notes.txt'
-        }
+          path: '/src/notes.txt',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1496,10 +1612,20 @@ describe('SearchService - Code Graph Integration', () => {
       getCalledByCount: vi.fn().mockReturnValue(0),
       getCallsCount: vi.fn().mockReturnValue(0),
       getIncomingEdges: vi.fn().mockReturnValue([
-        { from: '/src/index.ts', to: '/src/utils.ts:myFunction', type: 'imports', confidence: 1.0 },
+        {
+          from: '/src/index.ts',
+          to: '/src/utils.ts:myFunction',
+          type: 'imports',
+          confidence: 1.0,
+        },
       ]),
       getEdges: vi.fn().mockReturnValue([
-        { from: '/src/utils.ts:myFunction', to: '/src/types.ts:MyInterface', type: 'implements', confidence: 1.0 },
+        {
+          from: '/src/utils.ts:myFunction',
+          to: '/src/types.ts:MyInterface',
+          type: 'implements',
+          confidence: 1.0,
+        },
       ]),
     };
 
@@ -1514,8 +1640,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils.ts'
-        }
+          path: '/src/utils.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1555,8 +1681,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils.ts'
-        }
+          path: '/src/utils.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1570,7 +1696,9 @@ describe('SearchService - Code Graph Integration', () => {
     });
 
     expect(results.results.length).toBe(1);
-    const callers = results.results[0]?.full?.relatedCode?.filter(r => r.relationship === 'calls this');
+    const callers = results.results[0]?.full?.relatedCode?.filter(
+      (r) => r.relationship === 'calls this'
+    );
     expect(callers?.length).toBe(1);
     // When nodeId has no colon, file should be the whole nodeId and symbol should be empty -> 'unknown'
     expect(callers?.[0]?.file).toBe('simpleNodeId');
@@ -1589,8 +1717,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils.ts'
-        }
+          path: '/src/utils.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
@@ -1615,7 +1743,7 @@ describe('SearchService - Code Graph Integration', () => {
       from: `/src/file${i}.ts:func${i}`,
       to: '/src/utils.ts:myFunction',
       type: 'calls' as const,
-      confidence: 0.8
+      confidence: 0.8,
     }));
 
     const mockGraph = {
@@ -1636,8 +1764,8 @@ describe('SearchService - Code Graph Integration', () => {
           type: 'file' as const,
           storeId,
           indexedAt: new Date(),
-          path: '/src/utils.ts'
-        }
+          path: '/src/utils.ts',
+        },
       },
     ]);
     vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);

@@ -14,7 +14,7 @@ describe('ASTParser', () => {
         type: 'function',
         name: 'hello',
         exported: false,
-        async: false
+        async: false,
       });
     });
 
@@ -73,7 +73,7 @@ function test() {
       const nodes = parser.parse(code, 'javascript');
 
       // Should not capture arrow functions, only declarations
-      expect(nodes.filter(n => n.type === 'function')).toHaveLength(0);
+      expect(nodes.filter((n) => n.type === 'function')).toHaveLength(0);
     });
   });
 
@@ -86,7 +86,7 @@ function test() {
       expect(nodes[0]).toMatchObject({
         type: 'class',
         name: 'MyClass',
-        exported: false
+        exported: false,
       });
     });
 
@@ -149,7 +149,7 @@ class Test {
       expect(nodes[0]).toMatchObject({
         type: 'interface',
         name: 'User',
-        exported: false
+        exported: false,
       });
     });
 
@@ -236,7 +236,7 @@ function invalid( { syntax error
       expect(imports[0]).toMatchObject({
         source: 'module',
         specifiers: ['foo', 'bar'],
-        isType: false
+        isType: false,
       });
     });
 
@@ -370,7 +370,7 @@ import type { Props } from "./types";
       const nodes = parser.parse(code, 'javascript');
 
       // Anonymous classes don't have an id, should be skipped
-      expect(nodes.filter(n => n.type === 'class')).toHaveLength(0);
+      expect(nodes.filter((n) => n.type === 'class')).toHaveLength(0);
     });
 
     it('handles class with computed property method (non-identifier key)', () => {
@@ -430,7 +430,7 @@ function fn2() {}
       const nodes = parser.parse(code, 'typescript');
 
       expect(nodes).toHaveLength(4);
-      expect(nodes.map(n => n.name)).toEqual(['fn1', 'Class1', 'Interface1', 'fn2']);
+      expect(nodes.map((n) => n.name)).toEqual(['fn1', 'Class1', 'Interface1', 'fn2']);
     });
 
     it('handles anonymous function expressions (no id)', () => {
@@ -438,7 +438,7 @@ function fn2() {}
       const nodes = parser.parse(code, 'javascript');
 
       // Anonymous functions don't have an id, should be skipped
-      expect(nodes.filter(n => n.name)).toHaveLength(0);
+      expect(nodes.filter((n) => n.name)).toHaveLength(0);
     });
 
     it('handles class with constructor', () => {
@@ -451,12 +451,13 @@ function fn2() {}
 
       expect(nodes[0]?.name).toBe('MyClass');
       // Constructor is a method
-      expect(nodes[0]?.methods?.some(m => m.name === 'constructor')).toBe(true);
+      expect(nodes[0]?.methods?.some((m) => m.name === 'constructor')).toBe(true);
     });
 
     it('handles very long file with many declarations', () => {
-      const functions = Array.from({ length: 50 }, (_, i) =>
-        `function fn${i}() { return ${i}; }`
+      const functions = Array.from(
+        { length: 50 },
+        (_, i) => `function fn${i}() { return ${i}; }`
       ).join('\n');
 
       const nodes = parser.parse(functions, 'javascript');

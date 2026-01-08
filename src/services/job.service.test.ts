@@ -30,7 +30,7 @@ describe('JobService', () => {
     it('should create a job with required fields', () => {
       const job = jobService.createJob({
         type: 'clone',
-        details: { storeId: 'test-store', url: 'https://github.com/test/repo' }
+        details: { storeId: 'test-store', url: 'https://github.com/test/repo' },
       });
 
       expect(job.id).toMatch(/^job_[a-f0-9]{12}$/);
@@ -45,7 +45,7 @@ describe('JobService', () => {
     it('should persist job to file', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       const jobFile = join(tempDir, 'jobs', `${job.id}.json`);
@@ -57,13 +57,13 @@ describe('JobService', () => {
     it('should update job status and progress', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       jobService.updateJob(job.id, {
         status: 'running',
         progress: 50,
-        message: 'Processing files...'
+        message: 'Processing files...',
       });
 
       const updated = jobService.getJob(job.id);
@@ -75,11 +75,11 @@ describe('JobService', () => {
     it('should merge job details', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test', filesProcessed: 10 }
+        details: { storeId: 'test', filesProcessed: 10 },
       });
 
       jobService.updateJob(job.id, {
-        details: { totalFiles: 100 }
+        details: { totalFiles: 100 },
       });
 
       const updated = jobService.getJob(job.id);
@@ -99,7 +99,7 @@ describe('JobService', () => {
     it('should retrieve job by ID', () => {
       const job = jobService.createJob({
         type: 'clone',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       const retrieved = jobService.getJob(job.id);
@@ -193,7 +193,7 @@ describe('JobService', () => {
     it('should cancel a pending job', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       const result = jobService.cancelJob(job.id);
@@ -211,7 +211,7 @@ describe('JobService', () => {
     it('should return error for completed job', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'completed' });
 
@@ -222,7 +222,7 @@ describe('JobService', () => {
     it('should return error for failed job', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'failed' });
 
@@ -233,7 +233,7 @@ describe('JobService', () => {
     it('should succeed if job already cancelled', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.cancelJob(job.id);
 
@@ -244,7 +244,7 @@ describe('JobService', () => {
     it('should remove PID file if exists', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       // Create a PID file with a non-existent process ID (NOT our own PID - that would kill the test runner!)
@@ -259,7 +259,7 @@ describe('JobService', () => {
     it('should handle missing PID file gracefully', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       const result = jobService.cancelJob(job.id);
@@ -269,7 +269,7 @@ describe('JobService', () => {
     it('should handle invalid PID gracefully', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       // Create PID file with non-existent process ID
@@ -285,7 +285,7 @@ describe('JobService', () => {
     it('should clean up old completed jobs', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'completed' });
 
@@ -303,7 +303,7 @@ describe('JobService', () => {
     it('should clean up old failed jobs', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'failed' });
 
@@ -319,7 +319,7 @@ describe('JobService', () => {
     it('should clean up old cancelled jobs', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'cancelled' });
 
@@ -335,7 +335,7 @@ describe('JobService', () => {
     it('should not clean up recent jobs', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'completed' });
 
@@ -346,7 +346,7 @@ describe('JobService', () => {
     it('should not clean up active jobs', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'running' });
 
@@ -363,7 +363,7 @@ describe('JobService', () => {
     it('should use default 24 hours if not specified', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
       jobService.updateJob(job.id, { status: 'completed' });
 
@@ -384,7 +384,7 @@ describe('JobService', () => {
       jobService.updateJob(job2.id, { status: 'failed' });
 
       // Make both old
-      [job1, job2].forEach(job => {
+      [job1, job2].forEach((job) => {
         const jobFile = join(tempDir, 'jobs', `${job.id}.json`);
         const jobData = JSON.parse(readFileSync(jobFile, 'utf-8'));
         jobData.updatedAt = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
@@ -400,7 +400,7 @@ describe('JobService', () => {
     it('should delete a job file', () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       const deleted = jobService.deleteJob(job.id);

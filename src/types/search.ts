@@ -75,14 +75,16 @@ export interface SearchResult {
   readonly full?: ResultFull | undefined;
 
   // Ranking attribution metadata for transparency
-  readonly rankingMetadata?: {
-    readonly vectorRank?: number;    // Position in vector results (1-based)
-    readonly ftsRank?: number;       // Position in FTS results (1-based)
-    readonly vectorRRF: number;      // Vector contribution to RRF score
-    readonly ftsRRF: number;         // FTS contribution to RRF score
-    readonly fileTypeBoost: number;  // File type multiplier applied
-    readonly frameworkBoost: number; // Framework context multiplier
-  } | undefined;
+  readonly rankingMetadata?:
+    | {
+        readonly vectorRank?: number; // Position in vector results (1-based)
+        readonly ftsRank?: number; // Position in FTS results (1-based)
+        readonly vectorRRF: number; // Vector contribution to RRF score
+        readonly ftsRRF: number; // FTS contribution to RRF score
+        readonly fileTypeBoost: number; // File type multiplier applied
+        readonly frameworkBoost: number; // Framework context multiplier
+      }
+    | undefined;
 }
 
 export interface SearchResponse {

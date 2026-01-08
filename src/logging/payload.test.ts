@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 // Mock logger module before importing payload
 vi.mock('./logger.js', () => ({
   getLogDirectory: vi.fn(),
-  isLevelEnabled: vi.fn()
+  isLevelEnabled: vi.fn(),
 }));
 
 import { summarizePayload, truncateForLog } from './payload.js';

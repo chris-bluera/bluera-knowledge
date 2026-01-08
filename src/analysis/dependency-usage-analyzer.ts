@@ -1,15 +1,30 @@
-import { readFile, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { readFile, readdir } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { ASTParser } from './ast-parser.js';
-import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import type { SupportedLanguage } from './repo-url-resolver.js';
+import type { Result } from '../types/result.js';
 
 const TEXT_EXTENSIONS = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-  '.py', '.rb', '.go', '.java', '.rs', '.php',
-  '.md', '.txt', '.json', '.yml', '.yaml', '.toml'
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.py',
+  '.rb',
+  '.go',
+  '.java',
+  '.rs',
+  '.php',
+  '.md',
+  '.txt',
+  '.json',
+  '.yml',
+  '.yaml',
+  '.toml',
 ]);
 
 export interface PackageUsage {
@@ -60,7 +75,7 @@ export class DependencyUsageAnalyzer {
           usages: [],
           totalFilesScanned: 0,
           skippedFiles: 0,
-          analysisTimeMs: Date.now() - startTime
+          analysisTimeMs: Date.now() - startTime,
         });
       }
 
@@ -72,7 +87,7 @@ export class DependencyUsageAnalyzer {
           usages: [],
           totalFilesScanned: 0,
           skippedFiles: 0,
-          analysisTimeMs: Date.now() - startTime
+          analysisTimeMs: Date.now() - startTime,
         });
       }
 
@@ -92,20 +107,18 @@ export class DependencyUsageAnalyzer {
             if (packageName !== null && declaredDeps.has(packageName)) {
               const dep = declaredDeps.get(packageName);
               if (dep !== undefined) {
-                this.incrementUsage(
-                  usageMap,
-                  packageName,
-                  filePath,
-                  dep.isDev,
-                  dep.language
-                );
+                this.incrementUsage(usageMap, packageName, filePath, dep.isDev, dep.language);
               }
             }
           }
 
           processedCount++;
           if (onProgress !== undefined && processedCount % 10 === 0) {
-            onProgress(processedCount, files.length, `Analyzed ${String(processedCount)}/${String(files.length)} files`);
+            onProgress(
+              processedCount,
+              files.length,
+              `Analyzed ${String(processedCount)}/${String(files.length)} files`
+            );
           }
         } catch {
           // Skip files that can't be read or parsed
@@ -114,14 +127,15 @@ export class DependencyUsageAnalyzer {
       }
 
       // 4. Sort by usage frequency
-      const sortedUsages = Array.from(usageMap.values())
-        .sort((a, b) => b.importCount - a.importCount);
+      const sortedUsages = Array.from(usageMap.values()).sort(
+        (a, b) => b.importCount - a.importCount
+      );
 
       return ok({
         usages: sortedUsages,
         totalFilesScanned: processedCount,
         skippedFiles: skippedCount,
-        analysisTimeMs: Date.now() - startTime
+        analysisTimeMs: Date.now() - startTime,
       });
     } catch (error) {
       const errorObj = new Error(
@@ -178,7 +192,10 @@ export class DependencyUsageAnalyzer {
     return [];
   }
 
-  private extractImportsRegex(content: string, language: 'javascript' | 'python'): Array<{ source: string }> {
+  private extractImportsRegex(
+    content: string,
+    language: 'javascript' | 'python'
+  ): Array<{ source: string }> {
     const imports: Array<{ source: string }> = [];
 
     if (language === 'javascript') {
@@ -234,7 +251,7 @@ export class DependencyUsageAnalyzer {
         fileCount: 1,
         files: [filePath],
         isDevDependency,
-        language
+        language,
       });
     }
   }
@@ -250,7 +267,18 @@ export class DependencyUsageAnalyzer {
 
         if (entry.isDirectory()) {
           // Skip common ignored directories
-          if (!['node_modules', '.git', 'dist', 'build', 'coverage', '__pycache__', '.venv', 'venv'].includes(entry.name)) {
+          if (
+            ![
+              'node_modules',
+              '.git',
+              'dist',
+              'build',
+              'coverage',
+              '__pycache__',
+              '.venv',
+              'venv',
+            ].includes(entry.name)
+          ) {
             files.push(...(await this.scanDirectory(fullPath)));
           }
         } else if (entry.isFile()) {
@@ -312,7 +340,7 @@ export class DependencyUsageAnalyzer {
 
           // Parse package name (before ==, >=, etc.)
           const match = /^([a-zA-Z0-9_-]+)/.exec(trimmed);
-          if (match !== null && match[1] !== undefined) {
+          if (match?.[1] !== undefined) {
             const name = match[1].toLowerCase();
             deps.set(name, { name, isDev: false, language: 'python' });
           }
@@ -350,7 +378,7 @@ export class DependencyUsageAnalyzer {
         // or serde = { version = "1.0", features = [...] }
         const inDepsSection = /\[dependencies\]([\s\S]*?)(?=\n\[|$)/;
         const depsMatch = inDepsSection.exec(content);
-        if (depsMatch !== null && depsMatch[1] !== undefined) {
+        if (depsMatch?.[1] !== undefined) {
           const depsSection = depsMatch[1];
           // Match crate names at start of lines
           const cratePattern = /^([a-zA-Z0-9_-]+)\s*=/gm;
@@ -364,7 +392,7 @@ export class DependencyUsageAnalyzer {
         // Also check [dev-dependencies]
         const inDevDepsSection = /\[dev-dependencies\]([\s\S]*?)(?=\n\[|$)/;
         const devDepsMatch = inDevDepsSection.exec(content);
-        if (devDepsMatch !== null && devDepsMatch[1] !== undefined) {
+        if (devDepsMatch?.[1] !== undefined) {
           const devDepsSection = devDepsMatch[1];
           const cratePattern = /^([a-zA-Z0-9_-]+)\s*=/gm;
           for (const match of devDepsSection.matchAll(cratePattern)) {

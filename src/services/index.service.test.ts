@@ -892,7 +892,8 @@ describe('IndexService - Hash and Metadata', () => {
   });
 
   it('indexes code with function names', async () => {
-    const code = 'export function hello() {\n  return "world";\n}\n\nfunction goodbye() {\n  return "bye";\n}';
+    const code =
+      'export function hello() {\n  return "world";\n}\n\nfunction goodbye() {\n  return "bye";\n}';
     await writeFile(join(testFilesDir, 'code.ts'), code);
 
     const store: FileStore = {
@@ -1245,36 +1246,56 @@ describe('IndexService - Code Graph Integration', () => {
     // Verify the source files passed to buildGraph
     const sourceFiles = buildGraphMock.mock.calls[0][0] as Array<{ path: string; content: string }>;
     expect(sourceFiles.length).toBe(2);
-    expect(sourceFiles.some(f => f.path.endsWith('.js'))).toBe(true);
-    expect(sourceFiles.some(f => f.path.endsWith('.jsx'))).toBe(true);
+    expect(sourceFiles.some((f) => f.path.endsWith('.js'))).toBe(true);
+    expect(sourceFiles.some((f) => f.path.endsWith('.jsx'))).toBe(true);
   });
 });
 
 describe('classifyWebContentType', () => {
   describe('documentation-primary classification', () => {
     it('classifies API reference URLs', () => {
-      expect(classifyWebContentType('https://example.com/api-reference/endpoints')).toBe('documentation-primary');
-      expect(classifyWebContentType('https://example.com/api-docs/v2')).toBe('documentation-primary');
-      expect(classifyWebContentType('https://example.com/apiref/methods')).toBe('documentation-primary');
+      expect(classifyWebContentType('https://example.com/api-reference/endpoints')).toBe(
+        'documentation-primary'
+      );
+      expect(classifyWebContentType('https://example.com/api-docs/v2')).toBe(
+        'documentation-primary'
+      );
+      expect(classifyWebContentType('https://example.com/apiref/methods')).toBe(
+        'documentation-primary'
+      );
     });
 
     it('classifies API reference by title', () => {
-      expect(classifyWebContentType('https://example.com/page', 'API Reference Guide')).toBe('documentation-primary');
-      expect(classifyWebContentType('https://example.com/page', 'Complete API Documentation')).toBe('documentation-primary');
+      expect(classifyWebContentType('https://example.com/page', 'API Reference Guide')).toBe(
+        'documentation-primary'
+      );
+      expect(classifyWebContentType('https://example.com/page', 'Complete API Documentation')).toBe(
+        'documentation-primary'
+      );
     });
 
     it('classifies getting started URLs', () => {
-      expect(classifyWebContentType('https://example.com/getting-started')).toBe('documentation-primary');
-      expect(classifyWebContentType('https://example.com/getting_started')).toBe('documentation-primary');
-      expect(classifyWebContentType('https://example.com/gettingstarted')).toBe('documentation-primary');
+      expect(classifyWebContentType('https://example.com/getting-started')).toBe(
+        'documentation-primary'
+      );
+      expect(classifyWebContentType('https://example.com/getting_started')).toBe(
+        'documentation-primary'
+      );
+      expect(classifyWebContentType('https://example.com/gettingstarted')).toBe(
+        'documentation-primary'
+      );
     });
 
     it('classifies quickstart URLs', () => {
-      expect(classifyWebContentType('https://example.com/quickstart')).toBe('documentation-primary');
+      expect(classifyWebContentType('https://example.com/quickstart')).toBe(
+        'documentation-primary'
+      );
     });
 
     it('classifies tutorial URLs', () => {
-      expect(classifyWebContentType('https://example.com/tutorial/basics')).toBe('documentation-primary');
+      expect(classifyWebContentType('https://example.com/tutorial/basics')).toBe(
+        'documentation-primary'
+      );
     });
 
     it('classifies setup URLs', () => {
@@ -1282,16 +1303,24 @@ describe('classifyWebContentType', () => {
     });
 
     it('classifies getting started by title', () => {
-      expect(classifyWebContentType('https://example.com/page', 'Getting Started with React')).toBe('documentation-primary');
-      expect(classifyWebContentType('https://example.com/page', 'Quickstart Guide')).toBe('documentation-primary');
-      expect(classifyWebContentType('https://example.com/page', 'Tutorial: Build Your First App')).toBe('documentation-primary');
+      expect(classifyWebContentType('https://example.com/page', 'Getting Started with React')).toBe(
+        'documentation-primary'
+      );
+      expect(classifyWebContentType('https://example.com/page', 'Quickstart Guide')).toBe(
+        'documentation-primary'
+      );
+      expect(
+        classifyWebContentType('https://example.com/page', 'Tutorial: Build Your First App')
+      ).toBe('documentation-primary');
     });
   });
 
   describe('documentation classification', () => {
     it('classifies docs paths', () => {
       expect(classifyWebContentType('https://example.com/docs/intro')).toBe('documentation');
-      expect(classifyWebContentType('https://example.com/documentation/advanced')).toBe('documentation');
+      expect(classifyWebContentType('https://example.com/documentation/advanced')).toBe(
+        'documentation'
+      );
     });
 
     it('classifies reference paths', () => {
@@ -1307,7 +1336,9 @@ describe('classifyWebContentType', () => {
     });
 
     it('classifies guide paths', () => {
-      expect(classifyWebContentType('https://example.com/guide/installation')).toBe('documentation');
+      expect(classifyWebContentType('https://example.com/guide/installation')).toBe(
+        'documentation'
+      );
     });
   });
 

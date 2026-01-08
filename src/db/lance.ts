@@ -1,8 +1,8 @@
 import * as lancedb from '@lancedb/lancedb';
-import type { Table, Connection } from '@lancedb/lancedb';
-import type { Document, DocumentMetadata } from '../types/document.js';
-import type { StoreId, DocumentId } from '../types/brands.js';
 import { createDocumentId } from '../types/brands.js';
+import type { StoreId, DocumentId } from '../types/brands.js';
+import type { Document, DocumentMetadata } from '../types/document.js';
+import type { Table, Connection } from '@lancedb/lancedb';
 
 interface LanceDocument {
   id: string;
@@ -29,9 +29,7 @@ export class LanceStore {
   }
 
   async initialize(storeId: StoreId): Promise<void> {
-    if (this.connection === null) {
-      this.connection = await lancedb.connect(this.dataDir);
-    }
+    this.connection ??= await lancedb.connect(this.dataDir);
 
     const tableName = this.getTableName(storeId);
     const tableNames = await this.connection.tableNames();
@@ -77,7 +75,9 @@ export class LanceStore {
     vector: number[],
     limit: number,
     threshold?: number
-  ): Promise<Array<{ id: DocumentId; content: string; score: number; metadata: DocumentMetadata }>> {
+  ): Promise<
+    Array<{ id: DocumentId; content: string; score: number; metadata: DocumentMetadata }>
+  > {
     const table = await this.getTable(storeId);
     let query = table.vectorSearch(vector).limit(limit);
 
@@ -114,15 +114,19 @@ export class LanceStore {
     storeId: StoreId,
     query: string,
     limit: number
-  ): Promise<Array<{ id: DocumentId; content: string; score: number; metadata: DocumentMetadata }>> {
+  ): Promise<
+    Array<{ id: DocumentId; content: string; score: number; metadata: DocumentMetadata }>
+  > {
     const table = await this.getTable(storeId);
 
     try {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const results = await table
-        .search(query, 'fts')
-        .limit(limit)
-        .toArray() as Array<{ id: string; content: string; metadata: string; score: number }>;
+      const results = (await table.search(query, 'fts').limit(limit).toArray()) as Array<{
+        id: string;
+        content: string;
+        metadata: string;
+        score: number;
+      }>;
 
       return results.map((r) => ({
         id: createDocumentId(r.id),

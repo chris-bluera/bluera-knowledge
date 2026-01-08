@@ -24,7 +24,8 @@ describe('SnippetService', () => {
     });
 
     it('extracts snippet around single query term match', () => {
-      const content = 'The quick brown fox jumps over the lazy dog. ' +
+      const content =
+        'The quick brown fox jumps over the lazy dog. ' +
         'This is some filler text to make the content longer. ' +
         'Here is the important keyword we want to find. ' +
         'More filler text at the end to extend the content.';
@@ -34,7 +35,8 @@ describe('SnippetService', () => {
     });
 
     it('extracts snippet around multiple clustered query terms', () => {
-      const content = 'Unrelated text at the start. '.repeat(10) +
+      const content =
+        'Unrelated text at the start. '.repeat(10) +
         'Here is the target area with multiple keywords: search query terms matching. ' +
         'Unrelated text at the end. '.repeat(10);
       const snippet = extractSnippet(content, 'target keywords search');
@@ -115,7 +117,8 @@ describe('SnippetService', () => {
     });
 
     it('finds best position when multiple query terms appear', () => {
-      const content = 'First occurrence of term. ' +
+      const content =
+        'First occurrence of term. ' +
         'A'.repeat(200) +
         ' Second occurrence with more terms from query nearby. ' +
         'A'.repeat(200);
@@ -139,7 +142,9 @@ describe('SnippetService', () => {
 
     it('calculates proximity score correctly', () => {
       // Create content where terms are closer together in one location
-      const content = 'distant word here. ' + 'A'.repeat(300) +
+      const content =
+        'distant word here. ' +
+        'A'.repeat(300) +
         ' clustered search query terms all together here ' +
         'A'.repeat(300);
       const snippet = extractSnippet(content, 'search query terms', { maxLength: 100 });
@@ -186,11 +191,14 @@ describe('SnippetService', () => {
     });
 
     it('scores positions based on unique nearby terms', () => {
-      const content = 'repeated repeated repeated. ' +
+      const content =
+        'repeated repeated repeated. ' +
         'A'.repeat(100) +
         ' diverse unique different varied terms here ' +
         'A'.repeat(100);
-      const snippet = extractSnippet(content, 'diverse unique different varied', { maxLength: 100 });
+      const snippet = extractSnippet(content, 'diverse unique different varied', {
+        maxLength: 100,
+      });
       expect(snippet).toContain('diverse');
       expect(snippet).toContain('unique');
     });

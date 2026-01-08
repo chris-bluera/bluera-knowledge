@@ -33,7 +33,7 @@ export class CodeGraph {
         name: node.name,
         exported: node.exported,
         startLine: node.startLine,
-        endLine: node.endLine
+        endLine: node.endLine,
       };
 
       if (node.signature !== undefined) {
@@ -60,7 +60,7 @@ export class CodeGraph {
             exported: node.exported, // Methods inherit export status from class
             startLine: method.startLine,
             endLine: method.endLine,
-            signature: method.signature
+            signature: method.signature,
           };
 
           this.nodes.set(methodId, methodNode);
@@ -83,7 +83,7 @@ export class CodeGraph {
         from: fromFile,
         to: `${resolvedTo}:${spec}`,
         type: 'imports',
-        confidence: 1.0
+        confidence: 1.0,
       };
 
       const edges = this.edges.get(fromFile) ?? [];
@@ -117,7 +117,7 @@ export class CodeGraph {
           from: nodeId,
           to: targetNode.id,
           type: 'calls',
-          confidence: 0.8 // Lower confidence for regex-based detection
+          confidence: 0.8, // Lower confidence for regex-based detection
         });
       } else {
         // Unknown function, possibly from import
@@ -125,7 +125,7 @@ export class CodeGraph {
           from: nodeId,
           to: `unknown:${calledFunction}`,
           type: 'calls',
-          confidence: 0.5
+          confidence: 0.5,
         });
       }
     }
@@ -181,18 +181,14 @@ export class CodeGraph {
    * Count how many nodes call this node
    */
   getCalledByCount(nodeId: string): number {
-    return this.getIncomingEdges(nodeId)
-      .filter(e => e.type === 'calls')
-      .length;
+    return this.getIncomingEdges(nodeId).filter((e) => e.type === 'calls').length;
   }
 
   /**
    * Count how many nodes this node calls
    */
   getCallsCount(nodeId: string): number {
-    return this.getEdges(nodeId)
-      .filter(e => e.type === 'calls')
-      .length;
+    return this.getEdges(nodeId).filter((e) => e.type === 'calls').length;
   }
 
   getAllNodes(): GraphNode[] {
@@ -220,7 +216,7 @@ export class CodeGraph {
         if (part === '..') {
           resolved = resolved.split('/').slice(0, -1).join('/');
         } else if (part !== '.') {
-          resolved += '/' + part;
+          resolved += `/${part}`;
         }
       }
 
@@ -239,7 +235,7 @@ export class CodeGraph {
 
     return {
       nodes: Array.from(this.nodes.values()),
-      edges: allEdges.map(e => ({ from: e.from, to: e.to, type: e.type }))
+      edges: allEdges.map((e) => ({ from: e.from, to: e.to, type: e.type })),
     };
   }
 }

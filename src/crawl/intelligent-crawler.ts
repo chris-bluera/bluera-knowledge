@@ -5,9 +5,9 @@
 
 import { EventEmitter } from 'node:events';
 import axios from 'axios';
-import { ClaudeClient, type CrawlStrategy } from './claude-client.js';
 import { convertHtmlToMarkdown } from './article-converter.js';
 import { PythonBridge, type CrawledLink } from './bridge.js';
+import { ClaudeClient, type CrawlStrategy } from './claude-client.js';
 import { createLogger, summarizePayload } from '../logging/index.js';
 
 const logger = createLogger('crawler');
@@ -58,26 +58,25 @@ export class IntelligentCrawler extends EventEmitter {
   /**
    * Crawl a website with intelligent or simple mode
    */
-  async *crawl(
-    seedUrl: string,
-    options: CrawlOptions = {},
-  ): AsyncIterable<CrawlResult> {
-    const {
-      crawlInstruction,
-      extractInstruction,
-      maxPages = 50,
-      simple = false,
-    } = options;
+  async *crawl(seedUrl: string, options: CrawlOptions = {}): AsyncIterable<CrawlResult> {
+    const { crawlInstruction, extractInstruction, maxPages = 50, simple = false } = options;
 
     this.visited.clear();
     this.stopped = false;
 
-    logger.info({
-      seedUrl,
-      maxPages,
-      mode: simple ? 'simple' : (crawlInstruction !== undefined && crawlInstruction !== '' ? 'intelligent' : 'simple'),
-      hasExtractInstruction: extractInstruction !== undefined,
-    }, 'Starting crawl');
+    logger.info(
+      {
+        seedUrl,
+        maxPages,
+        mode: simple
+          ? 'simple'
+          : crawlInstruction !== undefined && crawlInstruction !== ''
+            ? 'intelligent'
+            : 'simple',
+        hasExtractInstruction: extractInstruction !== undefined,
+      },
+      'Starting crawl'
+    );
 
     const startProgress: CrawlProgress = {
       type: 'start',
@@ -91,15 +90,24 @@ export class IntelligentCrawler extends EventEmitter {
 
     if (useIntelligentMode) {
       // TypeScript knows crawlInstruction is defined here due to useIntelligentMode check
-      yield* this.crawlIntelligent(seedUrl, crawlInstruction, extractInstruction, maxPages, options.useHeadless ?? false);
+      yield* this.crawlIntelligent(
+        seedUrl,
+        crawlInstruction,
+        extractInstruction,
+        maxPages,
+        options.useHeadless ?? false
+      );
     } else {
       yield* this.crawlSimple(seedUrl, extractInstruction, maxPages, options.useHeadless ?? false);
     }
 
-    logger.info({
-      seedUrl,
-      pagesVisited: this.visited.size,
-    }, 'Crawl complete');
+    logger.info(
+      {
+        seedUrl,
+        pagesVisited: this.visited.size,
+      },
+      'Crawl complete'
+    );
 
     const completeProgress: CrawlProgress = {
       type: 'complete',
@@ -117,7 +125,7 @@ export class IntelligentCrawler extends EventEmitter {
     crawlInstruction: string,
     extractInstruction: string | undefined,
     maxPages: number,
-    useHeadless: boolean = false,
+    useHeadless: boolean = false
   ): AsyncIterable<CrawlResult> {
     // Check if Claude CLI is available before attempting intelligent mode
     if (!ClaudeClient.isAvailable()) {
@@ -125,7 +133,8 @@ export class IntelligentCrawler extends EventEmitter {
         type: 'error',
         pagesVisited: 0,
         totalPages: maxPages,
-        message: 'Claude CLI not found, using simple crawl mode (install Claude Code for intelligent crawling)',
+        message:
+          'Claude CLI not found, using simple crawl mode (install Claude Code for intelligent crawling)',
         error: new Error('Claude CLI not available'),
       };
       this.emit('progress', fallbackProgress);
@@ -181,7 +190,12 @@ export class IntelligentCrawler extends EventEmitter {
       if (this.visited.has(url)) continue;
 
       try {
-        const result = await this.crawlSinglePage(url, extractInstruction, pagesVisited, useHeadless);
+        const result = await this.crawlSinglePage(
+          url,
+          extractInstruction,
+          pagesVisited,
+          useHeadless
+        );
         pagesVisited++;
         yield result;
       } catch (error) {
@@ -204,7 +218,7 @@ export class IntelligentCrawler extends EventEmitter {
     seedUrl: string,
     extractInstruction: string | undefined,
     maxPages: number,
-    useHeadless: boolean = false,
+    useHeadless: boolean = false
   ): AsyncIterable<CrawlResult> {
     const queue: Array<{ url: string; depth: number }> = [{ url: seedUrl, depth: 0 }];
     const maxDepth = 2; // Default depth limit for simple mode
@@ -222,7 +236,7 @@ export class IntelligentCrawler extends EventEmitter {
           current.url,
           extractInstruction,
           pagesVisited,
-          useHeadless,
+          useHeadless
         );
         result.depth = current.depth;
         pagesVisited++;
@@ -237,7 +251,10 @@ export class IntelligentCrawler extends EventEmitter {
             if (links.length === 0) {
               logger.debug({ url: current.url }, 'No links found - page may be a leaf node');
             } else {
-              logger.debug({ url: current.url, linkCount: links.length }, 'Links extracted from page');
+              logger.debug(
+                { url: current.url, linkCount: links.length },
+                'Links extracted from page'
+              );
             }
 
             for (const link of links) {
@@ -278,7 +295,7 @@ export class IntelligentCrawler extends EventEmitter {
     url: string,
     extractInstruction: string | undefined,
     pagesVisited: number,
-    useHeadless: boolean = false,
+    useHeadless: boolean = false
   ): Promise<CrawlResult> {
     const pageProgress: CrawlProgress = {
       type: 'page',
@@ -302,11 +319,14 @@ export class IntelligentCrawler extends EventEmitter {
       throw new Error(`Failed to convert HTML: ${conversion.error ?? 'Unknown error'}`);
     }
 
-    logger.debug({
-      url,
-      title: conversion.title,
-      markdownLength: conversion.markdown.length,
-    }, 'Article converted to markdown');
+    logger.debug(
+      {
+        url,
+        title: conversion.title,
+        markdownLength: conversion.markdown.length,
+      },
+      'Article converted to markdown'
+    );
 
     let extracted: string | undefined;
 
@@ -335,7 +355,7 @@ export class IntelligentCrawler extends EventEmitter {
 
           extracted = await this.claudeClient.extractContent(
             conversion.markdown,
-            extractInstruction,
+            extractInstruction
           );
         } catch (error) {
           // If extraction fails, just store raw markdown
@@ -371,16 +391,22 @@ export class IntelligentCrawler extends EventEmitter {
       try {
         const result = await this.pythonBridge.fetchHeadless(url);
         const durationMs = Date.now() - startTime;
-        logger.info({
-          url,
-          useHeadless: true,
-          durationMs,
-          ...summarizePayload(result.html, 'raw-html', url),
-        }, 'Raw HTML fetched');
+        logger.info(
+          {
+            url,
+            useHeadless: true,
+            durationMs,
+            ...summarizePayload(result.html, 'raw-html', url),
+          },
+          'Raw HTML fetched'
+        );
         return result.html;
       } catch (error) {
         // Fallback to axios if headless fails
-        logger.warn({ url, error: error instanceof Error ? error.message : String(error) }, 'Headless fetch failed, falling back to axios');
+        logger.warn(
+          { url, error: error instanceof Error ? error.message : String(error) },
+          'Headless fetch failed, falling back to axios'
+        );
       }
     }
 
@@ -389,24 +415,29 @@ export class IntelligentCrawler extends EventEmitter {
       const response = await axios.get<string>(url, {
         timeout: 30000,
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; bluera-knowledge-crawler/1.0)',
+          'User-Agent': 'Mozilla/5.0 (compatible; bluera-knowledge-crawler/1.0)',
         },
       });
 
       const durationMs = Date.now() - startTime;
-      logger.info({
-        url,
-        useHeadless: false,
-        durationMs,
-        ...summarizePayload(response.data, 'raw-html', url),
-      }, 'Raw HTML fetched');
+      logger.info(
+        {
+          url,
+          useHeadless: false,
+          durationMs,
+          ...summarizePayload(response.data, 'raw-html', url),
+        },
+        'Raw HTML fetched'
+      );
 
       return response.data;
     } catch (error) {
-      logger.error({ url, error: error instanceof Error ? error.message : String(error) }, 'Failed to fetch HTML');
+      logger.error(
+        { url, error: error instanceof Error ? error.message : String(error) },
+        'Failed to fetch HTML'
+      );
       throw new Error(
-        `Failed to fetch ${url}: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to fetch ${url}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -453,7 +484,9 @@ export class IntelligentCrawler extends EventEmitter {
     try {
       const domain1 = new URL(url1).hostname.toLowerCase();
       const domain2 = new URL(url2).hostname.toLowerCase();
-      return domain1 === domain2 || domain1.endsWith(`.${domain2}`) || domain2.endsWith(`.${domain1}`);
+      return (
+        domain1 === domain2 || domain1.endsWith(`.${domain2}`) || domain2.endsWith(`.${domain1}`)
+      );
     } catch {
       return false;
     }

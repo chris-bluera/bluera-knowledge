@@ -19,13 +19,13 @@ describe('execute.handler', () => {
           list: async () => [],
           getByIdOrName: async () => undefined,
           create: async () => ({ success: false, error: { message: 'Not implemented in test' } }),
-          delete: async () => ({ success: false, error: { message: 'Not implemented in test' } })
+          delete: async () => ({ success: false, error: { message: 'Not implemented in test' } }),
         },
         lance: {
-          deleteStore: async () => {}
-        }
+          deleteStore: async () => {},
+        },
       } as unknown as HandlerContext['services'],
-      options: { dataDir: tempDir }
+      options: { dataDir: tempDir },
     };
   });
 
@@ -88,7 +88,7 @@ describe('execute.handler', () => {
     it('should handle "store:info" command', async () => {
       const args: ExecuteArgs = {
         command: 'store:info',
-        args: { store: 'nonexistent' }
+        args: { store: 'nonexistent' },
       };
 
       // Should throw since store doesn't exist
@@ -113,12 +113,12 @@ describe('execute.handler', () => {
       const job = jobService.createJob({
         type: 'index',
         details: { storeId: 'test-store' },
-        message: 'Testing...'
+        message: 'Testing...',
       });
 
       const args: ExecuteArgs = {
         command: 'job:status',
-        args: { jobId: job.id }
+        args: { jobId: job.id },
       };
       const result = await handleExecute(args, mockContext);
 
@@ -134,12 +134,12 @@ describe('execute.handler', () => {
       const job = jobService.createJob({
         type: 'index',
         details: { storeId: 'test-store' },
-        message: 'Testing...'
+        message: 'Testing...',
       });
 
       const args: ExecuteArgs = {
         command: 'job:cancel',
-        args: { jobId: job.id }
+        args: { jobId: job.id },
       };
       const result = await handleExecute(args, mockContext);
 
@@ -168,7 +168,7 @@ describe('execute.handler', () => {
     it('should throw for help on unknown command', async () => {
       const args: ExecuteArgs = {
         command: 'help',
-        args: { command: 'nonexistent' }
+        args: { command: 'nonexistent' },
       };
 
       await expect(handleExecute(args, mockContext)).rejects.toThrow(

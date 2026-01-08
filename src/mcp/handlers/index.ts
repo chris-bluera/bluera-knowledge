@@ -1,13 +1,7 @@
 import { z } from 'zod';
+import { handleSearch, handleGetFullContext } from './search.handler.js';
+import { SearchArgsSchema, GetFullContextArgsSchema } from '../schemas/index.js';
 import type { ToolHandler } from '../types.js';
-import {
-  SearchArgsSchema,
-  GetFullContextArgsSchema
-} from '../schemas/index.js';
-import {
-  handleSearch,
-  handleGetFullContext
-} from './search.handler.js';
 
 /**
  * Tool definition with schema and handler
@@ -30,14 +24,16 @@ export interface ToolDefinition {
 export const tools: ToolDefinition[] = [
   {
     name: 'search',
-    description: 'Search all indexed knowledge stores with pattern detection and AI-optimized results. Returns structured code units with progressive context layers.',
+    description:
+      'Search all indexed knowledge stores with pattern detection and AI-optimized results. Returns structured code units with progressive context layers.',
     schema: SearchArgsSchema,
-    handler: handleSearch
+    handler: handleSearch,
   },
   {
     name: 'get_full_context',
-    description: 'Get complete code and context for a specific search result by ID. Use this after search to get full implementation details.',
+    description:
+      'Get complete code and context for a specific search result by ID. Use this after search to get full implementation details.',
     schema: GetFullContextArgsSchema,
-    handler: handleGetFullContext
-  }
+    handler: handleGetFullContext,
+  },
 ];

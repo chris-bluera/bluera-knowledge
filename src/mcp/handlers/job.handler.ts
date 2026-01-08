@@ -1,15 +1,11 @@
-import type { ToolHandler, ToolResponse } from '../types.js';
-import type {
-  CheckJobStatusArgs,
-  ListJobsArgs,
-  CancelJobArgs
-} from '../schemas/index.js';
+import { JobService } from '../../services/job.service.js';
 import {
   CheckJobStatusArgsSchema,
   ListJobsArgsSchema,
-  CancelJobArgsSchema
+  CancelJobArgsSchema,
 } from '../schemas/index.js';
-import { JobService } from '../../services/job.service.js';
+import type { CheckJobStatusArgs, ListJobsArgs, CancelJobArgs } from '../schemas/index.js';
+import type { ToolHandler, ToolResponse } from '../types.js';
 
 /**
  * Handle check_job_status requests
@@ -36,9 +32,9 @@ export const handleCheckJobStatus: ToolHandler<CheckJobStatusArgs> = (
     content: [
       {
         type: 'text',
-        text: JSON.stringify(job, null, 2)
-      }
-    ]
+        text: JSON.stringify(job, null, 2),
+      },
+    ],
   });
 };
 
@@ -47,10 +43,7 @@ export const handleCheckJobStatus: ToolHandler<CheckJobStatusArgs> = (
  *
  * Lists all jobs with optional filtering by status or active status.
  */
-export const handleListJobs: ToolHandler<ListJobsArgs> = (
-  args,
-  context
-): Promise<ToolResponse> => {
+export const handleListJobs: ToolHandler<ListJobsArgs> = (args, context): Promise<ToolResponse> => {
   // Validate arguments with Zod
   const validated = ListJobsArgsSchema.parse(args);
 
@@ -71,9 +64,9 @@ export const handleListJobs: ToolHandler<ListJobsArgs> = (
     content: [
       {
         type: 'text',
-        text: JSON.stringify({ jobs }, null, 2)
-      }
-    ]
+        text: JSON.stringify({ jobs }, null, 2),
+      },
+    ],
   });
 };
 
@@ -105,12 +98,16 @@ export const handleCancelJob: ToolHandler<CancelJobArgs> = (
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          success: true,
-          job,
-          message: 'Job cancelled successfully'
-        }, null, 2)
-      }
-    ]
+        text: JSON.stringify(
+          {
+            success: true,
+            job,
+            message: 'Job cancelled successfully',
+          },
+          null,
+          2
+        ),
+      },
+    ],
   });
 };

@@ -15,7 +15,9 @@ describe('branded types', () => {
     });
 
     it('throws error for invalid store ID', () => {
-      expect(() => createStoreId('invalid id with spaces')).toThrow('Invalid store ID: invalid id with spaces');
+      expect(() => createStoreId('invalid id with spaces')).toThrow(
+        'Invalid store ID: invalid id with spaces'
+      );
     });
 
     it('throws error for empty store ID', () => {

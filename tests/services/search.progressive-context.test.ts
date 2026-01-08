@@ -19,8 +19,8 @@ describe('Progressive Context', () => {
         signature: 'validateToken(token: string): boolean',
         purpose: 'Validates JWT token',
         location: 'src/auth.ts:45',
-        relevanceReason: 'Matches query about token validation'
-      }
+        relevanceReason: 'Matches query about token validation',
+      },
     };
 
     expect(result.summary).toBeDefined();

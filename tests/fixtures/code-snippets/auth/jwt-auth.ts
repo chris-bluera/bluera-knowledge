@@ -51,11 +51,7 @@ declare global {
  * @param user - User object containing id, email, and roles
  * @returns JWT access token
  */
-export function generateAccessToken(user: {
-  id: string;
-  email: string;
-  roles: string[];
-}): string {
+export function generateAccessToken(user: { id: string; email: string; roles: string[] }): string {
   const payload: JwtPayload = {
     userId: user.id,
     email: user.email,
@@ -76,11 +72,7 @@ export function generateAccessToken(user: {
 export function generateRefreshToken(userId: string): string {
   const tokenId = randomBytes(16).toString('hex');
 
-  return jwt.sign(
-    { userId, tokenId },
-    REFRESH_SECRET,
-    { expiresIn: REFRESH_TOKEN_EXPIRY }
-  );
+  return jwt.sign({ userId, tokenId }, REFRESH_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY });
 }
 
 /**
@@ -88,11 +80,7 @@ export function generateRefreshToken(userId: string): string {
  * @param user - User object
  * @returns Token pair with access token, refresh token, and expiry time
  */
-export function generateTokenPair(user: {
-  id: string;
-  email: string;
-  roles: string[];
-}): TokenPair {
+export function generateTokenPair(user: { id: string; email: string; roles: string[] }): TokenPair {
   return {
     accessToken: generateAccessToken(user),
     refreshToken: generateRefreshToken(user.id),
@@ -137,11 +125,7 @@ export function verifyRefreshToken(token: string): { userId: string; tokenId: st
  * Express middleware to authenticate requests using JWT
  * Extracts the token from the Authorization header (Bearer scheme)
  */
-export function authenticateToken(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -179,7 +163,7 @@ export function requireRoles(...requiredRoles: string[]) {
       return;
     }
 
-    const hasRole = req.user.roles.some(role => requiredRoles.includes(role));
+    const hasRole = req.user.roles.some((role) => requiredRoles.includes(role));
 
     if (!hasRole) {
       res.status(403).json({

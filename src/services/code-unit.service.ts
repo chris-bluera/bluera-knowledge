@@ -146,13 +146,16 @@ export class CodeUnitService {
       fullContent,
       startLine,
       endLine,
-      language
+      language,
     };
   }
 
   private extractSignature(line: string, name: string, type: string): string {
     // Remove 'export', 'async', trim whitespace
-    const sig = line.replace(/^\s*export\s+/, '').replace(/^\s*async\s+/, '').trim();
+    const sig = line
+      .replace(/^\s*export\s+/, '')
+      .replace(/^\s*async\s+/, '')
+      .trim();
 
     if (type === 'function') {
       // Extract just "functionName(params): returnType"
@@ -169,8 +172,13 @@ export class CodeUnitService {
       // For arrow functions, extract the variable declaration part
       // Example: const myFunc = (param: string): void => ...
       // Returns: const myFunc = (param: string): void
-      const arrowMatch = sig.match(new RegExp(`((?:const|let|var)\\s+${name}\\s*=\\s*(?:async\\s+)?\\([^)]*\\)(?::\\s*[^=]+)?)`));
-      if (arrowMatch?.[1] != null && arrowMatch[1] !== '') return arrowMatch[1].trim();
+      const arrowMatch = sig.match(
+        new RegExp(
+          `((?:const|let|var)\\s+${name}\\s*=\\s*(?:async\\s+)?\\([^)]*\\)(?::\\s*[^=]+)?)`
+        )
+      );
+      const matchedSig = arrowMatch?.[1];
+      if (matchedSig !== undefined && matchedSig !== '') return matchedSig.trim();
 
       // Fallback for simple arrow functions without params
       return `const ${name}`;

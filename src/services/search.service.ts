@@ -1,12 +1,17 @@
-import type { LanceStore } from '../db/lance.js';
-import type { EmbeddingEngine } from '../db/embeddings.js';
-import type { SearchQuery, SearchResponse, SearchResult, DetailLevel } from '../types/search.js';
-import type { StoreId } from '../types/brands.js';
 import { CodeUnitService } from './code-unit.service.js';
-import type { CodeUnit } from '../types/search.js';
+import { createLogger } from '../logging/index.js';
 import type { CodeGraphService } from './code-graph.service.js';
 import type { CodeGraph } from '../analysis/code-graph.js';
-import { createLogger } from '../logging/index.js';
+import type { EmbeddingEngine } from '../db/embeddings.js';
+import type { LanceStore } from '../db/lance.js';
+import type { StoreId } from '../types/brands.js';
+import type {
+  SearchQuery,
+  SearchResponse,
+  SearchResult,
+  DetailLevel,
+  CodeUnit,
+} from '../types/search.js';
 
 const logger = createLogger('search-service');
 
@@ -32,54 +37,54 @@ export interface ClassifiedIntent {
  */
 const INTENT_FILE_BOOSTS: Record<QueryIntent, Record<string, number>> = {
   'how-to': {
-    'documentation-primary': 1.3,   // Strong boost for docs
-    'documentation': 1.2,
-    'example': 1.5,                  // Examples are ideal for "how to"
-    'source': 0.85,                 // Moderate penalty - source might still have good content
-    'source-internal': 0.7,         // Stronger penalty - internal code less useful
-    'test': 0.8,
-    'config': 0.7,
-    'other': 0.9,
+    'documentation-primary': 1.3, // Strong boost for docs
+    documentation: 1.2,
+    example: 1.5, // Examples are ideal for "how to"
+    source: 0.85, // Moderate penalty - source might still have good content
+    'source-internal': 0.7, // Stronger penalty - internal code less useful
+    test: 0.8,
+    config: 0.7,
+    other: 0.9,
   },
-  'implementation': {
+  implementation: {
     'documentation-primary': 0.95,
-    'documentation': 1.0,
-    'example': 1.0,
-    'source': 1.1,                  // Slight boost for source code
-    'source-internal': 1.05,        // Internal code can be relevant
-    'test': 1.0,
-    'config': 0.95,
-    'other': 1.0,
+    documentation: 1.0,
+    example: 1.0,
+    source: 1.1, // Slight boost for source code
+    'source-internal': 1.05, // Internal code can be relevant
+    test: 1.0,
+    config: 0.95,
+    other: 1.0,
   },
-  'conceptual': {
+  conceptual: {
     'documentation-primary': 1.1,
-    'documentation': 1.05,
-    'example': 1.0,
-    'source': 0.95,
+    documentation: 1.05,
+    example: 1.0,
+    source: 0.95,
     'source-internal': 0.9,
-    'test': 0.9,
-    'config': 0.85,
-    'other': 0.95,
+    test: 0.9,
+    config: 0.85,
+    other: 0.95,
   },
-  'comparison': {
+  comparison: {
     'documentation-primary': 1.15,
-    'documentation': 1.1,
-    'example': 1.05,
-    'source': 0.9,
+    documentation: 1.1,
+    example: 1.05,
+    source: 0.9,
     'source-internal': 0.85,
-    'test': 0.9,
-    'config': 0.85,
-    'other': 0.95,
+    test: 0.9,
+    config: 0.85,
+    other: 0.95,
   },
-  'debugging': {
+  debugging: {
     'documentation-primary': 1.0,
-    'documentation': 1.0,
-    'example': 1.05,
-    'source': 1.0,                  // Source code helps with debugging
+    documentation: 1.0,
+    example: 1.05,
+    source: 1.0, // Source code helps with debugging
     'source-internal': 0.95,
-    'test': 1.05,                   // Tests can show expected behavior
-    'config': 0.9,
-    'other': 1.0,
+    test: 1.05, // Tests can show expected behavior
+    config: 0.9,
+    other: 1.0,
   },
 };
 
@@ -153,23 +158,23 @@ function classifyQueryIntents(query: string): ClassifiedIntent[] {
   const intents: ClassifiedIntent[] = [];
 
   // Check all pattern groups and add matching intents with confidence
-  if (IMPLEMENTATION_PATTERNS.some(p => p.test(q))) {
+  if (IMPLEMENTATION_PATTERNS.some((p) => p.test(q))) {
     intents.push({ intent: 'implementation', confidence: 0.9 });
   }
 
-  if (DEBUGGING_PATTERNS.some(p => p.test(q))) {
+  if (DEBUGGING_PATTERNS.some((p) => p.test(q))) {
     intents.push({ intent: 'debugging', confidence: 0.85 });
   }
 
-  if (COMPARISON_PATTERNS.some(p => p.test(q))) {
+  if (COMPARISON_PATTERNS.some((p) => p.test(q))) {
     intents.push({ intent: 'comparison', confidence: 0.8 });
   }
 
-  if (HOW_TO_PATTERNS.some(p => p.test(q))) {
+  if (HOW_TO_PATTERNS.some((p) => p.test(q))) {
     intents.push({ intent: 'how-to', confidence: 0.75 });
   }
 
-  if (CONCEPTUAL_PATTERNS.some(p => p.test(q))) {
+  if (CONCEPTUAL_PATTERNS.some((p) => p.test(q))) {
     intents.push({ intent: 'conceptual', confidence: 0.7 });
   }
 
@@ -202,7 +207,7 @@ const RRF_PRESETS = {
  * Detect if results are primarily web content (have urls vs file paths).
  */
 function detectContentType(results: SearchResult[]): 'web' | 'code' {
-  const webCount = results.filter(r => 'url' in r.metadata).length;
+  const webCount = results.filter((r) => 'url' in r.metadata).length;
   return webCount > results.length / 2 ? 'web' : 'code';
 }
 
@@ -250,15 +255,18 @@ export class SearchService {
     const intents = classifyQueryIntents(query.query);
     const primaryIntent = getPrimaryIntent(intents);
 
-    logger.debug({
-      query: query.query,
-      mode,
-      limit,
-      stores,
-      detail,
-      intent: primaryIntent,
-      intents,
-    }, 'Search query received');
+    logger.debug(
+      {
+        query: query.query,
+        mode,
+        limit,
+        stores,
+        detail,
+        intent: primaryIntent,
+        intents,
+      },
+      'Search query received'
+    );
 
     let allResults: SearchResult[] = [];
 
@@ -281,28 +289,31 @@ export class SearchService {
     // Load code graphs for stores in results (for contextual/full detail levels)
     const graphs = new Map<string, CodeGraph | null>();
     if (detail === 'contextual' || detail === 'full') {
-      const storeIds = new Set(resultsToEnhance.map(r => r.metadata.storeId));
+      const storeIds = new Set(resultsToEnhance.map((r) => r.metadata.storeId));
       for (const storeId of storeIds) {
         graphs.set(storeId, await this.loadGraphForStore(storeId));
       }
     }
 
     // Enhance results with progressive context
-    const enhancedResults = resultsToEnhance.map(r => {
+    const enhancedResults = resultsToEnhance.map((r) => {
       const graph = graphs.get(r.metadata.storeId) ?? null;
       return this.addProgressiveContext(r, query.query, detail, graph);
     });
 
     const timeMs = Date.now() - startTime;
 
-    logger.info({
-      query: query.query,
-      mode,
-      resultCount: enhancedResults.length,
-      dedupedFrom: allResults.length,
-      intents: intents.map(i => `${i.intent}(${i.confidence.toFixed(2)})`),
-      timeMs,
-    }, 'Search complete');
+    logger.info(
+      {
+        query: query.query,
+        mode,
+        resultCount: enhancedResults.length,
+        dedupedFrom: allResults.length,
+        intents: intents.map((i) => `${i.intent}(${i.confidence.toFixed(2)})`),
+        timeMs,
+      },
+      'Search complete'
+    );
 
     return {
       query: query.query,
@@ -320,7 +331,10 @@ export class SearchService {
    */
   private deduplicateBySource(results: SearchResult[], query: string): SearchResult[] {
     const bySource = new Map<string, SearchResult>();
-    const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    const queryTerms = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 2);
 
     for (const result of results) {
       // Use file path as the source key (or url for web content, or id as last resort)
@@ -353,7 +367,7 @@ export class SearchService {
    */
   private countQueryTerms(content: string, queryTerms: string[]): number {
     const lowerContent = content.toLowerCase();
-    return queryTerms.filter(term => lowerContent.includes(term)).length;
+    return queryTerms.filter((term) => lowerContent.includes(term)).length;
   }
 
   private async vectorSearch(
@@ -367,12 +381,14 @@ export class SearchService {
 
     for (const storeId of stores) {
       const hits = await this.lanceStore.search(storeId, queryVector, limit, threshold);
-      results.push(...hits.map(r => ({
-        id: r.id,
-        score: r.score,
-        content: r.content,
-        metadata: r.metadata,
-      })));
+      results.push(
+        ...hits.map((r) => ({
+          id: r.id,
+          score: r.score,
+          content: r.content,
+          metadata: r.metadata,
+        }))
+      );
     }
 
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
@@ -387,12 +403,14 @@ export class SearchService {
 
     for (const storeId of stores) {
       const hits = await this.lanceStore.fullTextSearch(storeId, query, limit);
-      results.push(...hits.map(r => ({
-        id: r.id,
-        score: r.score,
-        content: r.content,
-        metadata: r.metadata,
-      })));
+      results.push(
+        ...hits.map((r) => ({
+          id: r.id,
+          score: r.score,
+          content: r.content,
+          metadata: r.metadata,
+        }))
+      );
     }
 
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
@@ -501,7 +519,12 @@ export class SearchService {
 
       rrfScores.push({
         id,
-        score: (vectorRRF + ftsRRF) * fileTypeBoost * frameworkBoost * urlKeywordBoost * pathKeywordBoost,
+        score:
+          (vectorRRF + ftsRRF) *
+          fileTypeBoost *
+          frameworkBoost *
+          urlKeywordBoost *
+          pathKeywordBoost,
         result,
         metadata,
       });
@@ -515,7 +538,7 @@ export class SearchService {
       const first = sorted[0];
       const last = sorted[sorted.length - 1];
       if (first === undefined || last === undefined) {
-        return sorted.map(r => ({
+        return sorted.map((r) => ({
           ...r.result,
           score: r.score,
           rankingMetadata: r.metadata,
@@ -526,7 +549,7 @@ export class SearchService {
       const range = maxScore - minScore;
 
       if (range > 0) {
-        return sorted.map(r => ({
+        return sorted.map((r) => ({
           ...r.result,
           score: (r.score - minScore) / range,
           rankingMetadata: r.metadata,
@@ -534,17 +557,14 @@ export class SearchService {
       }
     }
 
-    return sorted.map(r => ({
+    return sorted.map((r) => ({
       ...r.result,
       score: r.score,
       rankingMetadata: r.metadata,
     }));
   }
 
-  async searchAllStores(
-    query: SearchQuery,
-    storeIds: StoreId[]
-  ): Promise<SearchResponse> {
+  async searchAllStores(query: SearchQuery, storeIds: StoreId[]): Promise<SearchResponse> {
     return this.search({
       ...query,
       stores: storeIds,
@@ -562,25 +582,25 @@ export class SearchService {
     let baseBoost: number;
     switch (fileType) {
       case 'documentation-primary':
-        baseBoost = 1.8;  // README, guides get very strong boost
+        baseBoost = 1.8; // README, guides get very strong boost
         break;
       case 'documentation':
-        baseBoost = 1.5;  // docs/, tutorials/ get strong boost
+        baseBoost = 1.5; // docs/, tutorials/ get strong boost
         break;
       case 'example':
-        baseBoost = 1.4;  // examples/, demos/ are highly valuable
+        baseBoost = 1.4; // examples/, demos/ are highly valuable
         break;
       case 'source':
-        baseBoost = 1.0;  // Source code baseline
+        baseBoost = 1.0; // Source code baseline
         break;
       case 'source-internal':
-        baseBoost = 0.75;  // Internal implementation files (not too harsh)
+        baseBoost = 0.75; // Internal implementation files (not too harsh)
         break;
       case 'test':
-        baseBoost = 0.7;  // Tests significantly lower
+        baseBoost = 0.7; // Tests significantly lower
         break;
       case 'config':
-        baseBoost = 0.5;  // Config files rarely answer questions
+        baseBoost = 0.5; // Config files rarely answer questions
         break;
       default:
         baseBoost = 1.0;
@@ -597,9 +617,7 @@ export class SearchService {
       totalConfidence += confidence;
     }
 
-    const blendedMultiplier = totalConfidence > 0
-      ? weightedMultiplier / totalConfidence
-      : 1.0;
+    const blendedMultiplier = totalConfidence > 0 ? weightedMultiplier / totalConfidence : 1.0;
 
     return baseBoost * blendedMultiplier;
   }
@@ -618,27 +636,52 @@ export class SearchService {
 
     // Common stop words to filter from queries
     const stopWords = new Set([
-      'how', 'to', 'the', 'a', 'an', 'is', 'are', 'what', 'why', 'when',
-      'where', 'can', 'do', 'does', 'i', 'my', 'your', 'it', 'in', 'on',
-      'for', 'with', 'this', 'that', 'get', 'use', 'using'
+      'how',
+      'to',
+      'the',
+      'a',
+      'an',
+      'is',
+      'are',
+      'what',
+      'why',
+      'when',
+      'where',
+      'can',
+      'do',
+      'does',
+      'i',
+      'my',
+      'your',
+      'it',
+      'in',
+      'on',
+      'for',
+      'with',
+      'this',
+      'that',
+      'get',
+      'use',
+      'using',
     ]);
 
     // Extract meaningful query terms
-    const queryTerms = query.toLowerCase()
+    const queryTerms = query
+      .toLowerCase()
       .split(/\s+/)
-      .filter(t => t.length > 2 && !stopWords.has(t));
+      .filter((t) => t.length > 2 && !stopWords.has(t));
 
     if (queryTerms.length === 0) return 1.0;
 
     // Count matching terms in URL path
-    const matchingTerms = queryTerms.filter(term => urlPath.includes(term));
+    const matchingTerms = queryTerms.filter((term) => urlPath.includes(term));
 
     if (matchingTerms.length === 0) return 1.0;
 
     // Boost based on proportion of matching terms
     // Single match: ~1.5, all terms match: ~2.0
     const matchRatio = matchingTerms.length / queryTerms.length;
-    return 1.0 + (1.0 * matchRatio);
+    return 1.0 + 1.0 * matchRatio;
   }
 
   /**
@@ -655,27 +698,52 @@ export class SearchService {
 
     // Common stop words to filter from queries
     const stopWords = new Set([
-      'how', 'to', 'the', 'a', 'an', 'is', 'are', 'what', 'why', 'when',
-      'where', 'can', 'do', 'does', 'i', 'my', 'your', 'it', 'in', 'on',
-      'for', 'with', 'this', 'that', 'get', 'use', 'using'
+      'how',
+      'to',
+      'the',
+      'a',
+      'an',
+      'is',
+      'are',
+      'what',
+      'why',
+      'when',
+      'where',
+      'can',
+      'do',
+      'does',
+      'i',
+      'my',
+      'your',
+      'it',
+      'in',
+      'on',
+      'for',
+      'with',
+      'this',
+      'that',
+      'get',
+      'use',
+      'using',
     ]);
 
     // Extract meaningful query terms
-    const queryTerms = query.toLowerCase()
+    const queryTerms = query
+      .toLowerCase()
       .split(/\s+/)
-      .filter(t => t.length > 2 && !stopWords.has(t));
+      .filter((t) => t.length > 2 && !stopWords.has(t));
 
     if (queryTerms.length === 0) return 1.0;
 
     // Count matching terms in file path
-    const matchingTerms = queryTerms.filter(term => pathSegments.includes(term));
+    const matchingTerms = queryTerms.filter((term) => pathSegments.includes(term));
 
     if (matchingTerms.length === 0) return 1.0;
 
     // Boost based on proportion of matching terms
     // Single match: ~1.5, all terms match: ~2.0
     const matchRatio = matchingTerms.length / queryTerms.length;
-    return 1.0 + (1.0 * matchRatio);
+    return 1.0 + 1.0 * matchRatio;
   }
 
   /**
@@ -691,8 +759,8 @@ export class SearchService {
     for (const { pattern, terms } of FRAMEWORK_PATTERNS) {
       if (pattern.test(query)) {
         // Query mentions this framework - check if result is from that framework
-        const resultMatchesFramework = terms.some(term =>
-          pathLower.includes(term) || content.includes(term)
+        const resultMatchesFramework = terms.some(
+          (term) => pathLower.includes(term) || content.includes(term)
         );
 
         if (resultMatchesFramework) {
@@ -728,8 +796,8 @@ export class SearchService {
       name: symbolName,
       signature: codeUnit?.signature ?? '',
       purpose: this.generatePurpose(result.content, query),
-      location: `${path}${codeUnit ? ':' + String(codeUnit.startLine) : ''}`,
-      relevanceReason: this.generateRelevanceReason(result, query)
+      location: `${path}${codeUnit ? `:${String(codeUnit.startLine)}` : ''}`,
+      relevanceReason: this.generateRelevanceReason(result, query),
     };
 
     // Layer 2: Add context if requested
@@ -741,7 +809,7 @@ export class SearchService {
         interfaces: this.extractInterfaces(result.content),
         keyImports: this.extractImports(result.content),
         relatedConcepts: this.extractConcepts(result.content, query),
-        usage
+        usage,
       };
     }
 
@@ -754,7 +822,7 @@ export class SearchService {
         completeCode: codeUnit?.fullContent ?? result.content,
         relatedCode,
         documentation: this.extractDocumentation(result.content),
-        tests: undefined
+        tests: undefined,
       };
     }
 
@@ -766,8 +834,12 @@ export class SearchService {
     if (path === undefined || path === '') return undefined;
 
     const ext = path.split('.').pop() ?? '';
-    const language = ext === 'ts' || ext === 'tsx' ? 'typescript' :
-                     ext === 'js' || ext === 'jsx' ? 'javascript' : ext;
+    const language =
+      ext === 'ts' || ext === 'tsx'
+        ? 'typescript'
+        : ext === 'js' || ext === 'jsx'
+          ? 'javascript'
+          : ext;
 
     // Try to find a symbol name in the content
     const symbolName = this.extractSymbolName(result.content);
@@ -779,45 +851,54 @@ export class SearchService {
   private extractSymbolName(content: string): string {
     // Extract function or class name
     const funcMatch = content.match(/(?:export\s+)?(?:async\s+)?function\s+(\w+)/);
-    if (funcMatch !== null && funcMatch[1] !== undefined && funcMatch[1] !== '') return funcMatch[1];
+    if (funcMatch?.[1] !== undefined && funcMatch[1] !== '') return funcMatch[1];
 
     const classMatch = content.match(/(?:export\s+)?class\s+(\w+)/);
-    if (classMatch !== null && classMatch[1] !== undefined && classMatch[1] !== '') return classMatch[1];
+    if (classMatch?.[1] !== undefined && classMatch[1] !== '') return classMatch[1];
 
     const constMatch = content.match(/(?:export\s+)?const\s+(\w+)/);
-    if (constMatch !== null && constMatch[1] !== undefined && constMatch[1] !== '') return constMatch[1];
+    if (constMatch?.[1] !== undefined && constMatch[1] !== '') return constMatch[1];
 
     // Fallback: return "(anonymous)" for unnamed symbols
     return '(anonymous)';
   }
 
-  private inferType(fileType: string | undefined, codeUnit: CodeUnit | undefined): import('../types/search.js').ResultSummary['type'] {
+  private inferType(
+    fileType: string | undefined,
+    codeUnit: CodeUnit | undefined
+  ): import('../types/search.js').ResultSummary['type'] {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     if (codeUnit) return codeUnit.type as import('../types/search.js').ResultSummary['type'];
-    if (fileType === 'documentation' || fileType === 'documentation-primary') return 'documentation';
+    if (fileType === 'documentation' || fileType === 'documentation-primary')
+      return 'documentation';
     return 'function';
   }
 
   private generatePurpose(content: string, query: string): string {
     // Extract first line of JSDoc comment if present
     const docMatch = content.match(/\/\*\*\s*\n\s*\*\s*([^\n]+)/);
-    if (docMatch !== null && docMatch[1] !== undefined && docMatch[1] !== '') return docMatch[1].trim();
+    if (docMatch?.[1] !== undefined && docMatch[1] !== '') return docMatch[1].trim();
 
     const lines = content.split('\n');
-    const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    const queryTerms = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 2);
 
     // Helper to check if line is skippable (imports, declarations)
     const shouldSkip = (cleaned: string): boolean => {
-      return cleaned.startsWith('import ') ||
-             cleaned.startsWith('export ') ||
-             cleaned.startsWith('interface ') ||
-             cleaned.startsWith('type ');
+      return (
+        cleaned.startsWith('import ') ||
+        cleaned.startsWith('export ') ||
+        cleaned.startsWith('interface ') ||
+        cleaned.startsWith('type ')
+      );
     };
 
     // Helper to score a line based on query term matches
     const scoreLine = (cleaned: string): number => {
       const lowerLine = cleaned.toLowerCase();
-      return queryTerms.filter(term => lowerLine.includes(term)).length;
+      return queryTerms.filter((term) => lowerLine.includes(term)).length;
     };
 
     // Helper to check if line is meaningful (length, not a comment)
@@ -839,18 +920,18 @@ export class SearchService {
       if (shouldSkip(cleaned) || !isMeaningful(cleaned)) continue;
 
       let score = scoreLine(cleaned);
-      
+
       // Boost score for complete sentences (end with period, !, ?)
       if (/[.!?]$/.test(cleaned)) {
         score += 0.5;
       }
-      
+
       // Boost score for code examples (contains function calls or assignments)
       // Favor complete patterns: function calls WITH arguments, assignments with values
       if (/\w+\([^)]*\)|=\s*\w+\(|=>/.test(cleaned)) {
-        score += 0.6;  // Enhanced boost to preserve code examples in snippets
+        score += 0.6; // Enhanced boost to preserve code examples in snippets
       }
-      
+
       if (score > bestScore) {
         bestScore = score;
         bestLine = cleaned;
@@ -864,7 +945,7 @@ export class SearchService {
         if (firstSentence && firstSentence[0].length >= 20 && firstSentence[0].length <= 150) {
           return firstSentence[0].trim();
         }
-        return bestLine.substring(0, 147) + '...';
+        return `${bestLine.substring(0, 147)}...`;
       }
       return bestLine;
     }
@@ -879,7 +960,7 @@ export class SearchService {
         if (firstSentence && firstSentence[0].length >= 20 && firstSentence[0].length <= 150) {
           return firstSentence[0].trim();
         }
-        return cleaned.substring(0, 147) + '...';
+        return `${cleaned.substring(0, 147)}...`;
       }
 
       return cleaned;
@@ -889,10 +970,13 @@ export class SearchService {
   }
 
   private generateRelevanceReason(result: SearchResult, query: string): string {
-    const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    const queryTerms = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 2);
     const contentLower = result.content.toLowerCase();
 
-    const matchedTerms = queryTerms.filter(term => contentLower.includes(term));
+    const matchedTerms = queryTerms.filter((term) => contentLower.includes(term));
 
     if (matchedTerms.length > 0) {
       return `Matches: ${matchedTerms.join(', ')}`;
@@ -924,14 +1008,60 @@ export class SearchService {
 
     // Common stopwords to filter out
     const stopwords = new Set([
-      'this', 'that', 'these', 'those', 'from', 'with', 'have', 'will',
-      'would', 'should', 'could', 'about', 'been', 'were', 'being',
-      'function', 'return', 'const', 'import', 'export', 'default',
-      'type', 'interface', 'class', 'extends', 'implements', 'async',
-      'await', 'then', 'catch', 'throw', 'error', 'undefined', 'null',
-      'true', 'false', 'void', 'number', 'string', 'boolean', 'object',
-      'array', 'promise', 'callback', 'resolve', 'reject', 'value',
-      'param', 'params', 'args', 'props', 'options', 'config', 'data'
+      'this',
+      'that',
+      'these',
+      'those',
+      'from',
+      'with',
+      'have',
+      'will',
+      'would',
+      'should',
+      'could',
+      'about',
+      'been',
+      'were',
+      'being',
+      'function',
+      'return',
+      'const',
+      'import',
+      'export',
+      'default',
+      'type',
+      'interface',
+      'class',
+      'extends',
+      'implements',
+      'async',
+      'await',
+      'then',
+      'catch',
+      'throw',
+      'error',
+      'undefined',
+      'null',
+      'true',
+      'false',
+      'void',
+      'number',
+      'string',
+      'boolean',
+      'object',
+      'array',
+      'promise',
+      'callback',
+      'resolve',
+      'reject',
+      'value',
+      'param',
+      'params',
+      'args',
+      'props',
+      'options',
+      'config',
+      'data',
     ]);
 
     // Simple keyword extraction
@@ -953,11 +1083,11 @@ export class SearchService {
 
   private extractDocumentation(content: string): string {
     const docMatch = content.match(/\/\*\*([\s\S]*?)\*\//);
-    if (docMatch !== null && docMatch[1] !== undefined && docMatch[1] !== '') {
+    if (docMatch?.[1] !== undefined && docMatch[1] !== '') {
       return docMatch[1]
         .split('\n')
-        .map(line => line.replace(/^\s*\*\s?/, '').trim())
-        .filter(line => line.length > 0)
+        .map((line) => line.replace(/^\s*\*\s?/, '').trim())
+        .filter((line) => line.length > 0)
         .join('\n');
     }
     return '';
@@ -979,7 +1109,7 @@ export class SearchService {
     const nodeId = `${filePath}:${symbolName}`;
     return {
       calledBy: graph.getCalledByCount(nodeId),
-      calls: graph.getCallsCount(nodeId)
+      calls: graph.getCallsCount(nodeId),
     };
   }
 
@@ -1008,7 +1138,7 @@ export class SearchService {
         related.push({
           file,
           summary: symbol ? `${symbol}()` : 'unknown',
-          relationship: 'calls this'
+          relationship: 'calls this',
         });
       }
     }
@@ -1022,7 +1152,7 @@ export class SearchService {
         related.push({
           file,
           summary: symbol ? `${symbol}()` : 'unknown',
-          relationship: 'called by this'
+          relationship: 'called by this',
         });
       }
     }

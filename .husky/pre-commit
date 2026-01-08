@@ -6,7 +6,7 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 # Categorize changes
 HAS_SRC_CHANGES=$(echo "$STAGED_FILES" | grep -E '^src/.*\.(ts|js)$' || true)
 HAS_TEST_CHANGES=$(echo "$STAGED_FILES" | grep -E '\.(test|spec)\.(ts|js)$' || true)
-HAS_CONFIG_CHANGES=$(echo "$STAGED_FILES" | grep -E '^(package\.json|tsconfig\.json|tsup\.config\.ts|\.eslintrc|knip\.json)' || true)
+HAS_CONFIG_CHANGES=$(echo "$STAGED_FILES" | grep -E '^(package\.json|tsconfig\.json|tsup\.config\.ts|vitest\.config\.ts|\.eslintrc|knip\.json|\.prettierrc|commitlint\.config\.js)' || true)
 HAS_DOC_CHANGES=$(echo "$STAGED_FILES" | grep -E '\.(md|txt)$|^LICENSE|^NOTICE' || true)
 HAS_DIST_CHANGES=$(echo "$STAGED_FILES" | grep -E '^dist/' || true)
 
@@ -25,8 +25,9 @@ fi
 # Run checks based on what changed
 echo "🔍 Running validation checks..."
 
-# Always run lint and typecheck for code/config changes
+# Always run format check, lint and typecheck for code/config changes
 if [ -n "$HAS_SRC_CHANGES" ] || [ -n "$HAS_TEST_CHANGES" ] || [ -n "$HAS_CONFIG_CHANGES" ]; then
+  bun run format:check:quiet || exit 1
   bun run lint:quiet || exit 1
   bun run lint:deadcode:quiet || exit 1
   bun run typecheck:quiet || exit 1

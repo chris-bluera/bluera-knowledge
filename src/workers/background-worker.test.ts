@@ -31,7 +31,13 @@ describe('BackgroundWorker', () => {
     embeddingEngine = {
       embed: vi.fn().mockResolvedValue(new Array(384).fill(0)),
     } as unknown as EmbeddingEngine;
-    worker = new BackgroundWorker(jobService, storeService, indexService, lanceStore, embeddingEngine);
+    worker = new BackgroundWorker(
+      jobService,
+      storeService,
+      indexService,
+      lanceStore,
+      embeddingEngine
+    );
   });
 
   afterEach(() => {
@@ -42,27 +48,23 @@ describe('BackgroundWorker', () => {
 
   describe('executeJob', () => {
     it('should throw error for non-existent job', async () => {
-      await expect(worker.executeJob('non-existent')).rejects.toThrow(
-        'Job non-existent not found'
-      );
+      await expect(worker.executeJob('non-existent')).rejects.toThrow('Job non-existent not found');
     });
 
     it('should throw error for unknown job type', async () => {
       const job = jobService.createJob({
         // @ts-expect-error testing invalid job type
         type: 'unknown',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'Unknown job type: unknown'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('Unknown job type: unknown');
     });
 
     it('should set job to running status before execution', async () => {
       const job = jobService.createJob({
         type: 'crawl',
-        details: { storeId: 'test' }
+        details: { storeId: 'test' },
       });
 
       try {
@@ -79,12 +81,10 @@ describe('BackgroundWorker', () => {
     it('should update job to failed status on error', async () => {
       const job = jobService.createJob({
         type: 'crawl',
-        details: { storeId: 'test', url: 'https://example.com' }
+        details: { storeId: 'test', url: 'https://example.com' },
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'Web store test not found'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('Web store test not found');
 
       const updated = jobService.getJob(job.id);
       expect(updated?.status).toBe('failed');
@@ -96,48 +96,39 @@ describe('BackgroundWorker', () => {
     it('should throw error for job without storeId', async () => {
       const job = jobService.createJob({
         type: 'index',
-        details: {}
+        details: {},
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'Store ID required for index job'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('Store ID required for index job');
     });
 
     it('should throw error for non-existent store', async () => {
       const job = jobService.createJob({
         type: 'index',
-        details: { storeId: 'non-existent-store' }
+        details: { storeId: 'non-existent-store' },
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'Store non-existent-store not found'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('Store non-existent-store not found');
     });
-
   });
 
   describe('executeCloneJob', () => {
     it('should throw error for job without storeId', async () => {
       const job = jobService.createJob({
         type: 'clone',
-        details: {}
+        details: {},
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'Store ID required for clone job'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('Store ID required for clone job');
     });
 
     it('should throw error for non-existent store', async () => {
       const job = jobService.createJob({
         type: 'clone',
-        details: { storeId: 'non-existent-store' }
+        details: { storeId: 'non-existent-store' },
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'Store non-existent-store not found'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('Store non-existent-store not found');
     });
   });
 
@@ -145,29 +136,25 @@ describe('BackgroundWorker', () => {
     it('should throw error for job without storeId', async () => {
       const job = jobService.createJob({
         type: 'crawl',
-        details: { url: 'https://example.com' }
+        details: { url: 'https://example.com' },
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'Store ID required for crawl job'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('Store ID required for crawl job');
     });
 
     it('should throw error for job without url', async () => {
       const job = jobService.createJob({
         type: 'crawl',
-        details: { storeId: 'test-store' }
+        details: { storeId: 'test-store' },
       });
 
-      await expect(worker.executeJob(job.id)).rejects.toThrow(
-        'URL required for crawl job'
-      );
+      await expect(worker.executeJob(job.id)).rejects.toThrow('URL required for crawl job');
     });
 
     it('should throw error for non-existent store', async () => {
       const job = jobService.createJob({
         type: 'crawl',
-        details: { storeId: 'non-existent-store', url: 'https://example.com' }
+        details: { storeId: 'non-existent-store', url: 'https://example.com' },
       });
 
       await expect(worker.executeJob(job.id)).rejects.toThrow(

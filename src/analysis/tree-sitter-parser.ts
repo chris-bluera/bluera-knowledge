@@ -1,6 +1,6 @@
 import Parser from 'tree-sitter';
-import Rust from 'tree-sitter-rust';
 import Go from 'tree-sitter-go';
+import Rust from 'tree-sitter-rust';
 
 /**
  * Tree-sitter infrastructure for parsing Rust and Go code.
@@ -105,21 +105,15 @@ export function getNodeText(node: TreeSitterNode): string {
 /**
  * Get all children of a specific type
  */
-export function getChildrenOfType(
-  node: TreeSitterNode,
-  type: string
-): TreeSitterNode[] {
-  return node.children.filter(child => child.type === type);
+export function getChildrenOfType(node: TreeSitterNode, type: string): TreeSitterNode[] {
+  return node.children.filter((child) => child.type === type);
 }
 
 /**
  * Get the first child of a specific type
  */
-export function getFirstChildOfType(
-  node: TreeSitterNode,
-  type: string
-): TreeSitterNode | null {
-  return node.children.find(child => child.type === type) ?? null;
+export function getFirstChildOfType(node: TreeSitterNode, type: string): TreeSitterNode | null {
+  return node.children.find((child) => child.type === type) ?? null;
 }
 
 /**
@@ -136,14 +130,14 @@ export function getChildByFieldName(
  * Check if node has a visibility modifier (pub)
  */
 export function hasVisibilityModifier(node: TreeSitterNode): boolean {
-  return node.children.some(child => child.type === 'visibility_modifier');
+  return node.children.some((child) => child.type === 'visibility_modifier');
 }
 
 /**
  * Get visibility modifier text (e.g., "pub", "pub(crate)")
  */
 export function getVisibilityModifier(node: TreeSitterNode): string | null {
-  const visNode = node.children.find(child => child.type === 'visibility_modifier');
+  const visNode = node.children.find((child) => child.type === 'visibility_modifier');
   return visNode !== undefined ? visNode.text : null;
 }
 
@@ -152,14 +146,14 @@ export function getVisibilityModifier(node: TreeSitterNode): string | null {
  */
 export function isAsyncFunction(node: TreeSitterNode): boolean {
   // Check for 'async' keyword in function_item or function_signature_item
-  return node.children.some(child => child.type === 'async' || child.text === 'async');
+  return node.children.some((child) => child.type === 'async' || child.text === 'async');
 }
 
 /**
  * Check if a function is unsafe
  */
 export function isUnsafeFunction(node: TreeSitterNode): boolean {
-  return node.children.some(child => child.type === 'unsafe' || child.text === 'unsafe');
+  return node.children.some((child) => child.type === 'unsafe' || child.text === 'unsafe');
 }
 
 /**
@@ -190,7 +184,7 @@ export function getFunctionSignature(node: TreeSitterNode): string {
 
   // Add return type
   if (returnTypeNode !== null) {
-    signature += ' ' + returnTypeNode.text;
+    signature += ` ${returnTypeNode.text}`;
   }
 
   return signature;

@@ -108,9 +108,7 @@ export function measureSync<T>(
  * @param measurements - Array of measurements
  * @returns Statistical summary
  */
-export function calculateStats(
-  measurements: PerformanceMeasurement[]
-): PerformanceStats {
+export function calculateStats(measurements: PerformanceMeasurement[]): PerformanceStats {
   if (measurements.length === 0) {
     return {
       count: 0,
@@ -131,8 +129,7 @@ export function calculateStats(
 
   // Calculate standard deviation
   const squaredDiffs = durations.map((d) => Math.pow(d - mean, 2));
-  const avgSquaredDiff =
-    squaredDiffs.reduce((sum, d) => sum + d, 0) / durations.length;
+  const avgSquaredDiff = squaredDiffs.reduce((sum, d) => sum + d, 0) / durations.length;
   const stdDev = Math.sqrt(avgSquaredDiff);
 
   return {
@@ -173,10 +170,7 @@ function percentile(sortedValues: number[], p: number): number {
  * @param measurement - Measurement to check
  * @param maxDuration - Maximum acceptable duration in ms
  */
-export function assertDuration(
-  measurement: PerformanceMeasurement,
-  maxDuration: number
-): void {
+export function assertDuration(measurement: PerformanceMeasurement, maxDuration: number): void {
   if (measurement.duration > maxDuration) {
     throw new Error(
       `${measurement.name} took ${measurement.duration.toFixed(2)}ms, ` +
@@ -203,27 +197,19 @@ export function assertPerformanceTargets(
   const failures: string[] = [];
 
   if (targets.maxMean !== undefined && stats.mean > targets.maxMean) {
-    failures.push(
-      `Mean ${stats.mean.toFixed(2)}ms exceeds target ${targets.maxMean}ms`
-    );
+    failures.push(`Mean ${stats.mean.toFixed(2)}ms exceeds target ${targets.maxMean}ms`);
   }
 
   if (targets.maxP95 !== undefined && stats.p95 > targets.maxP95) {
-    failures.push(
-      `P95 ${stats.p95.toFixed(2)}ms exceeds target ${targets.maxP95}ms`
-    );
+    failures.push(`P95 ${stats.p95.toFixed(2)}ms exceeds target ${targets.maxP95}ms`);
   }
 
   if (targets.maxP99 !== undefined && stats.p99 > targets.maxP99) {
-    failures.push(
-      `P99 ${stats.p99.toFixed(2)}ms exceeds target ${targets.maxP99}ms`
-    );
+    failures.push(`P99 ${stats.p99.toFixed(2)}ms exceeds target ${targets.maxP99}ms`);
   }
 
   if (targets.maxMax !== undefined && stats.max > targets.maxMax) {
-    failures.push(
-      `Max ${stats.max.toFixed(2)}ms exceeds target ${targets.maxMax}ms`
-    );
+    failures.push(`Max ${stats.max.toFixed(2)}ms exceeds target ${targets.maxMax}ms`);
   }
 
   if (failures.length > 0) {
@@ -263,10 +249,7 @@ export class Benchmark {
   /**
    * Run multiple iterations
    */
-  async runIterations<T>(
-    iterations: number,
-    fn: () => Promise<T>
-  ): Promise<T[]> {
+  async runIterations<T>(iterations: number, fn: () => Promise<T>): Promise<T[]> {
     const results: T[] = [];
     for (let i = 0; i < iterations; i++) {
       results.push(await this.run(fn));

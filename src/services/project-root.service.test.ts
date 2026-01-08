@@ -439,9 +439,7 @@ describe('ProjectRootService', () => {
     it('handles concurrent resolve calls', () => {
       process.env.PROJECT_ROOT = '/test/path';
 
-      const results = Array.from({ length: 10 }, () =>
-        ProjectRootService.resolve()
-      );
+      const results = Array.from({ length: 10 }, () => ProjectRootService.resolve());
 
       results.forEach((result) => {
         expect(result).toBe(path.normalize('/test/path'));

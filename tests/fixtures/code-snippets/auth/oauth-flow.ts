@@ -180,7 +180,7 @@ export async function exchangeCodeForTokens(
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json',
+      Accept: 'application/json',
     },
     body: body.toString(),
   });
@@ -202,8 +202,8 @@ export async function fetchUserInfo(
 ): Promise<Record<string, unknown>> {
   const response = await fetch(config.userInfoUrl, {
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Accept': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
     },
   });
 
@@ -232,7 +232,7 @@ export async function refreshAccessToken(
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json',
+      Accept: 'application/json',
     },
     body: body.toString(),
   });

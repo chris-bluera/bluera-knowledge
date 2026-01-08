@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import {
   IntelligentCrawler
-} from "../chunk-I2TGFERH.js";
+} from "../chunk-DC7CGSGT.js";
 import {
   JobService,
   createDocumentId,
   createServices,
   createStoreId
-} from "../chunk-RF4ITWO5.js";
-import "../chunk-3GJAG5UV.js";
+} from "../chunk-WFNPNAAP.js";
+import "../chunk-6FHWC36B.js";
 
 // src/workers/background-worker-cli.ts
 import fs from "fs";
@@ -96,23 +96,26 @@ var BackgroundWorker = class {
       message: "Repository cloned, starting indexing...",
       progress: 30
     });
-    const result = await this.indexService.indexStore(store, (event) => {
-      const currentJob = this.jobService.getJob(job.id);
-      if (currentJob?.status === "cancelled") {
-        throw new Error("Job cancelled by user");
-      }
-      const indexProgress = calculateIndexProgress(event.current, event.total, 70);
-      const totalProgress = 30 + indexProgress;
-      this.jobService.updateJob(job.id, {
-        message: `Indexed ${String(event.current)}/${String(event.total)} files`,
-        progress: Math.min(99, totalProgress),
-        // Cap at 99 until fully complete
-        details: {
-          filesProcessed: event.current,
-          totalFiles: event.total
+    const result = await this.indexService.indexStore(
+      store,
+      (event) => {
+        const currentJob = this.jobService.getJob(job.id);
+        if (currentJob?.status === "cancelled") {
+          throw new Error("Job cancelled by user");
         }
-      });
-    });
+        const indexProgress = calculateIndexProgress(event.current, event.total, 70);
+        const totalProgress = 30 + indexProgress;
+        this.jobService.updateJob(job.id, {
+          message: `Indexed ${String(event.current)}/${String(event.total)} files`,
+          progress: Math.min(99, totalProgress),
+          // Cap at 99 until fully complete
+          details: {
+            filesProcessed: event.current,
+            totalFiles: event.total
+          }
+        });
+      }
+    );
     if (!result.success) {
       throw result.error;
     }
@@ -129,22 +132,25 @@ var BackgroundWorker = class {
     if (!store) {
       throw new Error(`Store ${storeId} not found`);
     }
-    const result = await this.indexService.indexStore(store, (event) => {
-      const currentJob = this.jobService.getJob(job.id);
-      if (currentJob?.status === "cancelled") {
-        throw new Error("Job cancelled by user");
-      }
-      const progress = calculateIndexProgress(event.current, event.total);
-      this.jobService.updateJob(job.id, {
-        message: `Indexed ${String(event.current)}/${String(event.total)} files`,
-        progress: Math.min(99, progress),
-        // Cap at 99 until fully complete
-        details: {
-          filesProcessed: event.current,
-          totalFiles: event.total
+    const result = await this.indexService.indexStore(
+      store,
+      (event) => {
+        const currentJob = this.jobService.getJob(job.id);
+        if (currentJob?.status === "cancelled") {
+          throw new Error("Job cancelled by user");
         }
-      });
-    });
+        const progress = calculateIndexProgress(event.current, event.total);
+        this.jobService.updateJob(job.id, {
+          message: `Indexed ${String(event.current)}/${String(event.total)} files`,
+          progress: Math.min(99, progress),
+          // Cap at 99 until fully complete
+          details: {
+            filesProcessed: event.current,
+            totalFiles: event.total
+          }
+        });
+      }
+    );
     if (!result.success) {
       throw result.error;
     }
@@ -153,15 +159,7 @@ var BackgroundWorker = class {
    * Execute a crawl job (web crawling + indexing)
    */
   async executeCrawlJob(job) {
-    const {
-      storeId,
-      url,
-      crawlInstruction,
-      extractInstruction,
-      maxPages,
-      simple,
-      useHeadless
-    } = job.details;
+    const { storeId, url, crawlInstruction, extractInstruction, maxPages, simple, useHeadless } = job.details;
     if (storeId === void 0 || typeof storeId !== "string") {
       throw new Error("Store ID required for crawl job");
     }
@@ -169,7 +167,7 @@ var BackgroundWorker = class {
       throw new Error("URL required for crawl job");
     }
     const store = await this.storeService.get(createStoreId(storeId));
-    if (!store || store.type !== "web") {
+    if (store?.type !== "web") {
       throw new Error(`Web store ${storeId} not found`);
     }
     const resolvedMaxPages = typeof maxPages === "number" ? maxPages : 50;

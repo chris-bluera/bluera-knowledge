@@ -92,7 +92,7 @@ function validateBody<T>(schema: z.ZodSchema<T>, data: unknown): T {
   const result = schema.safeParse(data);
 
   if (!result.success) {
-    const errors = result.error.errors.map(err => ({
+    const errors = result.error.errors.map((err) => ({
       field: err.path.join('.'),
       message: err.message,
     }));
@@ -132,11 +132,7 @@ export class UserController {
       asyncHandler(this.createUser.bind(this))
     );
 
-    this.router.put(
-      '/:id',
-      authenticateToken,
-      asyncHandler(this.updateUser.bind(this))
-    );
+    this.router.put('/:id', authenticateToken, asyncHandler(this.updateUser.bind(this)));
 
     this.router.delete(
       '/:id',
@@ -217,9 +213,7 @@ export class UserController {
     const data = validateBody(createUserSchema, req.body);
 
     // Check for existing user
-    const existingUser = Array.from(users.values()).find(
-      u => u.email === data.email
-    );
+    const existingUser = Array.from(users.values()).find((u) => u.email === data.email);
 
     if (existingUser) {
       throw new BadRequestError('User with this email already exists', {

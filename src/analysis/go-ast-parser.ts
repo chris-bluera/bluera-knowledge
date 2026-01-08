@@ -1,4 +1,3 @@
-import type { CodeNode, ImportInfo } from './ast-parser.js';
 import {
   parseGoCode,
   queryNodesByType,
@@ -7,8 +6,9 @@ import {
   getFunctionSignature,
   getFirstChildOfType,
   type TreeSitterNode,
-  type TreeSitterTree
+  type TreeSitterTree,
 } from './tree-sitter-parser.js';
+import type { CodeNode, ImportInfo } from './ast-parser.js';
 
 /**
  * Parser for Go code using tree-sitter
@@ -87,13 +87,14 @@ export class GoASTParser {
 
           // Extract string content from interpreted_string_literal
           const stringContent = pathNode.descendantsOfType('interpreted_string_literal_content')[0];
-          const path = stringContent !== undefined ? stringContent.text : pathNode.text.replace(/"/g, '');
+          const path =
+            stringContent !== undefined ? stringContent.text : pathNode.text.replace(/"/g, '');
 
           if (path !== '') {
             imports.push({
               source: path,
               specifiers: [],
-              isType: false
+              isType: false,
             });
           }
         }
@@ -131,7 +132,7 @@ export class GoASTParser {
         async: false,
         startLine,
         endLine,
-        signature
+        signature,
       });
     }
 
@@ -176,7 +177,7 @@ export class GoASTParser {
         startLine,
         endLine,
         signature: name,
-        methods: []
+        methods: [],
       });
     }
 
@@ -223,7 +224,7 @@ export class GoASTParser {
         startLine,
         endLine,
         signature: name,
-        methods
+        methods,
       });
     }
 
@@ -267,7 +268,7 @@ export class GoASTParser {
         exported,
         startLine,
         endLine,
-        signature
+        signature,
       });
     }
 
@@ -296,9 +297,7 @@ export class GoASTParser {
         const endLine = positionToLineNumber(spec.endPosition);
 
         const typeNode = getChildByFieldName(spec, 'type');
-        const signature = typeNode !== null
-          ? `${name}: ${typeNode.text}`
-          : name;
+        const signature = typeNode !== null ? `${name}: ${typeNode.text}` : name;
 
         nodes.push({
           type: 'const',
@@ -306,7 +305,7 @@ export class GoASTParser {
           exported,
           startLine,
           endLine,
-          signature
+          signature,
         });
       }
     }
@@ -327,9 +326,7 @@ export class GoASTParser {
         const endLine = positionToLineNumber(spec.endPosition);
 
         const typeNode = getChildByFieldName(spec, 'type');
-        const signature = typeNode !== null
-          ? `${name}: ${typeNode.text}`
-          : name;
+        const signature = typeNode !== null ? `${name}: ${typeNode.text}` : name;
 
         nodes.push({
           type: 'const',
@@ -337,7 +334,7 @@ export class GoASTParser {
           exported,
           startLine,
           endLine,
-          signature
+          signature,
         });
       }
     }
@@ -368,17 +365,15 @@ export class GoASTParser {
       const endLine = positionToLineNumber(methodNode.endPosition);
 
       // Find the corresponding struct and attach method
-      const structNode = nodes.find(
-        node => node.type === 'class' && node.name === receiverType
-      );
+      const structNode = nodes.find((node) => node.type === 'class' && node.name === receiverType);
 
-      if (structNode !== undefined && structNode.methods !== undefined) {
+      if (structNode?.methods !== undefined) {
         structNode.methods.push({
           name,
           async: false,
           signature,
           startLine,
-          endLine
+          endLine,
         });
       }
     }
@@ -420,7 +415,7 @@ export class GoASTParser {
         async: false,
         signature,
         startLine,
-        endLine
+        endLine,
       });
     }
 
@@ -448,9 +443,7 @@ export class GoASTParser {
 
     // Handle pointer receivers (*Type)
     if (typeNode.type === 'pointer_type') {
-      const innerType = typeNode.children.find(
-        child => child.type === 'type_identifier'
-      );
+      const innerType = typeNode.children.find((child) => child.type === 'type_identifier');
       return innerType !== undefined ? innerType.text : null;
     }
 

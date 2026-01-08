@@ -4,7 +4,7 @@ import type { GlobalOptions } from '../program.js';
 
 // Mock all dependencies
 vi.mock('../../mcp/server.js', () => ({
-  runMCPServer: vi.fn()
+  runMCPServer: vi.fn(),
 }));
 
 describe('MCP Command - Execution Tests', () => {
@@ -35,7 +35,7 @@ describe('MCP Command - Execution Tests', () => {
 
       expect(runMCPServer).toHaveBeenCalledWith({
         dataDir: '/tmp/test-data',
-        config: undefined
+        config: undefined,
       });
     });
 
@@ -55,7 +55,7 @@ describe('MCP Command - Execution Tests', () => {
 
       expect(runMCPServer).toHaveBeenCalledWith({
         dataDir: '/tmp/test-data',
-        config: '/custom/config.json'
+        config: '/custom/config.json',
       });
     });
 
@@ -75,7 +75,7 @@ describe('MCP Command - Execution Tests', () => {
 
       expect(runMCPServer).toHaveBeenCalledWith({
         dataDir: '/custom/data',
-        config: undefined
+        config: undefined,
       });
     });
 
@@ -95,7 +95,7 @@ describe('MCP Command - Execution Tests', () => {
 
       expect(runMCPServer).toHaveBeenCalledWith({
         dataDir: '/custom/data',
-        config: '/custom/config.json'
+        config: '/custom/config.json',
       });
     });
   });
@@ -204,7 +204,7 @@ describe('MCP Command - Execution Tests', () => {
       let serverStarted = false;
 
       vi.mocked(runMCPServer).mockImplementation(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         serverStarted = true;
       });
 

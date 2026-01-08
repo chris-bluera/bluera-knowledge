@@ -10,11 +10,11 @@ vi.mock('../../services/index.js', () => ({
 }));
 
 vi.mock('@hono/node-server', () => ({
-  serve: vi.fn()
+  serve: vi.fn(),
 }));
 
 vi.mock('../../server/app.js', () => ({
-  createApp: vi.fn()
+  createApp: vi.fn(),
 }));
 
 describe('Serve Command - Execution Tests', () => {
@@ -40,17 +40,17 @@ describe('Serve Command - Execution Tests', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       search: {
-        search: vi.fn()
+        search: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -79,7 +79,7 @@ describe('Serve Command - Execution Tests', () => {
       expect(serve).toHaveBeenCalledWith({
         fetch: expect.any(Function),
         port: 3847,
-        hostname: '127.0.0.1'
+        hostname: '127.0.0.1',
       });
     });
 
@@ -94,7 +94,7 @@ describe('Serve Command - Execution Tests', () => {
       expect(serve).toHaveBeenCalledWith(
         expect.objectContaining({
           port: 8080,
-          hostname: '127.0.0.1'
+          hostname: '127.0.0.1',
         })
       );
     });
@@ -110,7 +110,7 @@ describe('Serve Command - Execution Tests', () => {
       expect(serve).toHaveBeenCalledWith(
         expect.objectContaining({
           port: 3847,
-          hostname: '0.0.0.0'
+          hostname: '0.0.0.0',
         })
       );
     });
@@ -126,7 +126,7 @@ describe('Serve Command - Execution Tests', () => {
       expect(serve).toHaveBeenCalledWith(
         expect.objectContaining({
           port: 9000,
-          hostname: '0.0.0.0'
+          hostname: '0.0.0.0',
         })
       );
     });
@@ -141,7 +141,7 @@ describe('Serve Command - Execution Tests', () => {
 
       expect(serve).toHaveBeenCalledWith(
         expect.objectContaining({
-          port: 5000
+          port: 5000,
         })
       );
     });
@@ -188,7 +188,7 @@ describe('Serve Command - Execution Tests', () => {
 
       expect(serve).toHaveBeenCalledWith(
         expect.objectContaining({
-          fetch: mockFetch
+          fetch: mockFetch,
         })
       );
     });
@@ -200,9 +200,7 @@ describe('Serve Command - Execution Tests', () => {
       const actionHandler = (command as any)._actionHandler;
       await actionHandler([]);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'Starting server on http://127.0.0.1:3847'
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith('Starting server on http://127.0.0.1:3847');
     });
 
     it('logs server startup with custom port', async () => {
@@ -211,9 +209,7 @@ describe('Serve Command - Execution Tests', () => {
       command.parseOptions(['--port', '8080']);
       await actionHandler([]);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'Starting server on http://127.0.0.1:8080'
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith('Starting server on http://127.0.0.1:8080');
     });
 
     it('logs server startup with custom host', async () => {
@@ -222,9 +218,7 @@ describe('Serve Command - Execution Tests', () => {
       command.parseOptions(['--host', '0.0.0.0']);
       await actionHandler([]);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'Starting server on http://0.0.0.0:3847'
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith('Starting server on http://0.0.0.0:3847');
     });
 
     it('logs server startup with both custom port and host', async () => {
@@ -233,9 +227,7 @@ describe('Serve Command - Execution Tests', () => {
       command.parseOptions(['--port', '9000', '--host', '192.168.1.1']);
       await actionHandler([]);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'Starting server on http://192.168.1.1:9000'
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith('Starting server on http://192.168.1.1:9000');
     });
   });
 

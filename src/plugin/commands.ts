@@ -1,8 +1,8 @@
-import { createServices } from '../services/index.js';
+import ora from 'ora';
 import { extractRepoName } from './git-clone.js';
 import { DependencyUsageAnalyzer } from '../analysis/dependency-usage-analyzer.js';
 import { RepoUrlResolver } from '../analysis/repo-url-resolver.js';
-import ora from 'ora';
+import { createServices } from '../services/index.js';
 
 export async function handleSearch(args: {
   query: string;
@@ -14,9 +14,8 @@ export async function handleSearch(args: {
   const storeNames = args.stores?.split(',').map((s: string) => s.trim());
 
   const allStores = await services.store.list();
-  const targetStores = storeNames !== undefined
-    ? allStores.filter((s) => storeNames.includes(s.name))
-    : allStores;
+  const targetStores =
+    storeNames !== undefined ? allStores.filter((s) => storeNames.includes(s.name)) : allStores;
 
   if (targetStores.length === 0) {
     console.error('No stores found to search');
@@ -33,7 +32,7 @@ export async function handleSearch(args: {
     stores: targetStores.map((s) => s.id),
     mode: 'hybrid',
     limit: parseInt(args.limit ?? '10', 10),
-    detail: 'contextual'
+    detail: 'contextual',
   });
 
   console.log(`Found ${String(results.totalResults)} results:\n`);
@@ -61,7 +60,7 @@ export async function handleAddRepo(args: {
     name: storeName,
     type: 'repo',
     url: args.url,
-    ...(args.branch !== undefined ? { branch: args.branch } : {})
+    ...(args.branch !== undefined ? { branch: args.branch } : {}),
   });
 
   if (!result.success) {
@@ -85,10 +84,7 @@ export async function handleAddRepo(args: {
   }
 }
 
-export async function handleAddFolder(args: {
-  path: string;
-  name?: string;
-}): Promise<void> {
+export async function handleAddFolder(args: { path: string; name?: string }): Promise<void> {
   // PWD is set by Claude Code to user's project directory
   const services = await createServices(undefined, undefined, process.env['PWD']);
   const { basename } = await import('node:path');
@@ -99,7 +95,7 @@ export async function handleAddFolder(args: {
   const result = await services.store.create({
     name: storeName,
     type: 'file',
-    path: args.path
+    path: args.path,
   });
 
   if (!result.success) {
@@ -123,9 +119,7 @@ export async function handleAddFolder(args: {
   }
 }
 
-export async function handleIndex(args: {
-  store: string;
-}): Promise<void> {
+export async function handleIndex(args: { store: string }): Promise<void> {
   // PWD is set by Claude Code to user's project directory
   const services = await createServices(undefined, undefined, process.env['PWD']);
   const store = await services.store.getByIdOrName(args.store);
@@ -139,7 +133,9 @@ export async function handleIndex(args: {
   const result = await services.index.indexStore(store);
 
   if (result.success) {
-    console.log(`Indexed ${String(result.data.documentsIndexed)} documents in ${String(result.data.timeMs)}ms`);
+    console.log(
+      `Indexed ${String(result.data.documentsIndexed)} documents in ${String(result.data.timeMs)}ms`
+    );
   } else {
     console.error(`Error: ${result.error.message}`);
     process.exit(1);
@@ -207,7 +203,9 @@ export async function handleSuggest(): Promise<void> {
 
   const { usages, totalFilesScanned, skippedFiles } = result.data;
 
-  console.log(`✔ Scanned ${String(totalFilesScanned)} files${skippedFiles > 0 ? ` (skipped ${String(skippedFiles)})` : ''}\n`);
+  console.log(
+    `✔ Scanned ${String(totalFilesScanned)} files${skippedFiles > 0 ? ` (skipped ${String(skippedFiles)})` : ''}\n`
+  );
 
   if (usages.length === 0) {
     console.log('No external dependencies found in this project.');
@@ -217,9 +215,9 @@ export async function handleSuggest(): Promise<void> {
 
   // Filter out packages already in stores
   const existingStores = await services.store.list();
-  const existingRepoNames = new Set(existingStores.map(s => s.name));
+  const existingRepoNames = new Set(existingStores.map((s) => s.name));
 
-  const newUsages = usages.filter(u => !existingRepoNames.has(u.packageName));
+  const newUsages = usages.filter((u) => !existingRepoNames.has(u.packageName));
 
   if (newUsages.length === 0) {
     console.log('✔ All dependencies are already in knowledge stores!');
@@ -232,24 +230,25 @@ export async function handleSuggest(): Promise<void> {
   console.log('Top dependencies by usage in this project:\n');
   topSuggestions.forEach((usage, i) => {
     console.log(`${String(i + 1)}. ${usage.packageName}`);
-    console.log(`   ${String(usage.importCount)} imports across ${String(usage.fileCount)} files\n`);
+    console.log(
+      `   ${String(usage.importCount)} imports across ${String(usage.fileCount)} files\n`
+    );
   });
 
   console.log('Searching for repository URLs...\n');
 
   // For each package, find repo URL
   for (const usage of topSuggestions) {
-    const repoResult = await resolver.findRepoUrl(
-      usage.packageName,
-      usage.language
-    );
+    const repoResult = await resolver.findRepoUrl(usage.packageName, usage.language);
 
     if (repoResult.url !== null) {
       console.log(`✔ ${usage.packageName}: ${repoResult.url}`);
       console.log(`  /bluera-knowledge:add-repo ${repoResult.url} --name=${usage.packageName}\n`);
     } else {
       console.log(`✗ ${usage.packageName}: Could not find repository URL`);
-      console.log(`  You can manually add it: /bluera-knowledge:add-repo <url> --name=${usage.packageName}\n`);
+      console.log(
+        `  You can manually add it: /bluera-knowledge:add-repo <url> --name=${usage.packageName}\n`
+      );
     }
   }
 

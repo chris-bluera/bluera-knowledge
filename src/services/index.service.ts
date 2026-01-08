@@ -1,17 +1,17 @@
+import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { join, extname, basename } from 'node:path';
-import { createHash } from 'node:crypto';
-import type { LanceStore } from '../db/lance.js';
-import type { EmbeddingEngine } from '../db/embeddings.js';
-import type { Store, FileStore, RepoStore } from '../types/store.js';
-import type { Document } from '../types/document.js';
-import { createDocumentId } from '../types/brands.js';
-import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
 import { ChunkingService } from './chunking.service.js';
-import type { ProgressCallback } from '../types/progress.js';
-import type { CodeGraphService } from './code-graph.service.js';
 import { createLogger } from '../logging/index.js';
+import { createDocumentId } from '../types/brands.js';
+import { ok, err } from '../types/result.js';
+import type { CodeGraphService } from './code-graph.service.js';
+import type { EmbeddingEngine } from '../db/embeddings.js';
+import type { LanceStore } from '../db/lance.js';
+import type { Document } from '../types/document.js';
+import type { ProgressCallback } from '../types/progress.js';
+import type { Result } from '../types/result.js';
+import type { Store, FileStore, RepoStore } from '../types/store.js';
 
 const logger = createLogger('index-service');
 
@@ -28,9 +28,33 @@ interface IndexOptions {
 }
 
 const TEXT_EXTENSIONS = new Set([
-  '.txt', '.md', '.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml',
-  '.html', '.css', '.scss', '.less', '.py', '.rb', '.go', '.rs', '.java',
-  '.c', '.cpp', '.h', '.hpp', '.sh', '.bash', '.zsh', '.sql', '.xml',
+  '.txt',
+  '.md',
+  '.js',
+  '.ts',
+  '.jsx',
+  '.tsx',
+  '.json',
+  '.yaml',
+  '.yml',
+  '.html',
+  '.css',
+  '.scss',
+  '.less',
+  '.py',
+  '.rb',
+  '.go',
+  '.rs',
+  '.java',
+  '.c',
+  '.cpp',
+  '.h',
+  '.hpp',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.sql',
+  '.xml',
 ]);
 
 export class IndexService {
@@ -54,39 +78,54 @@ export class IndexService {
   }
 
   async indexStore(store: Store, onProgress?: ProgressCallback): Promise<Result<IndexResult>> {
-    logger.info({
-      storeId: store.id,
-      storeName: store.name,
-      storeType: store.type,
-    }, 'Starting store indexing');
+    logger.info(
+      {
+        storeId: store.id,
+        storeName: store.name,
+        storeType: store.type,
+      },
+      'Starting store indexing'
+    );
 
     try {
       if (store.type === 'file' || store.type === 'repo') {
         return await this.indexFileStore(store, onProgress);
       }
 
-      logger.error({ storeId: store.id, storeType: store.type }, 'Unsupported store type for indexing');
+      logger.error(
+        { storeId: store.id, storeType: store.type },
+        'Unsupported store type for indexing'
+      );
       return err(new Error(`Indexing not supported for store type: ${store.type}`));
     } catch (error) {
-      logger.error({
-        storeId: store.id,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Store indexing failed');
+      logger.error(
+        {
+          storeId: store.id,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Store indexing failed'
+      );
       return err(error instanceof Error ? error : new Error(String(error)));
     }
   }
 
-  private async indexFileStore(store: FileStore | RepoStore, onProgress?: ProgressCallback): Promise<Result<IndexResult>> {
+  private async indexFileStore(
+    store: FileStore | RepoStore,
+    onProgress?: ProgressCallback
+  ): Promise<Result<IndexResult>> {
     const startTime = Date.now();
     const files = await this.scanDirectory(store.path);
     const documents: Document[] = [];
     let filesProcessed = 0;
 
-    logger.debug({
-      storeId: store.id,
-      path: store.path,
-      fileCount: files.length,
-    }, 'Files scanned for indexing');
+    logger.debug(
+      {
+        storeId: store.id,
+        path: store.path,
+        fileCount: files.length,
+      },
+      'Files scanned for indexing'
+    );
 
     // Collect source files for code graph building
     const sourceFiles: Array<{ path: string; content: string }> = [];
@@ -96,7 +135,7 @@ export class IndexService {
       type: 'start',
       current: 0,
       total: files.length,
-      message: 'Starting index'
+      message: 'Starting index',
     });
 
     for (const filePath of files) {
@@ -117,9 +156,10 @@ export class IndexService {
 
       for (const chunk of chunks) {
         const vector = await this.embeddingEngine.embed(chunk.content);
-        const chunkId = chunks.length > 1
-          ? `${store.id}-${fileHash}-${String(chunk.chunkIndex)}`
-          : `${store.id}-${fileHash}`;
+        const chunkId =
+          chunks.length > 1
+            ? `${store.id}-${fileHash}-${String(chunk.chunkIndex)}`
+            : `${store.id}-${fileHash}`;
 
         const doc: Document = {
           id: createDocumentId(chunkId),
@@ -150,7 +190,7 @@ export class IndexService {
         type: 'progress',
         current: filesProcessed,
         total: files.length,
-        message: `Indexing ${filePath}`
+        message: `Indexing ${filePath}`,
       });
     }
 
@@ -169,19 +209,22 @@ export class IndexService {
       type: 'complete',
       current: files.length,
       total: files.length,
-      message: 'Indexing complete'
+      message: 'Indexing complete',
     });
 
     const timeMs = Date.now() - startTime;
 
-    logger.info({
-      storeId: store.id,
-      storeName: store.name,
-      documentsIndexed: filesProcessed,
-      chunksCreated: documents.length,
-      sourceFilesForGraph: sourceFiles.length,
-      timeMs,
-    }, 'Store indexing complete');
+    logger.info(
+      {
+        storeId: store.id,
+        storeName: store.name,
+        documentsIndexed: filesProcessed,
+        chunksCreated: documents.length,
+        sourceFilesForGraph: sourceFiles.length,
+        timeMs,
+      },
+      'Store indexing complete'
+    );
 
     return ok({
       documentsIndexed: filesProcessed,
@@ -287,8 +330,11 @@ export class IndexService {
     }
 
     // Compiler/transform internals (often not what users want)
-    if (/\/(compiler|transforms?|parse|codegen)\//.test(pathLower) &&
-        !fileNameLower.includes('readme') && !fileNameLower.includes('index')) {
+    if (
+      /\/(compiler|transforms?|parse|codegen)\//.test(pathLower) &&
+      !fileNameLower.includes('readme') &&
+      !fileNameLower.includes('index')
+    ) {
       return true;
     }
 
@@ -305,14 +351,18 @@ export function classifyWebContentType(url: string, title?: string): string {
   const titleLower = (title ?? '').toLowerCase();
 
   // API reference documentation → documentation-primary (1.8x boost)
-  if (/\/api[-/]?(ref|reference|docs?)?\//i.test(urlLower) ||
-      /api\s*(reference|documentation)/i.test(titleLower)) {
+  if (
+    /\/api[-/]?(ref|reference|docs?)?\//i.test(urlLower) ||
+    /api\s*(reference|documentation)/i.test(titleLower)
+  ) {
     return 'documentation-primary';
   }
 
   // Getting started / tutorials → documentation-primary (1.8x boost)
-  if (/\/(getting[-_]?started|quickstart|tutorial|setup)\b/i.test(urlLower) ||
-      /(getting started|quickstart|tutorial)/i.test(titleLower)) {
+  if (
+    /\/(getting[-_]?started|quickstart|tutorial|setup)\b/i.test(urlLower) ||
+    /(getting started|quickstart|tutorial)/i.test(titleLower)
+  ) {
     return 'documentation-primary';
   }
 

@@ -5,7 +5,7 @@ describe('MCP Server', () => {
   it('should create server with search tool', () => {
     const server = createMCPServer({
       dataDir: '/tmp/test',
-      config: undefined
+      config: undefined,
     });
 
     expect(server).toBeDefined();

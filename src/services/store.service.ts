@@ -1,12 +1,12 @@
+import { randomUUID } from 'node:crypto';
 import { readFile, writeFile, mkdir, stat, access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
-import type { Store, FileStore, RepoStore, WebStore, StoreType } from '../types/store.js';
-import type { StoreId } from '../types/brands.js';
-import { createStoreId } from '../types/brands.js';
-import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
 import { cloneRepository } from '../plugin/git-clone.js';
+import { createStoreId } from '../types/brands.js';
+import { ok, err } from '../types/result.js';
+import type { StoreId } from '../types/brands.js';
+import type { Result } from '../types/result.js';
+import type { Store, FileStore, RepoStore, WebStore, StoreType } from '../types/store.js';
 
 /**
  * Check if a file exists
@@ -103,7 +103,7 @@ export class StoreService {
             url: input.url,
             targetDir: cloneDir,
             ...(input.branch !== undefined ? { branch: input.branch } : {}),
-            depth: input.depth ?? 1
+            depth: input.depth ?? 1,
           });
 
           if (!result.success) {
@@ -176,10 +176,15 @@ export class StoreService {
   }
 
   async getByIdOrName(idOrName: string): Promise<Store | undefined> {
-    return Promise.resolve(this.registry.stores.find((s) => s.id === idOrName || s.name === idOrName));
+    return Promise.resolve(
+      this.registry.stores.find((s) => s.id === idOrName || s.name === idOrName)
+    );
   }
 
-  async update(id: StoreId, updates: Partial<Pick<Store, 'name' | 'description' | 'tags'>>): Promise<Result<Store>> {
+  async update(
+    id: StoreId,
+    updates: Partial<Pick<Store, 'name' | 'description' | 'tags'>>
+  ): Promise<Result<Store>> {
     const index = this.registry.stores.findIndex((s) => s.id === id);
     if (index === -1) {
       return err(new Error(`Store not found: ${id}`));
@@ -240,7 +245,9 @@ export class StoreService {
         })),
       };
     } catch (error) {
-      throw new Error(`Failed to parse store registry at ${registryPath}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to parse store registry at ${registryPath}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

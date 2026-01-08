@@ -171,8 +171,9 @@ export class TestHTMLServer {
     // Page with many links (for testing link extraction)
     if (url === '/many-links') {
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      const links = Array.from({ length: 20 }, (_, i) =>
-        `<a href="/link${String(i)}">Link ${String(i)}</a>`
+      const links = Array.from(
+        { length: 20 },
+        (_, i) => `<a href="/link${String(i)}">Link ${String(i)}</a>`
       ).join('\n');
       res.end(`
         <!DOCTYPE html>

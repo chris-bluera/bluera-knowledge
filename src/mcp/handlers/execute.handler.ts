@@ -1,9 +1,8 @@
-import type { ToolHandler, ToolResponse } from '../types.js';
-import type { ExecuteArgs } from '../schemas/index.js';
-import { ExecuteArgsSchema } from '../schemas/index.js';
-// Import commands module to register all commands
-import '../commands/index.js';
+// Import commands module - side effect registers all commands, then use executeCommand
 import { executeCommand } from '../commands/index.js';
+import { ExecuteArgsSchema } from '../schemas/index.js';
+import type { ExecuteArgs } from '../schemas/index.js';
+import type { ToolHandler, ToolResponse } from '../types.js';
 
 /**
  * Handle execute requests

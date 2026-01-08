@@ -1,5 +1,5 @@
-import type { PythonBridge, ParsePythonResult } from '../crawl/bridge.js';
 import type { CodeNode } from './ast-parser.js';
+import type { PythonBridge, ParsePythonResult } from '../crawl/bridge.js';
 
 export class PythonASTParser {
   constructor(private readonly bridge: PythonBridge) {}
@@ -7,7 +7,7 @@ export class PythonASTParser {
   async parse(code: string, filePath: string): Promise<CodeNode[]> {
     const result: ParsePythonResult = await this.bridge.parsePython(code, filePath);
 
-    return result.nodes.map(node => {
+    return result.nodes.map((node) => {
       const codeNode: CodeNode = {
         type: node.type,
         name: node.name,

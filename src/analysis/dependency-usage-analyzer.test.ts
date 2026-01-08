@@ -21,16 +21,10 @@ describe('DependencyUsageAnalyzer', () => {
   describe('Package name extraction', () => {
     it('extracts regular package name', async () => {
       const packageJson = {
-        dependencies: { 'lodash': '^4.0.0' }
+        dependencies: { lodash: '^4.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import { map } from "lodash";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import { map } from "lodash";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -43,16 +37,10 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('extracts scoped package name', async () => {
       const packageJson = {
-        dependencies: { '@org/package': '^1.0.0' }
+        dependencies: { '@org/package': '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import { foo } from "@org/package";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import { foo } from "@org/package";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -64,16 +52,10 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('extracts package from deep import path', async () => {
       const packageJson = {
-        dependencies: { 'lodash': '^4.0.0' }
+        dependencies: { lodash: '^4.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import map from "lodash/map";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import map from "lodash/map";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -85,14 +67,8 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('ignores relative imports', async () => {
       const packageJson = { dependencies: {} };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import { helper } from "./utils";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import { helper } from "./utils";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -104,14 +80,8 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('ignores node built-ins', async () => {
       const packageJson = { dependencies: {} };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import { readFile } from "node:fs/promises";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import { readFile } from "node:fs/promises";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -123,14 +93,8 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('ignores absolute paths', async () => {
       const packageJson = { dependencies: {} };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import { util } from "/absolute/path";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import { util } from "/absolute/path";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -145,14 +109,11 @@ describe('DependencyUsageAnalyzer', () => {
     it('reads dependencies from package.json', async () => {
       const packageJson = {
         dependencies: {
-          'react': '^18.0.0',
-          'lodash': '^4.0.0'
-        }
+          react: '^18.0.0',
+          lodash: '^4.0.0',
+        },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
       await writeFile(
         join(tempDir, 'index.ts'),
         'import React from "react"; import _ from "lodash";'
@@ -169,17 +130,11 @@ describe('DependencyUsageAnalyzer', () => {
     it('identifies dev dependencies', async () => {
       const packageJson = {
         devDependencies: {
-          'vitest': '^1.0.0'
-        }
+          vitest: '^1.0.0',
+        },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'test.ts'),
-        'import { describe } from "vitest";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'test.ts'), 'import { describe } from "vitest";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -191,10 +146,7 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('handles project with no dependencies', async () => {
       const packageJson = {};
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
       const result = await analyzer.analyze(tempDir);
 
@@ -215,14 +167,8 @@ describe('DependencyUsageAnalyzer', () => {
     });
 
     it('reads Python dependencies from requirements.txt', async () => {
-      await writeFile(
-        join(tempDir, 'requirements.txt'),
-        'requests==2.28.0\nnumpy>=1.20.0'
-      );
-      await writeFile(
-        join(tempDir, 'script.py'),
-        'import requests\nimport numpy'
-      );
+      await writeFile(join(tempDir, 'requirements.txt'), 'requests==2.28.0\nnumpy>=1.20.0');
+      await writeFile(join(tempDir, 'script.py'), 'import requests\nimport numpy');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -233,10 +179,7 @@ describe('DependencyUsageAnalyzer', () => {
     });
 
     it('handles malformed package.json gracefully', async () => {
-      await writeFile(
-        join(tempDir, 'package.json'),
-        '{ invalid json'
-      );
+      await writeFile(join(tempDir, 'package.json'), '{ invalid json');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -250,16 +193,10 @@ describe('DependencyUsageAnalyzer', () => {
   describe('File scanning', () => {
     it('scans JavaScript files', async () => {
       const packageJson = {
-        dependencies: { 'package': '^1.0.0' }
+        dependencies: { package: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.js'),
-        'import { foo } from "package";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.js'), 'import { foo } from "package";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -271,16 +208,10 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('scans TypeScript files', async () => {
       const packageJson = {
-        dependencies: { 'package': '^1.0.0' }
+        dependencies: { package: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import { foo } from "package";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import { foo } from "package";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -292,18 +223,12 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('scans nested directories', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
       await mkdir(join(tempDir, 'src'), { recursive: true });
-      await writeFile(
-        join(tempDir, 'src/app.ts'),
-        'import { x } from "pkg";'
-      );
+      await writeFile(join(tempDir, 'src/app.ts'), 'import { x } from "pkg";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -315,18 +240,12 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('ignores node_modules directory', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
       await mkdir(join(tempDir, 'node_modules'), { recursive: true });
-      await writeFile(
-        join(tempDir, 'node_modules/file.js'),
-        'import { x } from "pkg";'
-      );
+      await writeFile(join(tempDir, 'node_modules/file.js'), 'import { x } from "pkg";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -339,12 +258,9 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('ignores dist and build directories', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
       await mkdir(join(tempDir, 'dist'), { recursive: true });
       await mkdir(join(tempDir, 'build'), { recursive: true });
@@ -362,16 +278,10 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('handles unreadable files gracefully', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'good.ts'),
-        'import { x } from "pkg";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'good.ts'), 'import { x } from "pkg";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -385,12 +295,9 @@ describe('DependencyUsageAnalyzer', () => {
   describe('Usage counting', () => {
     it('counts import occurrences', async () => {
       const packageJson = {
-        dependencies: { 'lodash': '^4.0.0' }
+        dependencies: { lodash: '^4.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
       await writeFile(
         join(tempDir, 'file1.ts'),
         'import { map } from "lodash";\nimport { filter } from "lodash";'
@@ -407,20 +314,11 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('counts files using a package', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'file1.ts'),
-        'import { x } from "pkg";'
-      );
-      await writeFile(
-        join(tempDir, 'file2.ts'),
-        'import { y } from "pkg";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'file1.ts'), 'import { x } from "pkg";');
+      await writeFile(join(tempDir, 'file2.ts'), 'import { y } from "pkg";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -433,16 +331,10 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('tracks which files use each package', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'app.ts'),
-        'import { x } from "pkg";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'app.ts'), 'import { x } from "pkg";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -455,14 +347,11 @@ describe('DependencyUsageAnalyzer', () => {
     it('sorts results by import count', async () => {
       const packageJson = {
         dependencies: {
-          'pkg1': '^1.0.0',
-          'pkg2': '^1.0.0'
-        }
+          pkg1: '^1.0.0',
+          pkg2: '^1.0.0',
+        },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
       await writeFile(
         join(tempDir, 'file.ts'),
         'import { a } from "pkg1";\nimport { b } from "pkg1";\nimport { c } from "pkg2";'
@@ -481,19 +370,13 @@ describe('DependencyUsageAnalyzer', () => {
   describe('Progress reporting', () => {
     it('calls progress callback during analysis', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
       // Create multiple files to trigger progress (fires every 10 files)
       for (let i = 0; i < 25; i++) {
-        await writeFile(
-          join(tempDir, `file${i}.ts`),
-          'import { x } from "pkg";'
-        );
+        await writeFile(join(tempDir, `file${i}.ts`), 'import { x } from "pkg";');
       }
 
       const progressCalls: Array<{ current: number; total: number; message: string }> = [];
@@ -512,75 +395,51 @@ describe('DependencyUsageAnalyzer', () => {
   describe('Import detection methods', () => {
     it('uses ESM imports as primary detection method', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'file.js'),
-        'import { foo } from "pkg";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'file.js'), 'import { foo } from "pkg";');
 
       const result = await analyzer.analyze(tempDir);
 
       expect(result.success).toBe(true);
       if (result.success) {
-        const pkgUsage = result.data.usages.find(u => u.packageName === 'pkg');
+        const pkgUsage = result.data.usages.find((u) => u.packageName === 'pkg');
         expect(pkgUsage).toBeDefined();
         expect(pkgUsage?.packageName).toBe('pkg');
       }
     });
 
     it('detects Python import statements', async () => {
-      await writeFile(
-        join(tempDir, 'requirements.txt'),
-        'requests==2.28.0'
-      );
-      await writeFile(
-        join(tempDir, 'script.py'),
-        'import requests'
-      );
+      await writeFile(join(tempDir, 'requirements.txt'), 'requests==2.28.0');
+      await writeFile(join(tempDir, 'script.py'), 'import requests');
 
       const result = await analyzer.analyze(tempDir);
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.usages.some(u => u.packageName === 'requests')).toBe(true);
+        expect(result.data.usages.some((u) => u.packageName === 'requests')).toBe(true);
       }
     });
 
     it('detects Python from...import statements', async () => {
-      await writeFile(
-        join(tempDir, 'requirements.txt'),
-        'numpy>=1.20.0'
-      );
-      await writeFile(
-        join(tempDir, 'script.py'),
-        'from numpy import array'
-      );
+      await writeFile(join(tempDir, 'requirements.txt'), 'numpy>=1.20.0');
+      await writeFile(join(tempDir, 'script.py'), 'from numpy import array');
 
       const result = await analyzer.analyze(tempDir);
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.usages.some(u => u.packageName === 'numpy')).toBe(true);
+        expect(result.data.usages.some((u) => u.packageName === 'numpy')).toBe(true);
       }
     });
 
     it('handles malformed code gracefully', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'broken.ts'),
-        'import { incomplete from "pkg"'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'broken.ts'), 'import { incomplete from "pkg"');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -594,10 +453,7 @@ describe('DependencyUsageAnalyzer', () => {
   describe('Analysis metadata', () => {
     it('includes analysis time', async () => {
       const packageJson = { dependencies: {} };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
       const result = await analyzer.analyze(tempDir);
 
@@ -609,16 +465,10 @@ describe('DependencyUsageAnalyzer', () => {
 
     it('counts skipped files', async () => {
       const packageJson = {
-        dependencies: { 'pkg': '^1.0.0' }
+        dependencies: { pkg: '^1.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'good.ts'),
-        'import { x } from "pkg";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'good.ts'), 'import { x } from "pkg";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -632,16 +482,10 @@ describe('DependencyUsageAnalyzer', () => {
   describe('Language detection', () => {
     it('sets language to javascript for package.json dependencies', async () => {
       const packageJson = {
-        dependencies: { 'lodash': '^4.0.0' }
+        dependencies: { lodash: '^4.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'index.ts'),
-        'import { map } from "lodash";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'index.ts'), 'import { map } from "lodash";');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -652,14 +496,8 @@ describe('DependencyUsageAnalyzer', () => {
     });
 
     it('sets language to python for requirements.txt dependencies', async () => {
-      await writeFile(
-        join(tempDir, 'requirements.txt'),
-        'requests==2.28.0'
-      );
-      await writeFile(
-        join(tempDir, 'script.py'),
-        'import requests'
-      );
+      await writeFile(join(tempDir, 'requirements.txt'), 'requests==2.28.0');
+      await writeFile(join(tempDir, 'script.py'), 'import requests');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -704,10 +542,7 @@ serde = "1.0"
 tokio = { version = "1.0" }
 `
       );
-      await writeFile(
-        join(tempDir, 'main.rs'),
-        'use serde::Serialize;'
-      );
+      await writeFile(join(tempDir, 'main.rs'), 'use serde::Serialize;');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -729,10 +564,7 @@ require (
 )
 `
       );
-      await writeFile(
-        join(tempDir, 'main.go'),
-        'import "github.com/gorilla/mux"'
-      );
+      await writeFile(join(tempDir, 'main.go'), 'import "github.com/gorilla/mux"');
 
       const result = await analyzer.analyze(tempDir);
 
@@ -763,33 +595,21 @@ require (
     it('handles mixed language projects', async () => {
       // JavaScript
       const packageJson = {
-        dependencies: { 'express': '^4.0.0' }
+        dependencies: { express: '^4.0.0' },
       };
-      await writeFile(
-        join(tempDir, 'package.json'),
-        JSON.stringify(packageJson)
-      );
-      await writeFile(
-        join(tempDir, 'server.js'),
-        'import express from "express";'
-      );
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
+      await writeFile(join(tempDir, 'server.js'), 'import express from "express";');
 
       // Python
-      await writeFile(
-        join(tempDir, 'requirements.txt'),
-        'flask==2.0.0'
-      );
-      await writeFile(
-        join(tempDir, 'app.py'),
-        'import flask'
-      );
+      await writeFile(join(tempDir, 'requirements.txt'), 'flask==2.0.0');
+      await writeFile(join(tempDir, 'app.py'), 'import flask');
 
       const result = await analyzer.analyze(tempDir);
 
       expect(result.success).toBe(true);
       if (result.success) {
-        const jsUsage = result.data.usages.find(u => u.packageName === 'express');
-        const pyUsage = result.data.usages.find(u => u.packageName === 'flask');
+        const jsUsage = result.data.usages.find((u) => u.packageName === 'express');
+        const pyUsage = result.data.usages.find((u) => u.packageName === 'flask');
 
         expect(jsUsage?.language).toBe('javascript');
         expect(pyUsage?.language).toBe('python');

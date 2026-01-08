@@ -155,9 +155,7 @@ describe('Python Bridge Integration Tests', () => {
   describe('Error Handling', () => {
     it('handles invalid URLs gracefully', async () => {
       // Python worker should handle invalid URLs and return error
-      await expect(
-        bridge.crawl('not-a-valid-url')
-      ).rejects.toThrow();
+      await expect(bridge.crawl('not-a-valid-url')).rejects.toThrow();
     }, 30000);
 
     it('handles 404 pages', async () => {

@@ -32,16 +32,16 @@ export function doWork() {
   helper();
   return 'done';
 }
-`
-        }
+`,
+        },
       ];
 
       const graph = await service.buildGraph(files);
       const nodes = graph.getAllNodes();
 
       expect(nodes.length).toBe(2);
-      expect(nodes.some(n => n.name === 'helper')).toBe(true);
-      expect(nodes.some(n => n.name === 'doWork')).toBe(true);
+      expect(nodes.some((n) => n.name === 'helper')).toBe(true);
+      expect(nodes.some((n) => n.name === 'doWork')).toBe(true);
     });
 
     it('should track function calls', async () => {
@@ -56,15 +56,15 @@ function caller() {
 function callee() {
   return 42;
 }
-`
-        }
+`,
+        },
       ];
 
       const graph = await service.buildGraph(files);
 
       // Check that caller calls callee
       const callerEdges = graph.getEdges('/src/main.ts:caller');
-      const callsCallee = callerEdges.some(e => e.to.includes('callee') && e.type === 'calls');
+      const callsCallee = callerEdges.some((e) => e.to.includes('callee') && e.type === 'calls');
       expect(callsCallee).toBe(true);
     });
 
@@ -78,13 +78,13 @@ import { helper } from './utils.js';
 function useHelper() {
   helper();
 }
-`
-        }
+`,
+        },
       ];
 
       const graph = await service.buildGraph(files);
       const consumerEdges = graph.getEdges('/src/consumer.ts');
-      const hasImport = consumerEdges.some(e => e.type === 'imports');
+      const hasImport = consumerEdges.some((e) => e.type === 'imports');
       expect(hasImport).toBe(true);
     });
 
@@ -92,7 +92,7 @@ function useHelper() {
       const files = [
         { path: '/src/readme.md', content: '# README\n\nThis is docs.' },
         { path: '/src/config.json', content: '{"key": "value"}' },
-        { path: '/src/main.ts', content: 'export function main() {}' }
+        { path: '/src/main.ts', content: 'export function main() {}' },
       ];
 
       const graph = await service.buildGraph(files);
@@ -114,8 +114,8 @@ function useHelper() {
 export function helper() {
   return 'help';
 }
-`
-        }
+`,
+        },
       ];
 
       const graph = await service.buildGraph(files);
@@ -140,9 +140,7 @@ export function helper() {
 
     it('should cache loaded graphs', async () => {
       const storeId = createStoreId('cached-store');
-      const files = [
-        { path: '/src/main.ts', content: 'export function main() {}' }
-      ];
+      const files = [{ path: '/src/main.ts', content: 'export function main() {}' }];
 
       const graph = await service.buildGraph(files);
       await service.saveGraph(storeId, graph);
@@ -157,9 +155,7 @@ export function helper() {
 
     it('should persist graph to JSON file', async () => {
       const storeId = createStoreId('persisted-store');
-      const files = [
-        { path: '/src/main.ts', content: 'export function main() {}' }
-      ];
+      const files = [{ path: '/src/main.ts', content: 'export function main() {}' }];
 
       const graph = await service.buildGraph(files);
       await service.saveGraph(storeId, graph);
@@ -189,8 +185,8 @@ export class Calculator {
     return a - b;
   }
 }
-`
-        }
+`,
+        },
       ];
 
       const graph = await service.buildGraph(files);
@@ -204,13 +200,13 @@ export class Calculator {
 
       const nodes = loadedGraph!.getAllNodes();
       // Should have class + 2 methods
-      const classNode = nodes.find(n => n.name === 'Calculator' && n.type === 'class');
-      const methodNodes = nodes.filter(n => n.type === 'method');
+      const classNode = nodes.find((n) => n.name === 'Calculator' && n.type === 'class');
+      const methodNodes = nodes.filter((n) => n.type === 'method');
 
       expect(classNode).toBeDefined();
       expect(methodNodes.length).toBe(2);
-      expect(methodNodes.some(m => m.name === 'add')).toBe(true);
-      expect(methodNodes.some(m => m.name === 'subtract')).toBe(true);
+      expect(methodNodes.some((m) => m.name === 'add')).toBe(true);
+      expect(methodNodes.some((m) => m.name === 'subtract')).toBe(true);
     });
   });
 
@@ -227,8 +223,8 @@ function caller() {
 function target() {
   return 1;
 }
-`
-        }
+`,
+        },
       ];
 
       const graph = await service.buildGraph(files);
@@ -260,31 +256,29 @@ function target() {
 function callee() {
   return 1;
 }
-`
-        }
+`,
+        },
       ];
 
       const graph = await service.buildGraph(files);
       const related = service.getRelatedCode(graph, '/src/main.ts', 'target');
 
       // target is called by caller (and possibly itself due to regex-based detection)
-      const callers = related.filter(r => r.relationship === 'calls this');
+      const callers = related.filter((r) => r.relationship === 'calls this');
       expect(callers.length).toBeGreaterThanOrEqual(1);
-      expect(callers.some(c => c.id.includes('caller'))).toBe(true);
+      expect(callers.some((c) => c.id.includes('caller'))).toBe(true);
 
       // target calls callee
-      const callees = related.filter(r => r.relationship === 'called by this');
+      const callees = related.filter((r) => r.relationship === 'called by this');
       expect(callees.length).toBeGreaterThanOrEqual(1);
-      expect(callees.some(c => c.id.includes('callee'))).toBe(true);
+      expect(callees.some((c) => c.id.includes('callee'))).toBe(true);
     });
   });
 
   describe('clearCache', () => {
     it('should clear cached graphs', async () => {
       const storeId = createStoreId('cache-test');
-      const files = [
-        { path: '/src/main.ts', content: 'export function main() {}' }
-      ];
+      const files = [{ path: '/src/main.ts', content: 'export function main() {}' }];
 
       const graph = await service.buildGraph(files);
       await service.saveGraph(storeId, graph);

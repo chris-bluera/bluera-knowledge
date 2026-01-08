@@ -4,7 +4,7 @@ import {
   isDocumentMetadata,
   isPartialAppConfig,
   isFloat32ArrayData,
-  hasDefaultExport
+  hasDefaultExport,
 } from './type-guards.js';
 import type { DocumentMetadata } from '../types/document.js';
 
@@ -21,7 +21,12 @@ describe('TypeGuards - parseJSON', () => {
 
   it('throws on invalid JSON structure', () => {
     const validator = (value: unknown): value is { name: string } => {
-      return typeof value === 'object' && value !== null && 'name' in value && typeof (value as any).name === 'string';
+      return (
+        typeof value === 'object' &&
+        value !== null &&
+        'name' in value &&
+        typeof (value as any).name === 'string'
+      );
     };
 
     expect(() => {
@@ -39,7 +44,7 @@ describe('TypeGuards - parseJSON', () => {
 
   it('handles arrays with validator', () => {
     const validator = (value: unknown): value is string[] => {
-      return Array.isArray(value) && value.every(v => typeof v === 'string');
+      return Array.isArray(value) && value.every((v) => typeof v === 'string');
     };
 
     const result = parseJSON('["a","b","c"]', validator);
@@ -79,7 +84,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
     const metadata: DocumentMetadata = {
       storeId: 'store-123',
       path: '/path/to/file.ts',
-      docType: 'code'
+      docType: 'code',
     };
 
     expect(isDocumentMetadata(metadata)).toBe(true);
@@ -102,7 +107,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
   it('returns false when missing required storeId', () => {
     const invalid = {
       path: '/path/to/file.ts',
-      docType: 'code'
+      docType: 'code',
     };
 
     expect(isDocumentMetadata(invalid)).toBe(false);
@@ -111,7 +116,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
   it('returns false when missing required path', () => {
     const invalid = {
       storeId: 'store-123',
-      docType: 'code'
+      docType: 'code',
     };
 
     expect(isDocumentMetadata(invalid)).toBe(false);
@@ -120,7 +125,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
   it('returns false when missing required docType', () => {
     const invalid = {
       storeId: 'store-123',
-      path: '/path/to/file.ts'
+      path: '/path/to/file.ts',
     };
 
     expect(isDocumentMetadata(invalid)).toBe(false);
@@ -130,7 +135,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
     const invalid = {
       storeId: 123,
       path: '/path/to/file.ts',
-      docType: 'code'
+      docType: 'code',
     };
 
     expect(isDocumentMetadata(invalid)).toBe(false);
@@ -140,7 +145,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
     const invalid = {
       storeId: 'store-123',
       path: 123,
-      docType: 'code'
+      docType: 'code',
     };
 
     expect(isDocumentMetadata(invalid)).toBe(false);
@@ -150,7 +155,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
     const invalid = {
       storeId: 'store-123',
       path: '/path/to/file.ts',
-      docType: 123
+      docType: 123,
     };
 
     expect(isDocumentMetadata(invalid)).toBe(false);
@@ -161,7 +166,7 @@ describe('TypeGuards - isDocumentMetadata', () => {
       storeId: 'store-123',
       path: '/path/to/file.ts',
       docType: 'code',
-      extraProp: 'allowed'
+      extraProp: 'allowed',
     };
 
     expect(isDocumentMetadata(metadata)).toBe(true);
@@ -172,7 +177,7 @@ describe('TypeGuards - isPartialAppConfig', () => {
   it('returns true for valid partial config', () => {
     const config = {
       port: 3000,
-      host: 'localhost'
+      host: 'localhost',
     };
 
     expect(isPartialAppConfig(config)).toBe(true);
@@ -199,7 +204,7 @@ describe('TypeGuards - isPartialAppConfig', () => {
   it('returns true for object with any properties', () => {
     const config = {
       anyProp: 'value',
-      anotherProp: 123
+      anotherProp: 123,
     };
 
     expect(isPartialAppConfig(config)).toBe(true);
@@ -296,7 +301,7 @@ describe('TypeGuards - hasDefaultExport', () => {
   it('returns true for object with default and other properties', () => {
     const module = {
       default: 'value',
-      named: 'export'
+      named: 'export',
     };
 
     expect(hasDefaultExport(module)).toBe(true);
@@ -308,7 +313,7 @@ describe('TypeGuards - Type Narrowing', () => {
     const data: unknown = {
       storeId: 'store-123',
       path: '/file.ts',
-      docType: 'code'
+      docType: 'code',
     };
 
     if (isDocumentMetadata(data)) {

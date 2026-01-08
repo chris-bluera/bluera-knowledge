@@ -1,15 +1,12 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { createServices } from '../services/index.js';
-import { tools } from './handlers/index.js';
 import { handleExecute } from './handlers/execute.handler.js';
+import { tools } from './handlers/index.js';
 import { ExecuteArgsSchema } from './schemas/index.js';
-import type { MCPServerOptions } from './types.js';
 import { createLogger } from '../logging/index.js';
+import type { MCPServerOptions } from './types.js';
 
 const logger = createLogger('mcp-server');
 
@@ -35,74 +32,85 @@ export function createMCPServer(options: MCPServerOptions): Server {
         // Native search tool with full schema (most used, benefits from detailed params)
         {
           name: 'search',
-          description: 'Search all indexed knowledge stores with pattern detection and AI-optimized results. Returns structured code units with progressive context layers.',
+          description:
+            'Search all indexed knowledge stores with pattern detection and AI-optimized results. Returns structured code units with progressive context layers.',
           inputSchema: {
             type: 'object',
             properties: {
               query: {
                 type: 'string',
-                description: 'Search query (can include type signatures, constraints, or natural language)'
+                description:
+                  'Search query (can include type signatures, constraints, or natural language)',
               },
               intent: {
                 type: 'string',
-                enum: ['find-pattern', 'find-implementation', 'find-usage', 'find-definition', 'find-documentation'],
-                description: 'Search intent for better ranking'
+                enum: [
+                  'find-pattern',
+                  'find-implementation',
+                  'find-usage',
+                  'find-definition',
+                  'find-documentation',
+                ],
+                description: 'Search intent for better ranking',
               },
               detail: {
                 type: 'string',
                 enum: ['minimal', 'contextual', 'full'],
                 default: 'minimal',
-                description: 'Context detail level: minimal (summary only), contextual (+ imports/types), full (+ complete code)'
+                description:
+                  'Context detail level: minimal (summary only), contextual (+ imports/types), full (+ complete code)',
               },
               limit: {
                 type: 'number',
                 default: 10,
-                description: 'Maximum number of results'
+                description: 'Maximum number of results',
               },
               stores: {
                 type: 'array',
                 items: { type: 'string' },
-                description: 'Specific store IDs to search (optional)'
-              }
+                description: 'Specific store IDs to search (optional)',
+              },
             },
-            required: ['query']
-          }
+            required: ['query'],
+          },
         },
         // Native get_full_context tool (frequently used after search)
         {
           name: 'get_full_context',
-          description: 'Get complete code and context for a specific search result by ID. Use this after search to get full implementation details.',
+          description:
+            'Get complete code and context for a specific search result by ID. Use this after search to get full implementation details.',
           inputSchema: {
             type: 'object',
             properties: {
               resultId: {
                 type: 'string',
-                description: 'Result ID from previous search'
-              }
+                description: 'Result ID from previous search',
+              },
             },
-            required: ['resultId']
-          }
+            required: ['resultId'],
+          },
         },
         // Meta-tool for store and job management (consolidates 8 tools into 1)
         {
           name: 'execute',
-          description: 'Execute store/job management commands. Commands: stores, store:info, store:create, store:index, store:delete, jobs, job:status, job:cancel, help, commands',
+          description:
+            'Execute store/job management commands. Commands: stores, store:info, store:create, store:index, store:delete, jobs, job:status, job:cancel, help, commands',
           inputSchema: {
             type: 'object',
             properties: {
               command: {
                 type: 'string',
-                description: 'Command to execute (e.g., "stores", "store:create", "jobs", "help")'
+                description: 'Command to execute (e.g., "stores", "store:create", "jobs", "help")',
               },
               args: {
                 type: 'object',
-                description: 'Command arguments (e.g., {store: "mystore"} for store:info)'
-              }
+                description: 'Command arguments (e.g., {store: "mystore"} for store:info)',
+              },
             },
-            required: ['command']
-          }
-        }
-      ]
+            required: ['command'],
+          },
+        },
+      ],
     });
   });
 
@@ -114,11 +122,7 @@ export function createMCPServer(options: MCPServerOptions): Server {
     logger.info({ tool: name, args: JSON.stringify(args) }, 'Tool invoked');
 
     // Create services once (needed by all handlers)
-    const services = await createServices(
-      options.config,
-      options.dataDir,
-      options.projectRoot
-    );
+    const services = await createServices(options.config, options.dataDir, options.projectRoot);
     const context = { services, options };
 
     try {
@@ -130,7 +134,7 @@ export function createMCPServer(options: MCPServerOptions): Server {
         result = await handleExecute(validated, context);
       } else {
         // Find handler in registry for native tools (search, get_full_context)
-        const tool = tools.find(t => t.name === name);
+        const tool = tools.find((t) => t.name === name);
         if (tool === undefined) {
           throw new Error(`Unknown tool: ${name}`);
         }
@@ -148,11 +152,14 @@ export function createMCPServer(options: MCPServerOptions): Server {
       return result;
     } catch (error) {
       const durationMs = Date.now() - startTime;
-      logger.error({
-        tool: name,
-        durationMs,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Tool execution failed');
+      logger.error(
+        {
+          tool: name,
+          durationMs,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Tool execution failed'
+      );
       throw error;
     }
   });
@@ -161,10 +168,13 @@ export function createMCPServer(options: MCPServerOptions): Server {
 }
 
 export async function runMCPServer(options: MCPServerOptions): Promise<void> {
-  logger.info({
-    dataDir: options.dataDir,
-    projectRoot: options.projectRoot,
-  }, 'MCP server starting');
+  logger.info(
+    {
+      dataDir: options.dataDir,
+      projectRoot: options.projectRoot,
+    },
+    'MCP server starting'
+  );
 
   const server = createMCPServer(options);
   const transport = new StdioServerTransport();
@@ -182,9 +192,12 @@ if (isMCPServerEntry) {
   runMCPServer({
     dataDir: process.env['DATA_DIR'],
     config: process.env['CONFIG_PATH'],
-    projectRoot: process.env['PROJECT_ROOT'] ?? process.env['PWD']
+    projectRoot: process.env['PROJECT_ROOT'] ?? process.env['PWD'],
   }).catch((error: unknown) => {
-    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to start MCP server');
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Failed to start MCP server'
+    );
     process.exit(1);
   });
 }

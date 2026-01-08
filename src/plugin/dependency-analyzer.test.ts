@@ -21,35 +21,35 @@ describe('DependencyAnalyzer - Node.js Projects', () => {
       name: 'test-project',
       dependencies: {
         react: '^18.0.0',
-        vue: '^3.0.0'
-      }
+        vue: '^3.0.0',
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'react')).toBe(true);
-    expect(suggestions.some(s => s.name === 'vue')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'react')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'vue')).toBe(true);
   });
 
   it('includes devDependencies', async () => {
     const packageJson = {
       name: 'test-project',
       dependencies: {
-        hono: '^3.0.0'
+        hono: '^3.0.0',
       },
       devDependencies: {
-        pino: '^8.0.0'
-      }
+        pino: '^8.0.0',
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'hono')).toBe(true);
-    expect(suggestions.some(s => s.name === 'pino')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'hono')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'pino')).toBe(true);
   });
 
   it('returns only known repositories', async () => {
@@ -57,31 +57,31 @@ describe('DependencyAnalyzer - Node.js Projects', () => {
       name: 'test-project',
       dependencies: {
         react: '^18.0.0',
-        'some-unknown-package': '^1.0.0'
-      }
+        'some-unknown-package': '^1.0.0',
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'react')).toBe(true);
-    expect(suggestions.some(s => s.name === 'some-unknown-package')).toBe(false);
+    expect(suggestions.some((s) => s.name === 'react')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'some-unknown-package')).toBe(false);
   });
 
   it('includes repository URL for known packages', async () => {
     const packageJson = {
       name: 'test-project',
       dependencies: {
-        react: '^18.0.0'
-      }
+        react: '^18.0.0',
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    const reactSuggestion = suggestions.find(s => s.name === 'react');
+    const reactSuggestion = suggestions.find((s) => s.name === 'react');
     expect(reactSuggestion).toBeDefined();
     expect(reactSuggestion?.url).toContain('github.com');
   });
@@ -91,16 +91,16 @@ describe('DependencyAnalyzer - Node.js Projects', () => {
       name: 'test-project',
       dependencies: {
         react: '^18.0.0',
-        pino: '^8.0.0'
-      }
+        pino: '^8.0.0',
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    const reactSuggestion = suggestions.find(s => s.name === 'react');
-    const pinoSuggestion = suggestions.find(s => s.name === 'pino');
+    const reactSuggestion = suggestions.find((s) => s.name === 'react');
+    const pinoSuggestion = suggestions.find((s) => s.name === 'pino');
 
     expect(reactSuggestion?.importance).toBe('critical');
     expect(pinoSuggestion?.importance).toBe('medium');
@@ -110,15 +110,15 @@ describe('DependencyAnalyzer - Node.js Projects', () => {
     const packageJson = {
       name: 'test-project',
       dependencies: {
-        react: '^18.0.0'
-      }
+        react: '^18.0.0',
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    const reactSuggestion = suggestions.find(s => s.name === 'react');
+    const reactSuggestion = suggestions.find((s) => s.name === 'react');
     expect(reactSuggestion?.reason).toBeTruthy();
     expect(reactSuggestion?.reason).toContain('framework');
   });
@@ -172,9 +172,9 @@ django==4.2.0`;
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'fastapi')).toBe(true);
-    expect(suggestions.some(s => s.name === 'pydantic')).toBe(true);
-    expect(suggestions.some(s => s.name === 'django')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'fastapi')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'pydantic')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'django')).toBe(true);
   });
 
   it('parses different version specifiers', async () => {
@@ -187,10 +187,10 @@ django>3.0`;
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'fastapi')).toBe(true);
-    expect(suggestions.some(s => s.name === 'pydantic')).toBe(true);
-    expect(suggestions.some(s => s.name === 'flask')).toBe(true);
-    expect(suggestions.some(s => s.name === 'django')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'fastapi')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'pydantic')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'flask')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'django')).toBe(true);
   });
 
   it('ignores comments and blank lines', async () => {
@@ -205,8 +205,8 @@ pydantic>=1.10.0
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'fastapi')).toBe(true);
-    expect(suggestions.some(s => s.name === 'pydantic')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'fastapi')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'pydantic')).toBe(true);
   });
 
   it('analyzes pyproject.toml', async () => {
@@ -221,8 +221,8 @@ dependencies = [
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'fastapi')).toBe(true);
-    expect(suggestions.some(s => s.name === 'pydantic')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'fastapi')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'pydantic')).toBe(true);
   });
 });
 
@@ -242,8 +242,8 @@ describe('DependencyAnalyzer - Mixed Projects', () => {
     const packageJson = {
       name: 'test-project',
       dependencies: {
-        react: '^18.0.0'
-      }
+        react: '^18.0.0',
+      },
     };
 
     const requirements = 'fastapi==0.95.0';
@@ -253,26 +253,26 @@ describe('DependencyAnalyzer - Mixed Projects', () => {
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    expect(suggestions.some(s => s.name === 'react')).toBe(true);
-    expect(suggestions.some(s => s.name === 'fastapi')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'react')).toBe(true);
+    expect(suggestions.some((s) => s.name === 'fastapi')).toBe(true);
   });
 
   it('removes duplicates across sources', async () => {
     const packageJson = {
       name: 'test-project',
       dependencies: {
-        react: '^18.0.0'
+        react: '^18.0.0',
       },
       devDependencies: {
-        react: '^18.0.0' // Duplicate
-      }
+        react: '^18.0.0', // Duplicate
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
 
     const suggestions = await analyzeDependencies(tempDir);
 
-    const reactSuggestions = suggestions.filter(s => s.name === 'react');
+    const reactSuggestions = suggestions.filter((s) => s.name === 'react');
     expect(reactSuggestions).toHaveLength(1);
   });
 
@@ -280,11 +280,11 @@ describe('DependencyAnalyzer - Mixed Projects', () => {
     const packageJson = {
       name: 'test-project',
       dependencies: {
-        pino: '^8.0.0',        // medium
-        react: '^18.0.0',      // critical
-        zod: '^3.0.0',         // high
-        express: '^4.0.0'      // high
-      }
+        pino: '^8.0.0', // medium
+        react: '^18.0.0', // critical
+        zod: '^3.0.0', // high
+        express: '^4.0.0', // high
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
@@ -324,7 +324,7 @@ describe('DependencyAnalyzer - Edge Cases', () => {
   it('handles empty dependencies object', async () => {
     const packageJson = {
       name: 'test-project',
-      dependencies: {}
+      dependencies: {},
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
@@ -337,7 +337,7 @@ describe('DependencyAnalyzer - Edge Cases', () => {
   it('handles package.json without dependencies field', async () => {
     const packageJson = {
       name: 'test-project',
-      version: '1.0.0'
+      version: '1.0.0',
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
@@ -359,8 +359,8 @@ describe('DependencyAnalyzer - Edge Cases', () => {
     const packageJson = {
       name: 'test-project',
       dependencies: {
-        react: '^18.0.0'
-      }
+        react: '^18.0.0',
+      },
     };
 
     await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson));
@@ -372,7 +372,7 @@ describe('DependencyAnalyzer - Edge Cases', () => {
 
     try {
       const suggestions = await analyzeDependencies();
-      expect(suggestions.some(s => s.name === 'react')).toBe(true);
+      expect(suggestions.some((s) => s.name === 'react')).toBe(true);
     } finally {
       cwd.mockRestore();
     }

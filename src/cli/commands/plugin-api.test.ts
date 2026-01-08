@@ -12,7 +12,7 @@ vi.mock('../../plugin/commands.js', () => ({
   handleAddRepo: vi.fn(),
   handleAddFolder: vi.fn(),
   handleStores: vi.fn(),
-  handleSuggest: vi.fn()
+  handleSuggest: vi.fn(),
 }));
 
 describe('Plugin API Commands - Execution Tests', () => {
@@ -24,12 +24,8 @@ describe('Plugin API Commands - Execution Tests', () => {
   });
 
   beforeEach(async () => {
-    const {
-      handleAddRepo,
-      handleAddFolder,
-      handleStores,
-      handleSuggest
-    } = await import('../../plugin/commands.js');
+    const { handleAddRepo, handleAddFolder, handleStores, handleSuggest } =
+      await import('../../plugin/commands.js');
 
     vi.mocked(handleAddRepo).mockClear().mockResolvedValue(undefined);
     vi.mocked(handleAddFolder).mockClear().mockResolvedValue(undefined);
@@ -50,7 +46,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       await actionHandler(['https://github.com/user/repo.git']);
 
       expect(handleAddRepo).toHaveBeenCalledWith({
-        url: 'https://github.com/user/repo.git'
+        url: 'https://github.com/user/repo.git',
       });
     });
 
@@ -64,7 +60,7 @@ describe('Plugin API Commands - Execution Tests', () => {
 
       expect(handleAddRepo).toHaveBeenCalledWith({
         url: 'https://github.com/user/repo.git',
-        name: 'my-repo'
+        name: 'my-repo',
       });
     });
 
@@ -78,7 +74,7 @@ describe('Plugin API Commands - Execution Tests', () => {
 
       expect(handleAddRepo).toHaveBeenCalledWith({
         url: 'https://github.com/user/repo.git',
-        branch: 'develop'
+        branch: 'develop',
       });
     });
 
@@ -93,7 +89,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       expect(handleAddRepo).toHaveBeenCalledWith({
         url: 'https://github.com/user/repo.git',
         name: 'custom-name',
-        branch: 'main'
+        branch: 'main',
       });
     });
 
@@ -105,7 +101,9 @@ describe('Plugin API Commands - Execution Tests', () => {
       const command = createAddRepoCommand(getOptions);
       const actionHandler = (command as any)._actionHandler;
 
-      await expect(actionHandler(['https://github.com/user/repo.git'])).rejects.toThrow('Clone failed');
+      await expect(actionHandler(['https://github.com/user/repo.git'])).rejects.toThrow(
+        'Clone failed'
+      );
     });
   });
 
@@ -118,7 +116,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       await actionHandler(['/path/to/folder']);
 
       expect(handleAddFolder).toHaveBeenCalledWith({
-        path: '/path/to/folder'
+        path: '/path/to/folder',
       });
     });
 
@@ -132,7 +130,7 @@ describe('Plugin API Commands - Execution Tests', () => {
 
       expect(handleAddFolder).toHaveBeenCalledWith({
         path: '/path/to/folder',
-        name: 'my-folder'
+        name: 'my-folder',
       });
     });
 
@@ -144,7 +142,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       await actionHandler(['./relative/path']);
 
       expect(handleAddFolder).toHaveBeenCalledWith({
-        path: './relative/path'
+        path: './relative/path',
       });
     });
 
@@ -156,7 +154,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       await actionHandler(['/path/with spaces/folder']);
 
       expect(handleAddFolder).toHaveBeenCalledWith({
-        path: '/path/with spaces/folder'
+        path: '/path/with spaces/folder',
       });
     });
 
@@ -294,7 +292,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       await actionHandler(['https://github.com/user/repo.git']);
 
       expect(handleAddRepo).toHaveBeenCalledWith({
-        url: 'https://github.com/user/repo.git'
+        url: 'https://github.com/user/repo.git',
       });
     });
 
@@ -306,7 +304,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       await actionHandler(['/path']);
 
       expect(handleAddFolder).toHaveBeenCalledWith({
-        path: '/path'
+        path: '/path',
       });
     });
   });

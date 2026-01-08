@@ -73,10 +73,7 @@ export class ClaudeClient {
    * @param instruction - Natural language crawl instruction (e.g., "scrape all Getting Started pages")
    * @returns List of URLs to crawl with reasoning
    */
-  async determineCrawlUrls(
-    seedHtml: string,
-    instruction: string,
-  ): Promise<CrawlStrategy> {
+  async determineCrawlUrls(seedHtml: string, instruction: string): Promise<CrawlStrategy> {
     const prompt = `You are analyzing a webpage to determine which pages to crawl based on the user's instruction.
 
 Instruction: ${instruction}
@@ -110,7 +107,7 @@ Return only URLs that are relevant to the instruction. If the instruction mentio
       return { urls: parsed.urls, reasoning: parsed.reasoning };
     } catch (error) {
       throw new Error(
-        `Failed to determine crawl strategy: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to determine crawl strategy: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -133,7 +130,7 @@ ${this.truncateMarkdown(markdown, 100000)}`;
       return result.trim();
     } catch (error) {
       throw new Error(
-        `Failed to extract content: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to extract content: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -145,10 +142,7 @@ ${this.truncateMarkdown(markdown, 100000)}`;
    * @param jsonSchema - Optional JSON schema for structured output
    * @returns Claude's response as a string
    */
-  private async callClaude(
-    prompt: string,
-    jsonSchema?: Record<string, unknown>,
-  ): Promise<string> {
+  private async callClaude(prompt: string, jsonSchema?: Record<string, unknown>): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const args = ['-p'];
 
@@ -193,9 +187,7 @@ ${this.truncateMarkdown(markdown, 100000)}`;
           resolve(stdout.trim());
         } else {
           reject(
-            new Error(
-              `Claude CLI exited with code ${String(code)}${stderr ? `: ${stderr}` : ''}`,
-            ),
+            new Error(`Claude CLI exited with code ${String(code)}${stderr ? `: ${stderr}` : ''}`)
           );
         }
       });
@@ -220,7 +212,7 @@ ${this.truncateMarkdown(markdown, 100000)}`;
     if (html.length <= maxLength) return html;
 
     // Try to keep the beginning (usually has navigation)
-    return html.substring(0, maxLength) + '\n\n[... HTML truncated ...]';
+    return `${html.substring(0, maxLength)}\n\n[... HTML truncated ...]`;
   }
 
   /**
@@ -229,6 +221,6 @@ ${this.truncateMarkdown(markdown, 100000)}`;
   private truncateMarkdown(markdown: string, maxLength: number): string {
     if (markdown.length <= maxLength) return markdown;
 
-    return markdown.substring(0, maxLength) + '\n\n[... content truncated ...]';
+    return `${markdown.substring(0, maxLength)}\n\n[... content truncated ...]`;
   }
 }

@@ -11,15 +11,15 @@ vi.mock('../../services/index.js', () => ({
 }));
 
 vi.mock('node:child_process', () => ({
-  spawnSync: vi.fn(() => ({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') }))
+  spawnSync: vi.fn(() => ({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') })),
 }));
 
 vi.mock('node:fs', () => ({
-  existsSync: vi.fn()
+  existsSync: vi.fn(),
 }));
 
 vi.mock('node:fs/promises', () => ({
-  mkdir: vi.fn()
+  mkdir: vi.fn(),
 }));
 
 vi.mock('ora', () => ({
@@ -27,8 +27,8 @@ vi.mock('ora', () => ({
     start: vi.fn().mockReturnThis(),
     succeed: vi.fn().mockReturnThis(),
     fail: vi.fn().mockReturnThis(),
-    text: ''
-  }))
+    text: '',
+  })),
 }));
 
 describe('Setup Command - Execution Tests', () => {
@@ -54,14 +54,14 @@ describe('Setup Command - Execution Tests', () => {
         list: vi.fn(),
         getByIdOrName: vi.fn(),
         create: vi.fn(),
-        delete: vi.fn()
+        delete: vi.fn(),
       },
       lance: {
-        initialize: vi.fn()
+        initialize: vi.fn(),
       },
       index: {
-        indexStore: vi.fn()
-      }
+        indexStore: vi.fn(),
+      },
     } as unknown as ServiceContainer;
 
     vi.mocked(createServices).mockResolvedValue(mockServices);
@@ -80,7 +80,7 @@ describe('Setup Command - Execution Tests', () => {
   describe('repos subcommand - list mode', () => {
     it('lists all default repositories without cloning', async () => {
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       expect(reposCmd).toBeDefined();
 
@@ -99,7 +99,7 @@ describe('Setup Command - Execution Tests', () => {
 
     it('displays repository details in list mode', async () => {
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--list']);
@@ -109,8 +109,12 @@ describe('Setup Command - Execution Tests', () => {
       for (const repo of DEFAULT_REPOS) {
         expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(repo.name));
         expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(`URL: ${repo.url}`));
-        expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(`Description: ${repo.description}`));
-        expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(`Tags: ${repo.tags.join(', ')}`));
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+          expect.stringContaining(`Description: ${repo.description}`)
+        );
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+          expect.stringContaining(`Tags: ${repo.tags.join(', ')}`)
+        );
       }
     });
   });
@@ -123,7 +127,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -134,16 +142,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/claude-code',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code']);
@@ -159,7 +167,7 @@ describe('Setup Command - Execution Tests', () => {
 
     it('exits with error when no repos match filter', async () => {
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'nonexistent-repo']);
@@ -176,7 +184,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -187,16 +199,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/test',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'docs,sdk']);
@@ -216,7 +228,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -227,16 +243,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -257,7 +273,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -268,16 +288,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -287,7 +307,7 @@ describe('Setup Command - Execution Tests', () => {
         'git',
         ['pull', '--ff-only'],
         expect.objectContaining({
-          stdio: 'pipe'
+          stdio: 'pipe',
         })
       );
     });
@@ -301,7 +321,11 @@ describe('Setup Command - Execution Tests', () => {
       vi.mocked(mkdir).mockResolvedValue(undefined);
 
       // Pull fails (non-zero status) but shouldn't stop execution
-      vi.mocked(spawnSync).mockReturnValue({ status: 1, stdout: Buffer.from(''), stderr: Buffer.from('Pull failed') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 1,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from('Pull failed'),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -312,16 +336,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -340,12 +364,16 @@ describe('Setup Command - Execution Tests', () => {
       vi.mocked(mkdir).mockResolvedValue(undefined);
 
       // Clone fails with empty stderr - should use fallback message
-      vi.mocked(spawnSync).mockReturnValue({ status: 1, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 1,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -365,7 +393,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -376,16 +408,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs', '--skip-clone']);
@@ -404,7 +436,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -415,28 +451,28 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
       await actionHandler([]);
 
-      const repo = DEFAULT_REPOS.find(r => r.name === 'claude-code-docs')!;
+      const repo = DEFAULT_REPOS.find((r) => r.name === 'claude-code-docs')!;
       expect(mockServices.store.create).toHaveBeenCalledWith({
         name: repo.name,
         type: 'repo',
         path: expect.stringContaining('claude-code-docs'),
         description: repo.description,
-        tags: repo.tags
+        tags: repo.tags,
       });
     });
 
@@ -447,7 +483,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue({
         id: 'existing-store',
@@ -455,15 +495,15 @@ describe('Setup Command - Execution Tests', () => {
         type: 'repo',
         path: '/tmp/repos/claude-code-docs',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -481,16 +521,20 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
         success: false,
-        error: new Error('Store creation failed')
+        error: new Error('Store creation failed'),
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -512,17 +556,22 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName)
         .mockResolvedValueOnce(undefined) // First call - check if store exists
-        .mockResolvedValueOnce({ // Second call - get store for indexing
+        .mockResolvedValueOnce({
+          // Second call - get store for indexing
           id: 'store-1',
           name: 'claude-code-docs',
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         });
 
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -533,17 +582,17 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 25, chunksCreated: 100, timeMs: 2000 }
+        data: { documentsIndexed: 25, chunksCreated: 100, timeMs: 2000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -560,7 +609,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -571,12 +624,12 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs', '--skip-index']);
@@ -597,7 +650,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName)
         .mockResolvedValueOnce(undefined)
@@ -607,7 +664,7 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         });
 
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -618,17 +675,17 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: false,
-        error: new Error('Indexing failed')
+        error: new Error('Indexing failed'),
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -647,7 +704,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName)
         .mockResolvedValueOnce(undefined)
@@ -657,7 +718,7 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         });
 
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -668,8 +729,8 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/repos/claude-code-docs',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       vi.mocked(mockServices.index.indexStore).mockImplementation(async (store, onProgress) => {
@@ -680,12 +741,12 @@ describe('Setup Command - Execution Tests', () => {
         }
         return {
           success: true,
-          data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+          data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
         };
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code-docs']);
@@ -709,7 +770,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -720,16 +785,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/test',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code', '--repos-dir', '/custom/path']);
@@ -745,7 +810,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -756,16 +825,16 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/custom/path/test',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code', '--repos-dir', '/custom/path']);
@@ -773,7 +842,7 @@ describe('Setup Command - Execution Tests', () => {
 
       expect(mockServices.store.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: expect.stringContaining('/custom/path')
+          path: expect.stringContaining('/custom/path'),
         })
       );
     });
@@ -787,7 +856,11 @@ describe('Setup Command - Execution Tests', () => {
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: Buffer.from(''), stderr: Buffer.from('') });
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+      });
 
       vi.mocked(mockServices.store.getByIdOrName).mockResolvedValue(undefined);
       vi.mocked(mockServices.store.create).mockResolvedValue({
@@ -798,23 +871,25 @@ describe('Setup Command - Execution Tests', () => {
           type: 'repo',
           path: '/tmp/test',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       vi.mocked(mockServices.index.indexStore).mockResolvedValue({
         success: true,
-        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 }
+        data: { documentsIndexed: 10, chunksCreated: 50, timeMs: 1000 },
       });
 
       const command = createSetupCommand(getOptions);
-      const reposCmd = command.commands.find(c => c.name() === 'repos');
+      const reposCmd = command.commands.find((c) => c.name() === 'repos');
 
       const actionHandler = (reposCmd as any)._actionHandler;
       reposCmd.parseOptions(['--only', 'claude-code']);
       await actionHandler([]);
 
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Setup complete'));
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('bluera-knowledge search'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('bluera-knowledge search')
+      );
     });
   });
 });

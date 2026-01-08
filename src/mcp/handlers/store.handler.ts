@@ -1,23 +1,23 @@
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ToolHandler, ToolResponse } from '../types.js';
-import type {
-  ListStoresArgs,
-  GetStoreInfoArgs,
-  CreateStoreArgs,
-  IndexStoreArgs,
-  DeleteStoreArgs
-} from '../schemas/index.js';
+import { JobService } from '../../services/job.service.js';
+import { createStoreId } from '../../types/brands.js';
+import { spawnBackgroundWorker } from '../../workers/spawn-worker.js';
 import {
   ListStoresArgsSchema,
   GetStoreInfoArgsSchema,
   CreateStoreArgsSchema,
   IndexStoreArgsSchema,
-  DeleteStoreArgsSchema
+  DeleteStoreArgsSchema,
 } from '../schemas/index.js';
-import { JobService } from '../../services/job.service.js';
-import { spawnBackgroundWorker } from '../../workers/spawn-worker.js';
-import { createStoreId } from '../../types/brands.js';
+import type {
+  ListStoresArgs,
+  GetStoreInfoArgs,
+  CreateStoreArgs,
+  IndexStoreArgs,
+  DeleteStoreArgs,
+} from '../schemas/index.js';
+import type { ToolHandler, ToolResponse } from '../types.js';
 
 /**
  * Handle list_stores requests
@@ -34,27 +34,30 @@ export const handleListStores: ToolHandler<ListStoresArgs> = async (
   const { services } = context;
 
   const stores = await services.store.list();
-  const filtered = validated.type !== undefined
-    ? stores.filter(s => s.type === validated.type)
-    : stores;
+  const filtered =
+    validated.type !== undefined ? stores.filter((s) => s.type === validated.type) : stores;
 
   return {
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          stores: filtered.map(s => ({
-            id: s.id,
-            name: s.name,
-            type: s.type,
-            path: 'path' in s ? s.path : undefined,
-            url: 'url' in s && s.url !== undefined ? s.url : undefined,
-            description: s.description,
-            createdAt: s.createdAt.toISOString()
-          }))
-        }, null, 2)
-      }
-    ]
+        text: JSON.stringify(
+          {
+            stores: filtered.map((s) => ({
+              id: s.id,
+              name: s.name,
+              type: s.type,
+              path: 'path' in s ? s.path : undefined,
+              url: 'url' in s && s.url !== undefined ? s.url : undefined,
+              description: s.description,
+              createdAt: s.createdAt.toISOString(),
+            })),
+          },
+          null,
+          2
+        ),
+      },
+    ],
   };
 };
 
@@ -82,20 +85,24 @@ export const handleGetStoreInfo: ToolHandler<GetStoreInfoArgs> = async (
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          id: store.id,
-          name: store.name,
-          type: store.type,
-          path: 'path' in store ? store.path : undefined,
-          url: 'url' in store && store.url !== undefined ? store.url : undefined,
-          branch: 'branch' in store ? store.branch : undefined,
-          description: store.description,
-          status: store.status,
-          createdAt: store.createdAt.toISOString(),
-          updatedAt: store.updatedAt.toISOString()
-        }, null, 2)
-      }
-    ]
+        text: JSON.stringify(
+          {
+            id: store.id,
+            name: store.name,
+            type: store.type,
+            path: 'path' in store ? store.path : undefined,
+            url: 'url' in store && store.url !== undefined ? store.url : undefined,
+            branch: 'branch' in store ? store.branch : undefined,
+            description: store.description,
+            status: store.status,
+            createdAt: store.createdAt.toISOString(),
+            updatedAt: store.updatedAt.toISOString(),
+          },
+          null,
+          2
+        ),
+      },
+    ],
   };
 };
 
@@ -115,16 +122,17 @@ export const handleCreateStore: ToolHandler<CreateStoreArgs> = async (
   const { services, options } = context;
 
   // Determine if source is a URL or path
-  const isUrl = validated.source.startsWith('http://') ||
-                validated.source.startsWith('https://') ||
-                validated.source.startsWith('git@');
+  const isUrl =
+    validated.source.startsWith('http://') ||
+    validated.source.startsWith('https://') ||
+    validated.source.startsWith('git@');
 
   const result = await services.store.create({
     name: validated.name,
     type: validated.type,
     ...(isUrl ? { url: validated.source } : { path: validated.source }),
     ...(validated.branch !== undefined ? { branch: validated.branch } : {}),
-    ...(validated.description !== undefined ? { description: validated.description } : {})
+    ...(validated.description !== undefined ? { description: validated.description } : {}),
   });
 
   if (!result.success) {
@@ -135,7 +143,7 @@ export const handleCreateStore: ToolHandler<CreateStoreArgs> = async (
   const jobService = new JobService(options.dataDir);
   const jobDetails: Record<string, unknown> = {
     storeName: result.data.name,
-    storeId: result.data.id
+    storeId: result.data.id,
   };
   if (isUrl) {
     jobDetails['url'] = validated.source;
@@ -146,7 +154,7 @@ export const handleCreateStore: ToolHandler<CreateStoreArgs> = async (
   const job = jobService.createJob({
     type: validated.type === 'repo' && isUrl ? 'clone' : 'index',
     details: jobDetails,
-    message: `Indexing ${result.data.name}...`
+    message: `Indexing ${result.data.name}...`,
   });
 
   // Spawn background worker (dataDir defaults to project-local .bluera if undefined)
@@ -156,22 +164,26 @@ export const handleCreateStore: ToolHandler<CreateStoreArgs> = async (
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          store: {
-            id: result.data.id,
-            name: result.data.name,
-            type: result.data.type,
-            path: 'path' in result.data ? result.data.path : undefined
+        text: JSON.stringify(
+          {
+            store: {
+              id: result.data.id,
+              name: result.data.name,
+              type: result.data.type,
+              path: 'path' in result.data ? result.data.path : undefined,
+            },
+            job: {
+              id: job.id,
+              status: job.status,
+              message: job.message,
+            },
+            message: `Store created. Indexing started in background (Job ID: ${job.id})`,
           },
-          job: {
-            id: job.id,
-            status: job.status,
-            message: job.message
-          },
-          message: `Store created. Indexing started in background (Job ID: ${job.id})`
-        }, null, 2)
-      }
-    ]
+          null,
+          2
+        ),
+      },
+    ],
   };
 };
 
@@ -200,7 +212,7 @@ export const handleIndexStore: ToolHandler<IndexStoreArgs> = async (
   const jobService = new JobService(options.dataDir);
   const jobDetails: Record<string, unknown> = {
     storeName: store.name,
-    storeId: store.id
+    storeId: store.id,
   };
   if ('path' in store && store.path) {
     jobDetails['path'] = store.path;
@@ -208,7 +220,7 @@ export const handleIndexStore: ToolHandler<IndexStoreArgs> = async (
   const job = jobService.createJob({
     type: 'index',
     details: jobDetails,
-    message: `Re-indexing ${store.name}...`
+    message: `Re-indexing ${store.name}...`,
   });
 
   // Spawn background worker (dataDir defaults to project-local .bluera if undefined)
@@ -218,20 +230,24 @@ export const handleIndexStore: ToolHandler<IndexStoreArgs> = async (
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          store: {
-            id: store.id,
-            name: store.name
+        text: JSON.stringify(
+          {
+            store: {
+              id: store.id,
+              name: store.name,
+            },
+            job: {
+              id: job.id,
+              status: job.status,
+              message: job.message,
+            },
+            message: `Indexing started in background (Job ID: ${job.id})`,
           },
-          job: {
-            id: job.id,
-            status: job.status,
-            message: job.message
-          },
-          message: `Indexing started in background (Job ID: ${job.id})`
-        }, null, 2)
-      }
-    ]
+          null,
+          2
+        ),
+      },
+    ],
   };
 };
 
@@ -280,16 +296,20 @@ export const handleDeleteStore: ToolHandler<DeleteStoreArgs> = async (
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          deleted: true,
-          store: {
-            id: store.id,
-            name: store.name,
-            type: store.type
+        text: JSON.stringify(
+          {
+            deleted: true,
+            store: {
+              id: store.id,
+              name: store.name,
+              type: store.type,
+            },
+            message: `Successfully deleted store: ${store.name}`,
           },
-          message: `Successfully deleted store: ${store.name}`
-        }, null, 2)
-      }
-    ]
+          null,
+          2
+        ),
+      },
+    ],
   };
 };

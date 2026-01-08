@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
-import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
+import type { Result } from '../types/result.js';
 
 export interface CloneOptions {
   url: string;
@@ -10,9 +10,7 @@ export interface CloneOptions {
   depth?: number;
 }
 
-export async function cloneRepository(
-  options: CloneOptions
-): Promise<Result<string>> {
+export async function cloneRepository(options: CloneOptions): Promise<Result<string>> {
   const { url, targetDir, branch, depth = 1 } = options;
 
   await mkdir(targetDir, { recursive: true });
@@ -42,9 +40,7 @@ export async function cloneRepository(
 }
 
 export function isGitUrl(source: string): boolean {
-  return source.startsWith('http://') ||
-         source.startsWith('https://') ||
-         source.startsWith('git@');
+  return source.startsWith('http://') || source.startsWith('https://') || source.startsWith('git@');
 }
 
 export function extractRepoName(url: string): string {

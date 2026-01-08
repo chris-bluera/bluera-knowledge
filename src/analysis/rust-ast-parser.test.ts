@@ -14,7 +14,7 @@ describe('RustASTParser', () => {
         type: 'function',
         name: 'hello',
         exported: false,
-        async: false
+        async: false,
       });
       expect(nodes[0]?.signature).toContain('hello');
     });
@@ -81,9 +81,9 @@ pub fn third() -> i32 { 3 }
       `.trim();
       const nodes = parser.parse(code, 'test.rs');
 
-      const functions = nodes.filter(n => n.type === 'function');
+      const functions = nodes.filter((n) => n.type === 'function');
       expect(functions).toHaveLength(3);
-      expect(functions.map(f => f.name)).toEqual(['first', 'second', 'third']);
+      expect(functions.map((f) => f.name)).toEqual(['first', 'second', 'third']);
       expect(functions[2]?.exported).toBe(true);
     });
   });
@@ -97,7 +97,7 @@ pub fn third() -> i32 { 3 }
       expect(nodes[0]).toMatchObject({
         type: 'class',
         name: 'User',
-        exported: false
+        exported: false,
       });
     });
 
@@ -157,7 +157,7 @@ struct Data {
       expect(nodes[0]).toMatchObject({
         type: 'interface',
         name: 'Drawable',
-        exported: false
+        exported: false,
       });
       expect(nodes[0]?.methods).toBeDefined();
     });
@@ -210,7 +210,7 @@ trait Animal {
       expect(nodes[0]).toMatchObject({
         type: 'type',
         name: 'Result',
-        exported: false
+        exported: false,
       });
       expect(nodes[0]?.signature).toContain('Result');
     });
@@ -240,7 +240,7 @@ trait Animal {
       expect(nodes[0]).toMatchObject({
         type: 'const',
         name: 'MAX_SIZE',
-        exported: false
+        exported: false,
       });
       expect(nodes[0]?.signature).toContain('usize');
     });
@@ -259,7 +259,7 @@ trait Animal {
 
       expect(nodes[0]).toMatchObject({
         type: 'const',
-        name: 'COUNTER'
+        name: 'COUNTER',
       });
     });
 
@@ -289,7 +289,7 @@ impl User {
       `.trim();
       const nodes = parser.parse(code, 'test.rs');
 
-      const userStruct = nodes.find(n => n.name === 'User');
+      const userStruct = nodes.find((n) => n.name === 'User');
       expect(userStruct).toBeDefined();
       expect(userStruct?.methods).toHaveLength(2);
       expect(userStruct?.methods?.[0]?.name).toBe('new');
@@ -308,7 +308,7 @@ impl Service {
       `.trim();
       const nodes = parser.parse(code, 'test.rs');
 
-      const service = nodes.find(n => n.name === 'Service');
+      const service = nodes.find((n) => n.name === 'Service');
       expect(service?.methods?.[0]?.async).toBe(true);
     });
 
@@ -326,7 +326,7 @@ impl Drawable for Circle {
       const nodes = parser.parse(code, 'test.rs');
 
       // Trait impl methods shouldn't attach to struct
-      const circle = nodes.find(n => n.name === 'Circle');
+      const circle = nodes.find((n) => n.name === 'Circle');
       expect(circle).toBeDefined();
     });
 
@@ -344,7 +344,7 @@ impl Data {
       `.trim();
       const nodes = parser.parse(code, 'test.rs');
 
-      const data = nodes.find(n => n.name === 'Data');
+      const data = nodes.find((n) => n.name === 'Data');
       expect(data?.methods).toHaveLength(2);
     });
   });
@@ -358,7 +358,7 @@ impl Data {
       expect(imports[0]).toMatchObject({
         source: 'std::collections',
         specifiers: ['HashMap'],
-        isType: false
+        isType: false,
       });
     });
 
@@ -490,10 +490,10 @@ trait Handler {
 
       expect(nodes.length).toBeGreaterThan(0);
 
-      const structs = nodes.filter(n => n.type === 'class');
-      const functions = nodes.filter(n => n.type === 'function');
-      const traits = nodes.filter(n => n.type === 'interface');
-      const constants = nodes.filter(n => n.type === 'const');
+      const structs = nodes.filter((n) => n.type === 'class');
+      const functions = nodes.filter((n) => n.type === 'function');
+      const traits = nodes.filter((n) => n.type === 'interface');
+      const constants = nodes.filter((n) => n.type === 'const');
 
       expect(structs).toHaveLength(1);
       expect(functions).toHaveLength(1);
@@ -539,7 +539,7 @@ impl Test {
       `.trim();
       const nodes = parser.parse(code, 'test.rs');
 
-      const test = nodes.find(n => n.name === 'Test');
+      const test = nodes.find((n) => n.name === 'Test');
       const method = test?.methods?.[0];
 
       expect(method?.startLine).toBe(4);
@@ -558,7 +558,7 @@ impl Service {
       `.trim();
       const nodes = parser.parse(code, 'test.rs');
 
-      const service = nodes.find(n => n.name === 'Service');
+      const service = nodes.find((n) => n.name === 'Service');
       const method = service?.methods?.[0];
 
       expect(method?.signature).toContain('process');

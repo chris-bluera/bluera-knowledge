@@ -21,9 +21,9 @@ describe('RepoUrlResolver', () => {
         json: async () => ({
           repository: {
             type: 'git',
-            url: 'git+https://github.com/lodash/lodash.git'
-          }
-        })
+            url: 'git+https://github.com/lodash/lodash.git',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('lodash', 'javascript');
@@ -37,8 +37,8 @@ describe('RepoUrlResolver', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          repository: 'https://github.com/user/repo'
-        })
+          repository: 'https://github.com/user/repo',
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -50,7 +50,7 @@ describe('RepoUrlResolver', () => {
     it('handles 404 from npm registry', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response);
 
       const result = await resolver.findRepoUrl('nonexistent', 'javascript');
@@ -73,7 +73,7 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => {
           throw new Error('Invalid JSON');
-        }
+        },
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -86,8 +86,8 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           name: 'package',
-          version: '1.0.0'
-        })
+          version: '1.0.0',
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -103,10 +103,10 @@ describe('RepoUrlResolver', () => {
         json: async () => ({
           info: {
             project_urls: {
-              Source: 'https://github.com/psf/requests'
-            }
-          }
-        })
+              Source: 'https://github.com/psf/requests',
+            },
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('requests', 'python');
@@ -123,10 +123,10 @@ describe('RepoUrlResolver', () => {
           info: {
             project_urls: {
               Homepage: 'https://example.com',
-              Repository: 'https://github.com/user/repo'
-            }
-          }
-        })
+              Repository: 'https://github.com/user/repo',
+            },
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'python');
@@ -141,10 +141,10 @@ describe('RepoUrlResolver', () => {
           info: {
             project_urls: {
               Source: 'https://github.com/owner/repo1',
-              Code: 'https://github.com/owner/repo2'
-            }
-          }
-        })
+              Code: 'https://github.com/owner/repo2',
+            },
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'python');
@@ -158,10 +158,10 @@ describe('RepoUrlResolver', () => {
         json: async () => ({
           info: {
             project_urls: {
-              Source: 'https://gitlab.com/user/repo'
-            }
-          }
-        })
+              Source: 'https://gitlab.com/user/repo',
+            },
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'python');
@@ -172,7 +172,7 @@ describe('RepoUrlResolver', () => {
     it('handles 404 from PyPI', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response);
 
       const result = await resolver.findRepoUrl('nonexistent', 'python');
@@ -185,9 +185,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           info: {
-            name: 'package'
-          }
-        })
+            name: 'package',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'python');
@@ -202,9 +202,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'git+https://github.com/user/repo.git'
-          }
-        })
+            url: 'git+https://github.com/user/repo.git',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -217,9 +217,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'https://github.com/user/repo.git'
-          }
-        })
+            url: 'https://github.com/user/repo.git',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -232,9 +232,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'git://github.com/user/repo.git'
-          }
-        })
+            url: 'git://github.com/user/repo.git',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -247,9 +247,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'ssh://git@github.com/user/repo.git'
-          }
-        })
+            url: 'ssh://git@github.com/user/repo.git',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -262,9 +262,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'git@github.com:user/repo.git'
-          }
-        })
+            url: 'git@github.com:user/repo.git',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -277,9 +277,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'https://bitbucket.org/user/repo'
-          }
-        })
+            url: 'https://bitbucket.org/user/repo',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -292,9 +292,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'https://github.com/user/repo'
-          }
-        })
+            url: 'https://github.com/user/repo',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -309,9 +309,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           crate: {
-            repository: 'https://github.com/serde-rs/serde'
-          }
-        })
+            repository: 'https://github.com/serde-rs/serde',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('serde', 'rust');
@@ -326,9 +326,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           crate: {
-            repository: 'https://github.com/user/repo'
-          }
-        })
+            repository: 'https://github.com/user/repo',
+          },
+        }),
       } as Response);
 
       await resolver.findRepoUrl('tokio', 'rust');
@@ -337,8 +337,8 @@ describe('RepoUrlResolver', () => {
         'https://crates.io/api/v1/crates/tokio',
         expect.objectContaining({
           headers: expect.objectContaining({
-            'User-Agent': expect.stringContaining('bluera-knowledge')
-          })
+            'User-Agent': expect.stringContaining('bluera-knowledge'),
+          }),
         })
       );
     });
@@ -346,7 +346,7 @@ describe('RepoUrlResolver', () => {
     it('handles 404 from crates.io', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response);
 
       const result = await resolver.findRepoUrl('nonexistent-crate', 'rust');
@@ -361,9 +361,9 @@ describe('RepoUrlResolver', () => {
         json: async () => ({
           crate: {
             name: 'some-crate',
-            version: '1.0.0'
-          }
-        })
+            version: '1.0.0',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('some-crate', 'rust');
@@ -376,9 +376,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           crate: {
-            repository: 'git+https://github.com/user/repo.git'
-          }
-        })
+            repository: 'git+https://github.com/user/repo.git',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('crate', 'rust');
@@ -415,7 +415,7 @@ describe('RepoUrlResolver', () => {
     it('returns null for non-github modules when proxy fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response);
 
       const result = await resolver.findRepoUrl('golang.org/x/net', 'go');
@@ -438,9 +438,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'https://github.com/org/package'
-          }
-        })
+            url: 'https://github.com/org/package',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('@org/package', 'javascript');
@@ -454,9 +454,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: 'https://github.com/user/my-package'
-          }
-        })
+            url: 'https://github.com/user/my-package',
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('my-package', 'javascript');
@@ -467,7 +467,7 @@ describe('RepoUrlResolver', () => {
     it('handles empty response body', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => null
+        json: async () => null,
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -479,8 +479,8 @@ describe('RepoUrlResolver', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          repository: []
-        })
+          repository: [],
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -493,9 +493,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: null
-          }
-        })
+            url: null,
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -508,9 +508,9 @@ describe('RepoUrlResolver', () => {
         ok: true,
         json: async () => ({
           repository: {
-            url: undefined
-          }
-        })
+            url: undefined,
+          },
+        }),
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');
@@ -521,7 +521,7 @@ describe('RepoUrlResolver', () => {
     it('uses fallback when all strategies fail', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 500
+        status: 500,
       } as Response);
 
       const result = await resolver.findRepoUrl('package', 'javascript');

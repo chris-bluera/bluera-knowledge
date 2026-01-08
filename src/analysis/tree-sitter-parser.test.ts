@@ -17,7 +17,7 @@ import {
   queryNodesByType,
   extractImportPath,
   type TreeSitterNode,
-  type TreeSitterTree
+  type TreeSitterTree,
 } from './tree-sitter-parser.js';
 
 describe('tree-sitter-parser', () => {
@@ -252,7 +252,7 @@ describe('tree-sitter-parser', () => {
       // Create a mock node without a name field
       const mockNode: Partial<TreeSitterNode> = {
         children: [],
-        childForFieldName: () => null
+        childForFieldName: () => null,
       };
       const sig = getFunctionSignature(mockNode as TreeSitterNode);
       expect(sig).toBe('');
@@ -288,7 +288,7 @@ describe('tree-sitter-parser', () => {
     it('returns empty string when argument node is missing', () => {
       // Create a mock node without an argument field
       const mockNode: Partial<TreeSitterNode> = {
-        childForFieldName: () => null
+        childForFieldName: () => null,
       };
       const path = extractImportPath(mockNode as TreeSitterNode);
       expect(path).toBe('');

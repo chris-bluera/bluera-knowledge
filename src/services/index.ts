@@ -1,11 +1,11 @@
-import { ConfigService } from './config.service.js';
-import { StoreService } from './store.service.js';
-import { SearchService } from './search.service.js';
-import { IndexService } from './index.service.js';
 import { CodeGraphService } from './code-graph.service.js';
-import { LanceStore } from '../db/lance.js';
-import { EmbeddingEngine } from '../db/embeddings.js';
+import { ConfigService } from './config.service.js';
+import { IndexService } from './index.service.js';
+import { SearchService } from './search.service.js';
+import { StoreService } from './store.service.js';
 import { PythonBridge } from '../crawl/bridge.js';
+import { EmbeddingEngine } from '../db/embeddings.js';
+import { LanceStore } from '../db/lance.js';
 import { createLogger, shutdownLogger } from '../logging/index.js';
 
 const logger = createLogger('services');
@@ -42,10 +42,7 @@ export async function createServices(
   const resolvedDataDir = config.resolveDataDir();
 
   const lance = new LanceStore(resolvedDataDir);
-  const embeddings = new EmbeddingEngine(
-    appConfig.embedding.model,
-    appConfig.embedding.dimensions
-  );
+  const embeddings = new EmbeddingEngine(appConfig.embedding.model, appConfig.embedding.dimensions);
 
   await embeddings.initialize();
 

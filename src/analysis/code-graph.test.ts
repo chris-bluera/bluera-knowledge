@@ -13,8 +13,8 @@ describe('CodeGraph', () => {
           exported: true,
           startLine: 1,
           endLine: 5,
-          signature: 'testFn()'
-        }
+          signature: 'testFn()',
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -33,8 +33,8 @@ describe('CodeGraph', () => {
           name: 'shared',
           exported: false,
           startLine: 1,
-          endLine: 3
-        }
+          endLine: 3,
+        },
       ];
 
       graph.addNodes(nodes, '/src/file1.ts');
@@ -57,8 +57,8 @@ describe('CodeGraph', () => {
           exported: true,
           startLine: 1,
           endLine: 3,
-          signature: 'add(a, b)'
-        }
+          signature: 'add(a, b)',
+        },
       ];
 
       graph.addNodes(nodes, '/src/math.ts');
@@ -75,8 +75,8 @@ describe('CodeGraph', () => {
           name: 'User',
           exported: true,
           startLine: 1,
-          endLine: 3
-        }
+          endLine: 3,
+        },
       ];
 
       graph.addNodes(nodes, '/src/types.ts');
@@ -93,22 +93,22 @@ describe('CodeGraph', () => {
           name: 'fn1',
           exported: false,
           startLine: 1,
-          endLine: 2
+          endLine: 2,
         },
         {
           type: 'function',
           name: 'fn2',
           exported: false,
           startLine: 3,
-          endLine: 4
-        }
+          endLine: 4,
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
       const allNodes = graph.getAllNodes();
 
       expect(allNodes).toHaveLength(2);
-      expect(allNodes.map(n => n.name)).toEqual(['fn1', 'fn2']);
+      expect(allNodes.map((n) => n.name)).toEqual(['fn1', 'fn2']);
     });
 
     it('returns undefined for non-existent node', () => {
@@ -195,15 +195,15 @@ describe('CodeGraph', () => {
           name: 'caller',
           exported: false,
           startLine: 1,
-          endLine: 3
+          endLine: 3,
         },
         {
           type: 'function',
           name: 'helper',
           exported: false,
           startLine: 5,
-          endLine: 7
-        }
+          endLine: 7,
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -216,7 +216,7 @@ describe('CodeGraph', () => {
       graph.analyzeCallRelationships(code, '/src/test.ts', 'caller');
       const edges = graph.getEdges('/src/test.ts:caller');
 
-      const helperCall = edges.find(e => e.to === '/src/test.ts:helper');
+      const helperCall = edges.find((e) => e.to === '/src/test.ts:helper');
       expect(helperCall).toBeDefined();
       expect(helperCall?.type).toBe('calls');
     });
@@ -229,8 +229,8 @@ describe('CodeGraph', () => {
           name: 'test',
           exported: false,
           startLine: 1,
-          endLine: 3
-        }
+          endLine: 3,
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -247,7 +247,7 @@ describe('CodeGraph', () => {
       graph.analyzeCallRelationships('unknownFunction();', '/src/test.ts', 'caller');
       const edges = graph.getEdges('/src/test.ts:caller');
 
-      const unknownCall = edges.find(e => e.to === 'unknown:unknownFunction');
+      const unknownCall = edges.find((e) => e.to === 'unknown:unknownFunction');
       expect(unknownCall).toBeDefined();
       expect(unknownCall?.confidence).toBe(0.5);
     });
@@ -290,8 +290,8 @@ describe('CodeGraph', () => {
           name: 'test',
           exported: true,
           startLine: 1,
-          endLine: 3
-        }
+          endLine: 3,
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -313,8 +313,8 @@ describe('CodeGraph', () => {
           name: 'fn',
           exported: false,
           startLine: 1,
-          endLine: 2
-        }
+          endLine: 2,
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -323,7 +323,7 @@ describe('CodeGraph', () => {
 
       const json = graph.toJSON();
 
-      const edgeTypes = json.edges.map(e => e.type);
+      const edgeTypes = json.edges.map((e) => e.type);
       expect(edgeTypes).toContain('imports');
       expect(edgeTypes).toContain('calls');
     });
@@ -341,11 +341,7 @@ describe('CodeGraph', () => {
     it('handles deeply nested relative imports', () => {
       const graph = new CodeGraph();
 
-      graph.addImport(
-        '/src/very/deep/nested/component.ts',
-        '../../../root',
-        ['config']
-      );
+      graph.addImport('/src/very/deep/nested/component.ts', '../../../root', ['config']);
       const edges = graph.getEdges('/src/very/deep/nested/component.ts');
 
       expect(edges[0]?.to).toBe('/src/root:config');
@@ -386,7 +382,7 @@ describe('CodeGraph', () => {
       const nodes: CodeNode[] = [
         { type: 'function', name: 'caller1', exported: false, startLine: 1, endLine: 2 },
         { type: 'function', name: 'caller2', exported: false, startLine: 3, endLine: 4 },
-        { type: 'function', name: 'target', exported: false, startLine: 5, endLine: 6 }
+        { type: 'function', name: 'target', exported: false, startLine: 5, endLine: 6 },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -398,14 +394,14 @@ describe('CodeGraph', () => {
       const incoming = graph.getIncomingEdges('/src/test.ts:target');
 
       expect(incoming).toHaveLength(2);
-      expect(incoming.every(e => e.to === '/src/test.ts:target')).toBe(true);
-      expect(incoming.every(e => e.type === 'calls')).toBe(true);
+      expect(incoming.every((e) => e.to === '/src/test.ts:target')).toBe(true);
+      expect(incoming.every((e) => e.type === 'calls')).toBe(true);
     });
 
     it('returns empty array for node with no incoming edges', () => {
       const graph = new CodeGraph();
       const nodes: CodeNode[] = [
-        { type: 'function', name: 'isolated', exported: false, startLine: 1, endLine: 2 }
+        { type: 'function', name: 'isolated', exported: false, startLine: 1, endLine: 2 },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -420,7 +416,7 @@ describe('CodeGraph', () => {
         { type: 'function', name: 'fn1', exported: false, startLine: 1, endLine: 2 },
         { type: 'function', name: 'fn2', exported: false, startLine: 3, endLine: 4 },
         { type: 'function', name: 'fn3', exported: false, startLine: 5, endLine: 6 },
-        { type: 'function', name: 'utility', exported: false, startLine: 7, endLine: 8 }
+        { type: 'function', name: 'utility', exported: false, startLine: 7, endLine: 8 },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -445,7 +441,7 @@ describe('CodeGraph', () => {
       const nodes: CodeNode[] = [
         { type: 'function', name: 'main', exported: false, startLine: 1, endLine: 10 },
         { type: 'function', name: 'helper1', exported: false, startLine: 11, endLine: 15 },
-        { type: 'function', name: 'helper2', exported: false, startLine: 16, endLine: 20 }
+        { type: 'function', name: 'helper2', exported: false, startLine: 16, endLine: 20 },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -461,7 +457,7 @@ describe('CodeGraph', () => {
     it('returns 0 for calls when function makes no calls', () => {
       const graph = new CodeGraph();
       const nodes: CodeNode[] = [
-        { type: 'function', name: 'leaf', exported: false, startLine: 1, endLine: 2 }
+        { type: 'function', name: 'leaf', exported: false, startLine: 1, endLine: 2 },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -474,7 +470,7 @@ describe('CodeGraph', () => {
     it('distinguishes between call edges and import edges in calledBy count', () => {
       const graph = new CodeGraph();
       const nodes: CodeNode[] = [
-        { type: 'function', name: 'target', exported: true, startLine: 1, endLine: 2 }
+        { type: 'function', name: 'target', exported: true, startLine: 1, endLine: 2 },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -502,9 +498,9 @@ describe('CodeGraph', () => {
           endLine: 20,
           methods: [
             { name: 'search', async: true, signature: 'search(query: string): Promise<Result>' },
-            { name: 'update', async: false, signature: 'update(id: string): void' }
-          ]
-        }
+            { name: 'update', async: false, signature: 'update(id: string): void' },
+          ],
+        },
       ];
 
       graph.addNodes(nodes, '/src/service.ts');
@@ -538,17 +534,15 @@ describe('CodeGraph', () => {
           exported: true,
           startLine: 1,
           endLine: 10,
-          methods: [
-            { name: 'search', async: true, signature: 'search(): Promise<void>' }
-          ]
+          methods: [{ name: 'search', async: true, signature: 'search(): Promise<void>' }],
         },
         {
           type: 'function',
           name: 'handleSearch',
           exported: false,
           startLine: 12,
-          endLine: 15
-        }
+          endLine: 15,
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -571,24 +565,22 @@ describe('CodeGraph', () => {
           exported: true,
           startLine: 1,
           endLine: 20,
-          methods: [
-            { name: 'main', async: true, signature: 'main(): Promise<void>' }
-          ]
+          methods: [{ name: 'main', async: true, signature: 'main(): Promise<void>' }],
         },
         {
           type: 'function',
           name: 'helper1',
           exported: false,
           startLine: 22,
-          endLine: 24
+          endLine: 24,
         },
         {
           type: 'function',
           name: 'helper2',
           exported: false,
           startLine: 26,
-          endLine: 28
-        }
+          endLine: 28,
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -610,8 +602,8 @@ describe('CodeGraph', () => {
           exported: false,
           startLine: 1,
           endLine: 2,
-          methods: []
-        }
+          methods: [],
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -630,10 +622,8 @@ describe('CodeGraph', () => {
           exported: true,
           startLine: 1,
           endLine: 10,
-          methods: [
-            { name: 'method1', async: true, signature: 'method1(): Promise<void>' }
-          ]
-        }
+          methods: [{ name: 'method1', async: true, signature: 'method1(): Promise<void>' }],
+        },
       ];
 
       graph.addNodes(nodes, '/src/test.ts');
@@ -644,7 +634,7 @@ describe('CodeGraph', () => {
 
       // Deserialize would happen in CodeGraphService.loadGraph
       // Just verify the JSON structure is correct
-      const methodNode = json.nodes.find(n => n.id.includes('method1'));
+      const methodNode = json.nodes.find((n) => n.id.includes('method1'));
       expect(methodNode).toBeDefined();
       expect(methodNode?.type).toBe('method');
     });
@@ -655,10 +645,10 @@ describe('CodeGraph', () => {
       const graph = new CodeGraph();
 
       const file1Nodes: CodeNode[] = [
-        { type: 'function', name: 'fn1', exported: true, startLine: 1, endLine: 2 }
+        { type: 'function', name: 'fn1', exported: true, startLine: 1, endLine: 2 },
       ];
       const file2Nodes: CodeNode[] = [
-        { type: 'function', name: 'fn2', exported: true, startLine: 1, endLine: 2 }
+        { type: 'function', name: 'fn2', exported: true, startLine: 1, endLine: 2 },
       ];
 
       graph.addNodes(file1Nodes, '/src/file1.ts');
@@ -669,7 +659,7 @@ describe('CodeGraph', () => {
       const file2Edges = graph.getEdges('/src/file2.ts');
 
       expect(allNodes).toHaveLength(2);
-      expect(file2Edges.some(e => e.to.includes('fn1'))).toBe(true);
+      expect(file2Edges.some((e) => e.to.includes('fn1'))).toBe(true);
     });
 
     it('handles circular import detection', () => {
@@ -692,7 +682,7 @@ describe('CodeGraph', () => {
       const edges = graph.getEdges('/src/app.ts');
 
       expect(edges).toHaveLength(3);
-      expect(edges.every(e => e.from === '/src/app.ts')).toBe(true);
+      expect(edges.every((e) => e.from === '/src/app.ts')).toBe(true);
     });
   });
 });

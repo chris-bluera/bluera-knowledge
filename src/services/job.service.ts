@@ -1,23 +1,20 @@
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { randomUUID } from 'crypto';
-import type {
-  Job,
-  CreateJobParams,
-  UpdateJobParams,
-  JobStatus
-} from '../types/job.js';
 import { Result, ok, err } from '../types/result.js';
+import type { Job, CreateJobParams, UpdateJobParams, JobStatus } from '../types/job.js';
 
 export class JobService {
   private readonly jobsDir: string;
 
   constructor(dataDir?: string) {
     // Default to ~/.local/share/bluera-knowledge/jobs
-    const baseDir = dataDir ?? path.join(
-      process.env['HOME'] ?? process.env['USERPROFILE'] ?? '.',
-      '.local/share/bluera-knowledge'
-    );
+    const baseDir =
+      dataDir ??
+      path.join(
+        process.env['HOME'] ?? process.env['USERPROFILE'] ?? '.',
+        '.local/share/bluera-knowledge'
+      );
     this.jobsDir = path.join(baseDir, 'jobs');
 
     // Ensure jobs directory exists
@@ -38,7 +35,7 @@ export class JobService {
       message: params.message ?? `${params.type} job created`,
       details: params.details,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     // Write job to file
@@ -132,9 +129,7 @@ export class JobService {
     }
 
     // Sort by updated time (most recent first)
-    jobs.sort((a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+    jobs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
     return jobs;
   }
@@ -168,7 +163,7 @@ export class JobService {
     this.updateJob(jobId, {
       status: 'cancelled',
       message: 'Job cancelled by user',
-      details: { cancelledAt: new Date().toISOString() }
+      details: { cancelledAt: new Date().toISOString() },
     });
 
     // Kill worker process if it exists
@@ -201,7 +196,7 @@ export class JobService {
    */
   cleanupOldJobs(olderThanHours: number = 24): number {
     const jobs = this.listJobs();
-    const cutoffTime = Date.now() - (olderThanHours * 60 * 60 * 1000);
+    const cutoffTime = Date.now() - olderThanHours * 60 * 60 * 1000;
     let cleaned = 0;
 
     for (const job of jobs) {

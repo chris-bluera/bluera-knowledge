@@ -91,7 +91,7 @@ describe('StoreService', () => {
         name: 'Described Files',
         type: 'file',
         path: tempDir,
-        description: 'My file collection'
+        description: 'My file collection',
       });
 
       expect(result.success).toBe(true);
@@ -105,7 +105,7 @@ describe('StoreService', () => {
         name: 'Tagged Files',
         type: 'file',
         path: tempDir,
-        tags: ['important', 'work']
+        tags: ['important', 'work'],
       });
 
       expect(result.success).toBe(true);
@@ -117,7 +117,7 @@ describe('StoreService', () => {
     it('returns error when path not provided for file store', async () => {
       const result = await storeService.create({
         name: 'No Path',
-        type: 'file'
+        type: 'file',
       });
 
       expect(result.success).toBe(false);
@@ -130,7 +130,7 @@ describe('StoreService', () => {
       const result = await storeService.create({
         name: 'Bad Path',
         type: 'file',
-        path: '/nonexistent/path'
+        path: '/nonexistent/path',
       });
 
       expect(result.success).toBe(false);
@@ -145,7 +145,7 @@ describe('StoreService', () => {
       const result = await storeService.create({
         name: 'My Repo',
         type: 'repo',
-        path: tempDir
+        path: tempDir,
       });
 
       expect(result.success).toBe(true);
@@ -160,7 +160,7 @@ describe('StoreService', () => {
         name: 'Branched Repo',
         type: 'repo',
         path: tempDir,
-        branch: 'develop'
+        branch: 'develop',
       });
 
       expect(result.success).toBe(true);
@@ -172,7 +172,7 @@ describe('StoreService', () => {
     it('returns error when neither path nor URL provided for repo', async () => {
       const result = await storeService.create({
         name: 'No Path No URL',
-        type: 'repo'
+        type: 'repo',
       });
 
       expect(result.success).toBe(false);
@@ -187,7 +187,7 @@ describe('StoreService', () => {
       const result = await storeService.create({
         name: 'My Website',
         type: 'web',
-        url: 'https://example.com'
+        url: 'https://example.com',
       });
 
       expect(result.success).toBe(true);
@@ -202,7 +202,7 @@ describe('StoreService', () => {
         name: 'Deep Site',
         type: 'web',
         url: 'https://example.com',
-        depth: 3
+        depth: 3,
       });
 
       expect(result.success).toBe(true);
@@ -215,7 +215,7 @@ describe('StoreService', () => {
       const result = await storeService.create({
         name: 'Default Depth',
         type: 'web',
-        url: 'https://example.com'
+        url: 'https://example.com',
       });
 
       expect(result.success).toBe(true);
@@ -227,7 +227,7 @@ describe('StoreService', () => {
     it('returns error when URL not provided for web store', async () => {
       const result = await storeService.create({
         name: 'No URL',
-        type: 'web'
+        type: 'web',
       });
 
       expect(result.success).toBe(false);
@@ -242,7 +242,7 @@ describe('StoreService', () => {
       const result = await storeService.create({
         name: '',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       expect(result.success).toBe(false);
@@ -255,7 +255,7 @@ describe('StoreService', () => {
       const result = await storeService.create({
         name: '   ',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       expect(result.success).toBe(false);
@@ -273,13 +273,13 @@ describe('StoreService', () => {
       await storeService.create({
         name: 'Duplicate',
         type: 'file',
-        path: dir1
+        path: dir1,
       });
 
       const result = await storeService.create({
         name: 'Duplicate',
         type: 'file',
-        path: dir2
+        path: dir2,
       });
 
       expect(result.success).toBe(false);
@@ -344,7 +344,7 @@ describe('StoreService', () => {
       const createResult = await storeService.create({
         name: 'Test Store',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       if (!createResult.success) throw new Error('Create failed');
@@ -357,7 +357,7 @@ describe('StoreService', () => {
       await storeService.create({
         name: 'Test Store',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       const store = await storeService.getByIdOrName('Test Store');
@@ -375,13 +375,13 @@ describe('StoreService', () => {
       const createResult = await storeService.create({
         name: 'Original Name',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       if (!createResult.success) throw new Error('Create failed');
 
       const updateResult = await storeService.update(createResult.data.id, {
-        name: 'Updated Name'
+        name: 'Updated Name',
       });
 
       expect(updateResult.success).toBe(true);
@@ -394,13 +394,13 @@ describe('StoreService', () => {
       const createResult = await storeService.create({
         name: 'Test Store',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       if (!createResult.success) throw new Error('Create failed');
 
       const updateResult = await storeService.update(createResult.data.id, {
-        description: 'New description'
+        description: 'New description',
       });
 
       expect(updateResult.success).toBe(true);
@@ -413,13 +413,13 @@ describe('StoreService', () => {
       const createResult = await storeService.create({
         name: 'Test Store',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       if (!createResult.success) throw new Error('Create failed');
 
       const updateResult = await storeService.update(createResult.data.id, {
-        tags: ['new', 'tags']
+        tags: ['new', 'tags'],
       });
 
       expect(updateResult.success).toBe(true);
@@ -432,17 +432,17 @@ describe('StoreService', () => {
       const createResult = await storeService.create({
         name: 'Test Store',
         type: 'file',
-        path: tempDir
+        path: tempDir,
       });
 
       if (!createResult.success) throw new Error('Create failed');
       const originalUpdatedAt = createResult.data.updatedAt;
 
       // Wait a bit to ensure timestamp is different
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const updateResult = await storeService.update(createResult.data.id, {
-        name: 'Updated'
+        name: 'Updated',
       });
 
       expect(updateResult.success).toBe(true);
@@ -453,7 +453,7 @@ describe('StoreService', () => {
 
     it('returns error when updating nonexistent store', async () => {
       const result = await storeService.update('nonexistent-id' as any, {
-        name: 'Updated'
+        name: 'Updated',
       });
 
       expect(result.success).toBe(false);
@@ -480,7 +480,7 @@ describe('StoreService', () => {
       await storeService.create({
         name: 'Persistent Store',
         type: 'file',
-        path: storeDir
+        path: storeDir,
       });
 
       // Create new service instance with same data dir

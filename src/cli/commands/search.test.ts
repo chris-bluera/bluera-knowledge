@@ -473,9 +473,7 @@ describe('search command execution', () => {
 
       await actionHandler(['test query']);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"query": "test query"')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"query": "test query"'));
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"mode": "hybrid"'));
     });
 
@@ -573,9 +571,7 @@ describe('search command execution', () => {
       await actionHandler(['test query']);
 
       expect(consoleLogSpy).toHaveBeenCalledWith('\nSearch: "test query"');
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Mode: hybrid')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Mode: hybrid'));
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('1. [0.95] function: testFunction')
       );
@@ -592,7 +588,8 @@ describe('search command execution', () => {
           {
             id: createDocumentId('doc-1'),
             score: 0.95,
-            content: 'This is a long piece of content that should be truncated in the preview because it exceeds the maximum length allowed for display in the search results view.',
+            content:
+              'This is a long piece of content that should be truncated in the preview because it exceeds the maximum length allowed for display in the search results view.',
             highlight: 'This is a long piece of content',
             metadata: {
               type: 'file',

@@ -56,4 +56,6 @@ Identify logical features by grouping related files:
 <type>(<scope>): <description>
 ```
 
-Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`
+Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `build`, `ci`, `perf`
+
+**Note:** Commit messages are validated by commitlint (conventional commits format).

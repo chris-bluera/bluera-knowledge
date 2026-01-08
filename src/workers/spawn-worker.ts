@@ -1,6 +1,6 @@
 import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Spawn a background worker process to execute a job
@@ -36,12 +36,12 @@ export function spawnBackgroundWorker(jobId: string, dataDir: string): void {
 
   // Spawn the worker process
   const worker = spawn(command, args, {
-    detached: true,      // Detach from parent process
-    stdio: 'ignore',     // Don't pipe stdio (fully independent)
+    detached: true, // Detach from parent process
+    stdio: 'ignore', // Don't pipe stdio (fully independent)
     env: {
-      ...process.env,    // Inherit environment variables
-      BLUERA_DATA_DIR: dataDir  // Pass dataDir to worker
-    }
+      ...process.env, // Inherit environment variables
+      BLUERA_DATA_DIR: dataDir, // Pass dataDir to worker
+    },
   });
 
   // Unref the worker so the parent can exit

@@ -1,5 +1,10 @@
 import { Command } from 'commander';
-import { handleAddRepo, handleAddFolder, handleStores, handleSuggest } from '../../plugin/commands.js';
+import {
+  handleAddRepo,
+  handleAddFolder,
+  handleStores,
+  handleSuggest,
+} from '../../plugin/commands.js';
 import type { GlobalOptions } from '../program.js';
 
 /**
@@ -29,11 +34,9 @@ export function createAddFolderCommand(_getOptions: () => GlobalOptions): Comman
 }
 
 export function createStoresCommand(_getOptions: () => GlobalOptions): Command {
-  return new Command('stores')
-    .description('List all indexed library stores')
-    .action(async () => {
-      await handleStores();
-    });
+  return new Command('stores').description('List all indexed library stores').action(async () => {
+    await handleStores();
+  });
 }
 
 export function createSuggestCommand(_getOptions: () => GlobalOptions): Command {

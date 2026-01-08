@@ -15,7 +15,7 @@ describe('job.handler', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'job-handler-test-'));
     mockContext = {
       services: {} as any,
-      options: { dataDir: tempDir }
+      options: { dataDir: tempDir },
     };
   });
 
@@ -29,7 +29,7 @@ describe('job.handler', () => {
       const job = jobService.createJob({
         type: 'index',
         details: { storeId: 'test-store' },
-        message: 'Indexing...'
+        message: 'Indexing...',
       });
 
       const args: CheckJobStatusArgs = { jobId: job.id };
@@ -71,12 +71,12 @@ describe('job.handler', () => {
       jobService.createJob({
         type: 'index',
         details: { storeId: 'store1' },
-        message: 'Indexing store1'
+        message: 'Indexing store1',
       });
       jobService.createJob({
         type: 'clone',
         details: { url: 'https://example.com' },
-        message: 'Cloning repo'
+        message: 'Cloning repo',
       });
 
       const args: ListJobsArgs = {};
@@ -92,12 +92,12 @@ describe('job.handler', () => {
       const job1 = jobService.createJob({
         type: 'index',
         details: { storeId: 'store1' },
-        message: 'Indexing'
+        message: 'Indexing',
       });
       jobService.createJob({
         type: 'clone',
         details: { url: 'https://example.com' },
-        message: 'Cloning'
+        message: 'Cloning',
       });
 
       // Update job1 status
@@ -116,12 +116,12 @@ describe('job.handler', () => {
       const job1 = jobService.createJob({
         type: 'index',
         details: { storeId: 'store1' },
-        message: 'Indexing'
+        message: 'Indexing',
       });
       jobService.createJob({
         type: 'clone',
         details: { url: 'https://example.com' },
-        message: 'Cloning'
+        message: 'Cloning',
       });
 
       jobService.updateJob(job1.id, { status: 'completed' });
@@ -141,7 +141,7 @@ describe('job.handler', () => {
       const job = jobService.createJob({
         type: 'index',
         details: { storeId: 'test-store' },
-        message: 'Indexing...'
+        message: 'Indexing...',
       });
 
       const args: CancelJobArgs = { jobId: job.id };
@@ -170,7 +170,7 @@ describe('job.handler', () => {
       const job = jobService.createJob({
         type: 'index',
         details: { storeId: 'test-store' },
-        message: 'Indexing...'
+        message: 'Indexing...',
       });
 
       jobService.updateJob(job.id, { status: 'completed' });

@@ -165,10 +165,7 @@ export function cleanupMarkdown(markdown: string): string {
   result = result.replace(/(#{1,6}\s[^\n]+)\n(#{1,6}\s)/g, '$1\n\n$2');
 
   // 3. Lists - ensure all list items have single newlines only
-  result = result.replace(
-    /(\* Item 1)\n\n+(\* Item 2)\n\n+(\* Item 3)/g,
-    '$1\n$2\n$3',
-  );
+  result = result.replace(/(\* Item 1)\n\n+(\* Item 2)\n\n+(\* Item 3)/g, '$1\n$2\n$3');
 
   // 3.5. General list item spacing - ensure single newlines between list items
   result = result.replace(/(^\*\s[^\n]+)\n{2,}(^\*\s)/gm, '$1\n$2');

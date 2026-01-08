@@ -17,12 +17,7 @@ export class ApiError extends Error {
   public readonly isOperational: boolean;
   public readonly timestamp: Date;
 
-  constructor(
-    statusCode: number,
-    message: string,
-    code?: string,
-    isOperational = true
-  ) {
+  constructor(statusCode: number, message: string, code?: string, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
     this.code = code || 'API_ERROR';
@@ -77,9 +72,7 @@ export class NotFoundError extends ApiError {
   public readonly resource: string;
 
   constructor(resource: string, id?: string) {
-    const message = id
-      ? `${resource} with ID '${id}' not found`
-      : `${resource} not found`;
+    const message = id ? `${resource} with ID '${id}' not found` : `${resource} not found`;
     super(404, message, 'NOT_FOUND');
     this.resource = resource;
     Object.setPrototypeOf(this, NotFoundError.prototype);
@@ -106,9 +99,7 @@ export class ValidationError extends ApiError {
     value?: unknown;
   }>;
 
-  constructor(
-    errors: Array<{ field: string; message: string; value?: unknown }>
-  ) {
+  constructor(errors: Array<{ field: string; message: string; value?: unknown }>) {
     super(422, 'Validation failed', 'VALIDATION_ERROR');
     this.errors = errors;
     Object.setPrototypeOf(this, ValidationError.prototype);
@@ -239,9 +230,7 @@ export const errorHandler: ErrorRequestHandler = (
 
   // Handle unknown errors
   const internalError = new InternalError(
-    process.env.NODE_ENV === 'production'
-      ? 'An unexpected error occurred'
-      : err.message
+    process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message
   );
 
   const response = formatErrorResponse(internalError, req, requestId);

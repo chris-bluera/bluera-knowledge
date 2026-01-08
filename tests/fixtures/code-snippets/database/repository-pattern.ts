@@ -45,7 +45,11 @@ export interface IRepository<T extends Entity> {
   findById(id: string): Promise<T | null>;
   findOne(options: QueryOptions<T>): Promise<T | null>;
   findMany(options?: QueryOptions<T>): Promise<T[]>;
-  findPaginated(page: number, pageSize: number, options?: QueryOptions<T>): Promise<PaginatedResult<T>>;
+  findPaginated(
+    page: number,
+    pageSize: number,
+    options?: QueryOptions<T>
+  ): Promise<PaginatedResult<T>>;
   create(data: Omit<T, 'id'>): Promise<T>;
   update(id: string, data: Partial<T>): Promise<T>;
   delete(id: string): Promise<void>;
@@ -75,7 +79,7 @@ export abstract class BaseRepository<T extends Entity> implements IRepository<T>
 
     // Apply where filters
     if (options?.where) {
-      result = result.filter(item => {
+      result = result.filter((item) => {
         return Object.entries(options.where!).every(([key, value]) => {
           return item[key as keyof T] === value;
         });
@@ -126,7 +130,11 @@ export abstract class BaseRepository<T extends Entity> implements IRepository<T>
     options?: QueryOptions<T>
   ): Promise<PaginatedResult<T>> {
     const allItems = Array.from(this.items.values());
-    const filtered = this.applyFilters(allItems, { ...options, limit: undefined, offset: undefined });
+    const filtered = this.applyFilters(allItems, {
+      ...options,
+      limit: undefined,
+      offset: undefined,
+    });
     const total = filtered.length;
 
     const offset = (page - 1) * pageSize;

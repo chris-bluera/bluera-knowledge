@@ -1,10 +1,12 @@
 import { Command } from 'commander';
 import { createServices, destroyServices } from '../../services/index.js';
-import type { GlobalOptions } from '../program.js';
 import type { StoreType } from '../../types/store.js';
+import type { GlobalOptions } from '../program.js';
 
 export function createStoreCommand(getOptions: () => GlobalOptions): Command {
-  const store = new Command('store').description('Manage knowledge stores (collections of indexed documents)');
+  const store = new Command('store').description(
+    'Manage knowledge stores (collections of indexed documents)'
+  );
 
   store
     .command('list')
@@ -42,48 +44,63 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
   store
     .command('create <name>')
     .description('Create a new store pointing to a local path or URL')
-    .requiredOption('-t, --type <type>', 'Store type: file (local dir), repo (git), web (crawled site)')
+    .requiredOption(
+      '-t, --type <type>',
+      'Store type: file (local dir), repo (git), web (crawled site)'
+    )
     .requiredOption('-s, --source <path>', 'Local path for file/repo stores, URL for web stores')
     .option('-d, --description <desc>', 'Optional description for the store')
     .option('--tags <tags>', 'Comma-separated tags for filtering')
-    .action(async (name: string, options: {
-      type: StoreType;
-      source: string;
-      description?: string;
-      tags?: string;
-    }) => {
-      const globalOpts = getOptions();
-      const services = await createServices(globalOpts.config, globalOpts.dataDir);
-      let exitCode = 0;
-      try {
-        // Detect if source is a URL (for repo stores that should clone from remote)
-        const isUrl = options.source.startsWith('http://') || options.source.startsWith('https://');
-        const result = await services.store.create({
-          name,
-          type: options.type,
-          path: options.type === 'file' || (options.type === 'repo' && !isUrl) ? options.source : undefined,
-          url: options.type === 'web' || (options.type === 'repo' && isUrl) ? options.source : undefined,
-          description: options.description,
-          tags: options.tags?.split(',').map((t) => t.trim()),
-        });
-
-        if (result.success) {
-          if (globalOpts.format === 'json') {
-            console.log(JSON.stringify(result.data, null, 2));
-          } else {
-            console.log(`\nCreated store: ${result.data.name} (${result.data.id})\n`);
-          }
-        } else {
-          console.error(`Error: ${result.error.message}`);
-          exitCode = 1;
+    .action(
+      async (
+        name: string,
+        options: {
+          type: StoreType;
+          source: string;
+          description?: string;
+          tags?: string;
         }
-      } finally {
-        await destroyServices(services);
+      ) => {
+        const globalOpts = getOptions();
+        const services = await createServices(globalOpts.config, globalOpts.dataDir);
+        let exitCode = 0;
+        try {
+          // Detect if source is a URL (for repo stores that should clone from remote)
+          const isUrl =
+            options.source.startsWith('http://') || options.source.startsWith('https://');
+          const result = await services.store.create({
+            name,
+            type: options.type,
+            path:
+              options.type === 'file' || (options.type === 'repo' && !isUrl)
+                ? options.source
+                : undefined,
+            url:
+              options.type === 'web' || (options.type === 'repo' && isUrl)
+                ? options.source
+                : undefined,
+            description: options.description,
+            tags: options.tags?.split(',').map((t) => t.trim()),
+          });
+
+          if (result.success) {
+            if (globalOpts.format === 'json') {
+              console.log(JSON.stringify(result.data, null, 2));
+            } else {
+              console.log(`\nCreated store: ${result.data.name} (${result.data.id})\n`);
+            }
+          } else {
+            console.error(`Error: ${result.error.message}`);
+            exitCode = 1;
+          }
+        } finally {
+          await destroyServices(services);
+        }
+        if (exitCode !== 0) {
+          process.exit(exitCode);
+        }
       }
-      if (exitCode !== 0) {
-        process.exit(exitCode);
-      }
-    });
+    );
 
   store
     .command('info <store>')
@@ -137,7 +154,9 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
         const skipConfirmation = options.force === true || options.yes === true;
         if (!skipConfirmation) {
           if (!process.stdin.isTTY) {
-            console.error('Error: Use --force or -y to delete without confirmation in non-interactive mode');
+            console.error(
+              'Error: Use --force or -y to delete without confirmation in non-interactive mode'
+            );
             process.exit(1);
           }
           // Interactive confirmation
