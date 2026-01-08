@@ -18,6 +18,10 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
     )
     .option('-n, --limit <count>', 'Maximum results to return (default: 10)', '10')
     .option('-t, --threshold <score>', 'Minimum score 0-1; omit low-relevance results')
+    .option(
+      '--min-relevance <score>',
+      'Minimum raw cosine similarity 0-1; returns empty if no results meet threshold'
+    )
     .option('--include-content', 'Show full document content, not just preview snippet')
     .option(
       '--detail <level>',
@@ -32,6 +36,7 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
           mode?: SearchMode;
           limit?: string;
           threshold?: string;
+          minRelevance?: string;
           includeContent?: boolean;
           detail?: DetailLevel;
         }
@@ -82,6 +87,8 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
               limit: parseInt(options.limit ?? '10', 10),
               threshold:
                 options.threshold !== undefined ? parseFloat(options.threshold) : undefined,
+              minRelevance:
+                options.minRelevance !== undefined ? parseFloat(options.minRelevance) : undefined,
               includeContent: options.includeContent,
               detail: options.detail ?? 'minimal',
             });
@@ -96,12 +103,23 @@ export function createSearchCommand(getOptions: () => GlobalOptions): Command {
               }
             } else {
               console.log(`\nSearch: "${query}"`);
-              console.log(
-                `Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms\n`
-              );
+
+              // Build status line with optional confidence info
+              let statusLine = `Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms`;
+              if (results.confidence !== undefined) {
+                statusLine += ` | Confidence: ${results.confidence}`;
+              }
+              if (results.maxRawScore !== undefined) {
+                statusLine += ` | MaxRaw: ${results.maxRawScore.toFixed(3)}`;
+              }
+              console.log(`${statusLine}\n`);
 
               if (results.results.length === 0) {
-                console.log('No results found.\n');
+                if (results.confidence === 'low') {
+                  console.log('No sufficiently relevant results found.\n');
+                } else {
+                  console.log('No results found.\n');
+                }
               } else {
                 for (let i = 0; i < results.results.length; i++) {
                   const r = results.results[i];

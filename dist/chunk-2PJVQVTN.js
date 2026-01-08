@@ -2746,6 +2746,17 @@ var SearchService = class {
     this.graphCache.set(storeId, result);
     return result;
   }
+  /**
+   * Calculate confidence level based on max raw vector similarity score.
+   * Configurable via environment variables.
+   */
+  calculateConfidence(maxRawScore) {
+    const highThreshold = parseFloat(process.env["SEARCH_CONFIDENCE_HIGH"] ?? "0.5");
+    const mediumThreshold = parseFloat(process.env["SEARCH_CONFIDENCE_MEDIUM"] ?? "0.3");
+    if (maxRawScore >= highThreshold) return "high";
+    if (maxRawScore >= mediumThreshold) return "medium";
+    return "low";
+  }
   async search(query) {
     const startTime = Date.now();
     const mode = query.mode ?? "hybrid";
@@ -2762,18 +2773,52 @@ var SearchService = class {
         stores,
         detail,
         intent: primaryIntent,
-        intents
+        intents,
+        minRelevance: query.minRelevance
       },
       "Search query received"
     );
     let allResults = [];
+    let maxRawScore = 0;
     const fetchLimit = limit * 3;
     if (mode === "vector") {
+      const rawResults = await this.vectorSearchRaw(query.query, stores, fetchLimit);
+      maxRawScore = rawResults.length > 0 ? rawResults[0]?.score ?? 0 : 0;
       allResults = await this.vectorSearch(query.query, stores, fetchLimit, query.threshold);
     } else if (mode === "fts") {
       allResults = await this.ftsSearch(query.query, stores, fetchLimit);
     } else {
-      allResults = await this.hybridSearch(query.query, stores, fetchLimit, query.threshold);
+      const hybridResult = await this.hybridSearchWithMetadata(
+        query.query,
+        stores,
+        fetchLimit,
+        query.threshold
+      );
+      allResults = hybridResult.results;
+      maxRawScore = hybridResult.maxRawScore;
+    }
+    if (query.minRelevance !== void 0 && maxRawScore < query.minRelevance) {
+      const timeMs2 = Date.now() - startTime;
+      logger2.info(
+        {
+          query: query.query,
+          mode,
+          maxRawScore,
+          minRelevance: query.minRelevance,
+          timeMs: timeMs2
+        },
+        "Search filtered by minRelevance - no sufficiently relevant results"
+      );
+      return {
+        query: query.query,
+        mode,
+        stores,
+        results: [],
+        totalResults: 0,
+        timeMs: timeMs2,
+        confidence: this.calculateConfidence(maxRawScore),
+        maxRawScore
+      };
     }
     const dedupedResults = this.deduplicateBySource(allResults, query.query);
     const resultsToEnhance = dedupedResults.slice(0, limit);
@@ -2789,6 +2834,7 @@ var SearchService = class {
       return this.addProgressiveContext(r, query.query, detail, graph);
     });
     const timeMs = Date.now() - startTime;
+    const confidence = mode !== "fts" ? this.calculateConfidence(maxRawScore) : void 0;
     logger2.info(
       {
         query: query.query,
@@ -2796,6 +2842,8 @@ var SearchService = class {
         resultCount: enhancedResults.length,
         dedupedFrom: allResults.length,
         intents: intents.map((i) => `${i.intent}(${i.confidence.toFixed(2)})`),
+        maxRawScore: mode !== "fts" ? maxRawScore : void 0,
+        confidence,
         timeMs
       },
       "Search complete"
@@ -2806,7 +2854,9 @@ var SearchService = class {
       stores,
       results: enhancedResults,
       totalResults: enhancedResults.length,
-      timeMs
+      timeMs,
+      confidence,
+      maxRawScore: mode !== "fts" ? maxRawScore : void 0
     };
   }
   /**
@@ -2867,20 +2917,29 @@ var SearchService = class {
     }
     return normalized;
   }
-  async vectorSearch(query, stores, limit, threshold) {
+  /**
+   * Fetch raw vector search results without normalization.
+   * Returns results with raw cosine similarity scores [0-1].
+   */
+  async vectorSearchRaw(query, stores, limit) {
     const queryVector = await this.embeddingEngine.embed(query);
     const results = [];
     for (const storeId of stores) {
-      const hits = await this.lanceStore.search(storeId, queryVector, limit, threshold);
+      const hits = await this.lanceStore.search(storeId, queryVector, limit);
       results.push(
         ...hits.map((r) => ({
           id: r.id,
           score: r.score,
+          // Raw cosine similarity (1 - distance)
           content: r.content,
           metadata: r.metadata
         }))
       );
     }
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
+  }
+  async vectorSearch(query, stores, limit, threshold) {
+    const results = await this.vectorSearchRaw(query, stores, limit);
     const normalized = this.normalizeAndFilterScores(results, threshold);
     return normalized.slice(0, limit);
   }
@@ -2899,12 +2958,19 @@ var SearchService = class {
     }
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
-  async hybridSearch(query, stores, limit, threshold) {
+  /**
+   * Internal hybrid search result with additional metadata for confidence calculation.
+   */
+  async hybridSearchWithMetadata(query, stores, limit, threshold) {
     const intents = classifyQueryIntents(query);
-    const [vectorResults, ftsResults] = await Promise.all([
-      this.vectorSearch(query, stores, limit * 2),
-      this.ftsSearch(query, stores, limit * 2)
-    ]);
+    const rawVectorResults = await this.vectorSearchRaw(query, stores, limit * 2);
+    const rawVectorScores = /* @__PURE__ */ new Map();
+    rawVectorResults.forEach((r) => {
+      rawVectorScores.set(r.id, r.score);
+    });
+    const maxRawScore = rawVectorResults.length > 0 ? rawVectorResults[0]?.score ?? 0 : 0;
+    const vectorResults = this.normalizeAndFilterScores(rawVectorResults, threshold);
+    const ftsResults = await this.ftsSearch(query, stores, limit * 2);
     const vectorRanks = /* @__PURE__ */ new Map();
     const ftsRanks = /* @__PURE__ */ new Map();
     const allDocs = /* @__PURE__ */ new Map();
@@ -2924,6 +2990,7 @@ var SearchService = class {
     for (const [id, result] of allDocs) {
       const vectorRank = vectorRanks.get(id) ?? Infinity;
       const ftsRank = ftsRanks.get(id) ?? Infinity;
+      const rawVectorScore = rawVectorScores.get(id);
       const vectorRRF = vectorRank !== Infinity ? vectorWeight / (k + vectorRank) : 0;
       const ftsRRF = ftsRank !== Infinity ? ftsWeight / (k + ftsRank) : 0;
       const fileTypeBoost = this.getFileTypeBoost(
@@ -2948,10 +3015,14 @@ var SearchService = class {
       if (ftsRank !== Infinity) {
         metadata.ftsRank = ftsRank;
       }
+      if (rawVectorScore !== void 0) {
+        metadata.rawVectorScore = rawVectorScore;
+      }
       rrfScores.push({
         id,
         score: (vectorRRF + ftsRRF) * fileTypeBoost * frameworkBoost * urlKeywordBoost * pathKeywordBoost,
         result,
+        rawVectorScore,
         metadata
       });
     }
@@ -2988,9 +3059,9 @@ var SearchService = class {
       normalizedResults = [];
     }
     if (threshold !== void 0) {
-      return normalizedResults.filter((r) => r.score >= threshold);
+      normalizedResults = normalizedResults.filter((r) => r.score >= threshold);
     }
-    return normalizedResults;
+    return { results: normalizedResults, maxRawScore };
   }
   async searchAllStores(query, storeIds) {
     return this.search({
@@ -3023,7 +3094,7 @@ var SearchService = class {
         baseBoost = 0.75;
         break;
       case "test":
-        baseBoost = 0.7;
+        baseBoost = parseFloat(process.env["SEARCH_TEST_FILE_BOOST"] ?? "0.5");
         break;
       case "config":
         baseBoost = 0.5;
@@ -3040,7 +3111,11 @@ var SearchService = class {
       totalConfidence += confidence;
     }
     const blendedMultiplier = totalConfidence > 0 ? weightedMultiplier / totalConfidence : 1;
-    return baseBoost * blendedMultiplier;
+    const finalBoost = baseBoost * blendedMultiplier;
+    if (fileType === "test") {
+      return Math.min(finalBoost, 0.6);
+    }
+    return finalBoost;
   }
   /**
    * Get a score multiplier based on URL keyword matching.
@@ -4191,4 +4266,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-XJFV7AJW.js.map
+//# sourceMappingURL=chunk-2PJVQVTN.js.map

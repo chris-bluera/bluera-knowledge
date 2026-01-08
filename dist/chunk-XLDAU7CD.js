@@ -4,7 +4,7 @@ import {
   createServices,
   createStoreId,
   summarizePayload
-} from "./chunk-XJFV7AJW.js";
+} from "./chunk-2PJVQVTN.js";
 
 // src/mcp/server.ts
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -27,7 +27,8 @@ var SearchArgsSchema = z.object({
   ]).optional(),
   detail: z.enum(["minimal", "contextual", "full"]).default("minimal"),
   limit: z.number().int().positive().default(10),
-  stores: z.array(z.string()).optional()
+  stores: z.array(z.string()).optional(),
+  minRelevance: z.number().min(0, "minRelevance must be between 0 and 1").max(1, "minRelevance must be between 0 and 1").optional()
 });
 var GetFullContextArgsSchema = z.object({
   resultId: z.string().min(1, "Result ID must be a non-empty string")
@@ -743,7 +744,8 @@ var handleSearch = async (args, context) => {
     stores: storeIds,
     mode: "hybrid",
     limit: validated.limit,
-    detail: validated.detail
+    detail: validated.detail,
+    minRelevance: validated.minRelevance
   };
   const results = await services.search.search(searchQuery);
   for (const result of results.results) {
@@ -771,13 +773,16 @@ var handleSearch = async (args, context) => {
       results: enhancedResults,
       totalResults: results.totalResults,
       mode: results.mode,
-      timeMs: results.timeMs
+      timeMs: results.timeMs,
+      confidence: results.confidence,
+      maxRawScore: results.maxRawScore
     },
     null,
     2
   );
   const responseTokens = estimateTokens(responseJson);
-  const header = `Search: "${validated.query}" | Results: ${String(results.totalResults)} | ${formatTokenCount(responseTokens)} tokens | ${String(results.timeMs)}ms
+  const confidenceInfo = results.confidence !== void 0 ? ` | Confidence: ${results.confidence}` : "";
+  const header = `Search: "${validated.query}" | Results: ${String(results.totalResults)} | ${formatTokenCount(responseTokens)} tokens | ${String(results.timeMs)}ms${confidenceInfo}
 
 `;
   logger.info(
@@ -974,6 +979,10 @@ function createMCPServer(options) {
                 type: "array",
                 items: { type: "string" },
                 description: "Specific store IDs to search (optional)"
+              },
+              minRelevance: {
+                type: "number",
+                description: "Minimum raw cosine similarity (0-1). Returns empty if no results meet threshold. Use to filter irrelevant results."
               }
             },
             required: ["query"]
@@ -1086,4 +1095,4 @@ export {
   createMCPServer,
   runMCPServer
 };
-//# sourceMappingURL=chunk-36IFANFI.js.map
+//# sourceMappingURL=chunk-XLDAU7CD.js.map

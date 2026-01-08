@@ -72,6 +72,7 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
     mode: 'hybrid',
     limit: validated.limit,
     detail: validated.detail,
+    minRelevance: validated.minRelevance,
   };
 
   const results = await services.search.search(searchQuery);
@@ -107,6 +108,8 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
       totalResults: results.totalResults,
       mode: results.mode,
       timeMs: results.timeMs,
+      confidence: results.confidence,
+      maxRawScore: results.maxRawScore,
     },
     null,
     2
@@ -115,8 +118,10 @@ export const handleSearch: ToolHandler<SearchArgs> = async (
   // Calculate actual token estimate based on response content
   const responseTokens = estimateTokens(responseJson);
 
-  // Create visible header with token usage
-  const header = `Search: "${validated.query}" | Results: ${String(results.totalResults)} | ${formatTokenCount(responseTokens)} tokens | ${String(results.timeMs)}ms\n\n`;
+  // Create visible header with token usage and confidence
+  const confidenceInfo =
+    results.confidence !== undefined ? ` | Confidence: ${results.confidence}` : '';
+  const header = `Search: "${validated.query}" | Results: ${String(results.totalResults)} | ${formatTokenCount(responseTokens)} tokens | ${String(results.timeMs)}ms${confidenceInfo}\n\n`;
 
   // Log the complete MCP response that will be sent to Claude Code
   logger.info(

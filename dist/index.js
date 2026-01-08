@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import {
   runMCPServer
-} from "./chunk-36IFANFI.js";
+} from "./chunk-XLDAU7CD.js";
 import {
   IntelligentCrawler
-} from "./chunk-ZAWIPEYX.js";
+} from "./chunk-ZU54C5YG.js";
 import {
   ASTParser,
   ChunkingService,
@@ -16,7 +16,7 @@ import {
   err,
   extractRepoName,
   ok
-} from "./chunk-XJFV7AJW.js";
+} from "./chunk-2PJVQVTN.js";
 import "./chunk-6FHWC36B.js";
 
 // src/index.ts
@@ -934,7 +934,10 @@ function createSearchCommand(getOptions) {
     "-m, --mode <mode>",
     "vector (embeddings only), fts (text only), hybrid (both, default)",
     "hybrid"
-  ).option("-n, --limit <count>", "Maximum results to return (default: 10)", "10").option("-t, --threshold <score>", "Minimum score 0-1; omit low-relevance results").option("--include-content", "Show full document content, not just preview snippet").option(
+  ).option("-n, --limit <count>", "Maximum results to return (default: 10)", "10").option("-t, --threshold <score>", "Minimum score 0-1; omit low-relevance results").option(
+    "--min-relevance <score>",
+    "Minimum raw cosine similarity 0-1; returns empty if no results meet threshold"
+  ).option("--include-content", "Show full document content, not just preview snippet").option(
     "--detail <level>",
     "Context detail: minimal, contextual, full (default: minimal)",
     "minimal"
@@ -975,6 +978,7 @@ function createSearchCommand(getOptions) {
             mode: options.mode ?? "hybrid",
             limit: parseInt(options.limit ?? "10", 10),
             threshold: options.threshold !== void 0 ? parseFloat(options.threshold) : void 0,
+            minRelevance: options.minRelevance !== void 0 ? parseFloat(options.minRelevance) : void 0,
             includeContent: options.includeContent,
             detail: options.detail ?? "minimal"
           });
@@ -988,12 +992,21 @@ function createSearchCommand(getOptions) {
           } else {
             console.log(`
 Search: "${query}"`);
-            console.log(
-              `Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms
-`
-            );
+            let statusLine = `Mode: ${results.mode} | Detail: ${String(options.detail)} | Stores: ${String(results.stores.length)} | Results: ${String(results.totalResults)} | Time: ${String(results.timeMs)}ms`;
+            if (results.confidence !== void 0) {
+              statusLine += ` | Confidence: ${results.confidence}`;
+            }
+            if (results.maxRawScore !== void 0) {
+              statusLine += ` | MaxRaw: ${results.maxRawScore.toFixed(3)}`;
+            }
+            console.log(`${statusLine}
+`);
             if (results.results.length === 0) {
-              console.log("No results found.\n");
+              if (results.confidence === "low") {
+                console.log("No sufficiently relevant results found.\n");
+              } else {
+                console.log("No results found.\n");
+              }
             } else {
               for (let i = 0; i < results.results.length; i++) {
                 const r = results.results[i];

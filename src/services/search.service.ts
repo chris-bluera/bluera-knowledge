@@ -9,6 +9,7 @@ import type {
   SearchQuery,
   SearchResponse,
   SearchResult,
+  SearchConfidence,
   DetailLevel,
   CodeUnit,
 } from '../types/search.js';
@@ -246,6 +247,19 @@ export class SearchService {
     return result;
   }
 
+  /**
+   * Calculate confidence level based on max raw vector similarity score.
+   * Configurable via environment variables.
+   */
+  private calculateConfidence(maxRawScore: number): SearchConfidence {
+    const highThreshold = parseFloat(process.env['SEARCH_CONFIDENCE_HIGH'] ?? '0.5');
+    const mediumThreshold = parseFloat(process.env['SEARCH_CONFIDENCE_MEDIUM'] ?? '0.3');
+
+    if (maxRawScore >= highThreshold) return 'high';
+    if (maxRawScore >= mediumThreshold) return 'medium';
+    return 'low';
+  }
+
   async search(query: SearchQuery): Promise<SearchResponse> {
     const startTime = Date.now();
     const mode = query.mode ?? 'hybrid';
@@ -264,22 +278,61 @@ export class SearchService {
         detail,
         intent: primaryIntent,
         intents,
+        minRelevance: query.minRelevance,
       },
       'Search query received'
     );
 
     let allResults: SearchResult[] = [];
+    let maxRawScore = 0;
 
     // Fetch more results than needed to allow for deduplication
     const fetchLimit = limit * 3;
 
     if (mode === 'vector') {
+      // For vector mode, get raw scores first for confidence calculation
+      const rawResults = await this.vectorSearchRaw(query.query, stores, fetchLimit);
+      maxRawScore = rawResults.length > 0 ? (rawResults[0]?.score ?? 0) : 0;
       allResults = await this.vectorSearch(query.query, stores, fetchLimit, query.threshold);
     } else if (mode === 'fts') {
+      // FTS mode doesn't have vector similarity, so no confidence calculation
       allResults = await this.ftsSearch(query.query, stores, fetchLimit);
     } else {
-      // Hybrid: combine vector and FTS with RRF
-      allResults = await this.hybridSearch(query.query, stores, fetchLimit, query.threshold);
+      // Hybrid: combine vector and FTS with RRF, get maxRawScore for confidence
+      const hybridResult = await this.hybridSearchWithMetadata(
+        query.query,
+        stores,
+        fetchLimit,
+        query.threshold
+      );
+      allResults = hybridResult.results;
+      maxRawScore = hybridResult.maxRawScore;
+    }
+
+    // Apply minRelevance filter - if max raw score is below threshold, return empty
+    if (query.minRelevance !== undefined && maxRawScore < query.minRelevance) {
+      const timeMs = Date.now() - startTime;
+      logger.info(
+        {
+          query: query.query,
+          mode,
+          maxRawScore,
+          minRelevance: query.minRelevance,
+          timeMs,
+        },
+        'Search filtered by minRelevance - no sufficiently relevant results'
+      );
+
+      return {
+        query: query.query,
+        mode,
+        stores,
+        results: [],
+        totalResults: 0,
+        timeMs,
+        confidence: this.calculateConfidence(maxRawScore),
+        maxRawScore,
+      };
     }
 
     // Deduplicate by source file - keep best chunk per source (considers query relevance)
@@ -302,6 +355,7 @@ export class SearchService {
     });
 
     const timeMs = Date.now() - startTime;
+    const confidence = mode !== 'fts' ? this.calculateConfidence(maxRawScore) : undefined;
 
     logger.info(
       {
@@ -310,6 +364,8 @@ export class SearchService {
         resultCount: enhancedResults.length,
         dedupedFrom: allResults.length,
         intents: intents.map((i) => `${i.intent}(${i.confidence.toFixed(2)})`),
+        maxRawScore: mode !== 'fts' ? maxRawScore : undefined,
+        confidence,
         timeMs,
       },
       'Search complete'
@@ -322,6 +378,8 @@ export class SearchService {
       results: enhancedResults,
       totalResults: enhancedResults.length,
       timeMs,
+      confidence,
+      maxRawScore: mode !== 'fts' ? maxRawScore : undefined,
     };
   }
 
@@ -412,26 +470,40 @@ export class SearchService {
     return normalized;
   }
 
+  /**
+   * Fetch raw vector search results without normalization.
+   * Returns results with raw cosine similarity scores [0-1].
+   */
+  private async vectorSearchRaw(
+    query: string,
+    stores: readonly StoreId[],
+    limit: number
+  ): Promise<SearchResult[]> {
+    const queryVector = await this.embeddingEngine.embed(query);
+    const results: SearchResult[] = [];
+
+    for (const storeId of stores) {
+      const hits = await this.lanceStore.search(storeId, queryVector, limit);
+      results.push(
+        ...hits.map((r) => ({
+          id: r.id,
+          score: r.score, // Raw cosine similarity (1 - distance)
+          content: r.content,
+          metadata: r.metadata,
+        }))
+      );
+    }
+
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
+  }
+
   private async vectorSearch(
     query: string,
     stores: readonly StoreId[],
     limit: number,
     threshold?: number
   ): Promise<SearchResult[]> {
-    const queryVector = await this.embeddingEngine.embed(query);
-    const results: SearchResult[] = [];
-
-    for (const storeId of stores) {
-      const hits = await this.lanceStore.search(storeId, queryVector, limit, threshold);
-      results.push(
-        ...hits.map((r) => ({
-          id: r.id,
-          score: r.score,
-          content: r.content,
-          metadata: r.metadata,
-        }))
-      );
-    }
+    const results = await this.vectorSearchRaw(query, stores, limit);
 
     // Normalize scores and apply threshold filter
     const normalized = this.normalizeAndFilterScores(results, threshold);
@@ -460,20 +532,36 @@ export class SearchService {
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
-  private async hybridSearch(
+  /**
+   * Internal hybrid search result with additional metadata for confidence calculation.
+   */
+  private async hybridSearchWithMetadata(
     query: string,
     stores: readonly StoreId[],
     limit: number,
     threshold?: number
-  ): Promise<SearchResult[]> {
+  ): Promise<{ results: SearchResult[]; maxRawScore: number }> {
     // Classify query intents for context-aware ranking (supports multiple intents)
     const intents = classifyQueryIntents(query);
 
-    // Get both result sets (don't pass threshold - apply after RRF normalization)
-    const [vectorResults, ftsResults] = await Promise.all([
-      this.vectorSearch(query, stores, limit * 2),
-      this.ftsSearch(query, stores, limit * 2),
-    ]);
+    // Get raw vector results (unnormalized) to track raw cosine similarity
+    // We use these for both raw score tracking and as the basis for normalized vector results
+    const rawVectorResults = await this.vectorSearchRaw(query, stores, limit * 2);
+
+    // Build map of raw vector scores by document ID
+    const rawVectorScores = new Map<string, number>();
+    rawVectorResults.forEach((r) => {
+      rawVectorScores.set(r.id, r.score);
+    });
+
+    // Track max raw score for confidence calculation
+    const maxRawScore = rawVectorResults.length > 0 ? (rawVectorResults[0]?.score ?? 0) : 0;
+
+    // Normalize raw vector results directly (avoids duplicate embedding call)
+    const vectorResults = this.normalizeAndFilterScores(rawVectorResults, threshold);
+
+    // Get FTS results in parallel (only one call needed now)
+    const ftsResults = await this.ftsSearch(query, stores, limit * 2);
 
     // Build rank maps
     const vectorRanks = new Map<string, number>();
@@ -497,6 +585,7 @@ export class SearchService {
       id: string;
       score: number;
       result: SearchResult;
+      rawVectorScore: number | undefined;
       metadata: {
         vectorRank?: number;
         ftsRank?: number;
@@ -506,6 +595,7 @@ export class SearchService {
         frameworkBoost: number;
         urlKeywordBoost: number;
         pathKeywordBoost: number;
+        rawVectorScore?: number;
       };
     }> = [];
 
@@ -516,6 +606,7 @@ export class SearchService {
     for (const [id, result] of allDocs) {
       const vectorRank = vectorRanks.get(id) ?? Infinity;
       const ftsRank = ftsRanks.get(id) ?? Infinity;
+      const rawVectorScore = rawVectorScores.get(id);
 
       const vectorRRF = vectorRank !== Infinity ? vectorWeight / (k + vectorRank) : 0;
       const ftsRRF = ftsRank !== Infinity ? ftsWeight / (k + ftsRank) : 0;
@@ -545,6 +636,7 @@ export class SearchService {
         frameworkBoost: number;
         urlKeywordBoost: number;
         pathKeywordBoost: number;
+        rawVectorScore?: number;
       } = {
         vectorRRF,
         ftsRRF,
@@ -560,6 +652,9 @@ export class SearchService {
       if (ftsRank !== Infinity) {
         metadata.ftsRank = ftsRank;
       }
+      if (rawVectorScore !== undefined) {
+        metadata.rawVectorScore = rawVectorScore;
+      }
 
       rrfScores.push({
         id,
@@ -570,6 +665,7 @@ export class SearchService {
           urlKeywordBoost *
           pathKeywordBoost,
         result,
+        rawVectorScore,
         metadata,
       });
     }
@@ -616,10 +712,10 @@ export class SearchService {
 
     // Apply threshold filter on normalized scores (UX consistency)
     if (threshold !== undefined) {
-      return normalizedResults.filter((r) => r.score >= threshold);
+      normalizedResults = normalizedResults.filter((r) => r.score >= threshold);
     }
 
-    return normalizedResults;
+    return { results: normalizedResults, maxRawScore };
   }
 
   async searchAllStores(query: SearchQuery, storeIds: StoreId[]): Promise<SearchResponse> {
@@ -655,7 +751,7 @@ export class SearchService {
         baseBoost = 0.75; // Internal implementation files (not too harsh)
         break;
       case 'test':
-        baseBoost = 0.7; // Tests significantly lower
+        baseBoost = parseFloat(process.env['SEARCH_TEST_FILE_BOOST'] ?? '0.5'); // Tests strongly penalized
         break;
       case 'config':
         baseBoost = 0.5; // Config files rarely answer questions
@@ -676,8 +772,14 @@ export class SearchService {
     }
 
     const blendedMultiplier = totalConfidence > 0 ? weightedMultiplier / totalConfidence : 1.0;
+    const finalBoost = baseBoost * blendedMultiplier;
 
-    return baseBoost * blendedMultiplier;
+    // Cap test file boost to prevent intent multipliers from overriding the penalty
+    if (fileType === 'test') {
+      return Math.min(finalBoost, 0.6);
+    }
+
+    return finalBoost;
   }
 
   /**

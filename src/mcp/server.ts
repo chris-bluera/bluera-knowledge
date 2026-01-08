@@ -70,6 +70,11 @@ export function createMCPServer(options: MCPServerOptions): Server {
                 items: { type: 'string' },
                 description: 'Specific store IDs to search (optional)',
               },
+              minRelevance: {
+                type: 'number',
+                description:
+                  'Minimum raw cosine similarity (0-1). Returns empty if no results meet threshold. Use to filter irrelevant results.',
+              },
             },
             required: ['query'],
           },

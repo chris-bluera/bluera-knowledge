@@ -51,6 +51,7 @@ export interface SearchQuery {
   readonly mode?: SearchMode | undefined;
   readonly limit?: number | undefined;
   readonly threshold?: number | undefined;
+  readonly minRelevance?: number | undefined; // Minimum raw cosine similarity [0-1] to include results
   readonly filter?: Record<string, unknown> | undefined;
   readonly includeContent?: boolean | undefined;
   readonly contextLines?: number | undefined;
@@ -83,9 +84,14 @@ export interface SearchResult {
         readonly ftsRRF: number; // FTS contribution to RRF score
         readonly fileTypeBoost: number; // File type multiplier applied
         readonly frameworkBoost: number; // Framework context multiplier
+        readonly urlKeywordBoost: number; // URL keyword matching multiplier
+        readonly pathKeywordBoost: number; // File path keyword matching multiplier
+        readonly rawVectorScore?: number; // Raw cosine similarity [0-1] before RRF/normalization
       }
     | undefined;
 }
+
+export type SearchConfidence = 'high' | 'medium' | 'low';
 
 export interface SearchResponse {
   readonly query: string;
@@ -94,4 +100,6 @@ export interface SearchResponse {
   readonly results: readonly SearchResult[];
   readonly totalResults: number;
   readonly timeMs: number;
+  readonly confidence?: SearchConfidence | undefined; // Based on max raw vector similarity
+  readonly maxRawScore?: number | undefined; // Highest raw cosine similarity found
 }

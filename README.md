@@ -563,8 +563,16 @@ Store is ready for searching!
 **Search across indexed knowledge stores**
 
 ```bash
-/bluera-knowledge:search "<query>" [--stores=<names>] [--limit=<number>]
+/bluera-knowledge:search "<query>" [--stores=<names>] [--limit=<number>] [--min-relevance=<0-1>]
 ```
+
+**Options:**
+- `--stores=<names>` - Comma-separated store names to search (default: all stores)
+- `--limit=<number>` - Maximum results to return (default: 10)
+- `--min-relevance=<0-1>` - Minimum raw cosine similarity; returns empty if no results meet threshold
+- `--threshold=<0-1>` - Minimum normalized score to include results
+- `--mode=<mode>` - Search mode: `hybrid` (default), `vector`, or `fts`
+- `--detail=<level>` - Context detail: `minimal` (default), `contextual`, or `full`
 
 **Examples:**
 ```bash
@@ -579,6 +587,9 @@ Store is ready for searching!
 
 # Limit results
 /bluera-knowledge:search "testing patterns" --limit=5
+
+# Filter irrelevant results (returns empty if nothing is truly relevant)
+/bluera-knowledge:search "kubernetes deployment" --min-relevance=0.4
 ```
 
 <details>
@@ -1213,7 +1224,22 @@ bluera-knowledge search "routing" --stores react,vue
 
 # Get more results with full content
 bluera-knowledge search "middleware" --limit 20 --include-content
+
+# Filter irrelevant results (returns empty if nothing is truly relevant)
+bluera-knowledge search "kubernetes deployment" --min-relevance 0.4
+
+# Get JSON output with confidence and raw scores
+bluera-knowledge search "express middleware" --format json
 ```
+
+**Search Options:**
+- `-s, --stores <stores>` - Comma-separated store names/IDs
+- `-m, --mode <mode>` - `hybrid` (default), `vector`, or `fts`
+- `-n, --limit <count>` - Max results (default: 10)
+- `-t, --threshold <score>` - Min normalized score (0-1)
+- `--min-relevance <score>` - Min raw cosine similarity (0-1)
+- `--include-content` - Show full content in results
+- `--detail <level>` - `minimal`, `contextual`, or `full`
 
 #### List Stores
 

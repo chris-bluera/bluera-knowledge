@@ -1161,6 +1161,7 @@ describe('SearchService - Edge Cases', () => {
   });
 
   it('handles threshold parameter for vector search', async () => {
+    // Setup: multiple results with varying scores
     vi.mocked(mockLanceStore.search).mockResolvedValue([
       {
         id: createDocumentId('doc1'),
@@ -1168,22 +1169,41 @@ describe('SearchService - Edge Cases', () => {
         content: 'high score',
         metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
       },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.5,
+        content: 'medium score',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc3'),
+        score: 0.3,
+        content: 'low score',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
     ]);
 
+    // Search with high threshold
     const results = await searchService.search({
       query: 'test',
       stores: [storeId],
       mode: 'vector',
       limit: 10,
-      threshold: 0.9,
+      threshold: 0.8,
     });
 
+    // Verify lanceStore.search was called (without checking threshold param - it's unused in LanceStore)
     expect(vi.mocked(mockLanceStore.search)).toHaveBeenCalledWith(
       storeId,
       expect.anything(),
-      expect.anything(),
-      0.9
+      expect.anything()
     );
+
+    // Verify threshold filtering works: only high-score result should pass
+    // After normalization, the top result has score 1.0, and threshold 0.8 filters out lower ones
+    // The normalized scores are: doc1=1.0, doc2=0.31, doc3=0.0 (relative to max 0.95)
+    expect(results.results.length).toBe(1);
+    expect(results.results[0]?.id).toBe('doc1');
   });
 });
 
@@ -1990,5 +2010,173 @@ describe('SearchService - Threshold Filtering', () => {
     // Check response metadata
     expect(results.totalResults).toBe(results.results.length);
     expect(results.query).toBe('test query');
+  });
+});
+
+describe('SearchService - Raw Score and Confidence', () => {
+  let mockLanceStore: LanceStore;
+  let mockEmbeddingEngine: EmbeddingEngine;
+  let searchService: SearchService;
+  const storeId = createStoreId('test-store');
+
+  beforeEach(() => {
+    mockLanceStore = {
+      search: vi.fn(),
+      fullTextSearch: vi.fn(),
+    } as unknown as LanceStore;
+
+    mockEmbeddingEngine = {
+      embed: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
+    } as unknown as EmbeddingEngine;
+
+    searchService = new SearchService(mockLanceStore, mockEmbeddingEngine);
+  });
+
+  it('exposes rawVectorScore in rankingMetadata for hybrid search', async () => {
+    // Mock results with known raw vector scores
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.85, // Raw cosine similarity
+        content: 'vector result',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.65,
+        content: 'another vector result',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+    });
+
+    // Verify results have rawVectorScore in rankingMetadata
+    expect(results.results.length).toBeGreaterThan(0);
+    const firstResult = results.results[0];
+    expect(firstResult?.rankingMetadata).toBeDefined();
+    expect(firstResult?.rankingMetadata?.rawVectorScore).toBeDefined();
+    expect(firstResult?.rankingMetadata?.rawVectorScore).toBe(0.85);
+  });
+
+  it('returns confidence level based on maxRawScore', async () => {
+    // Mock results with high raw vector score (>= 0.5)
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.6, // High confidence threshold
+        content: 'high score result',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+    });
+
+    expect(results.confidence).toBe('high');
+    expect(results.maxRawScore).toBe(0.6);
+  });
+
+  it('returns medium confidence for scores between 0.3 and 0.5', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.4, // Medium confidence
+        content: 'medium score result',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+    });
+
+    expect(results.confidence).toBe('medium');
+    expect(results.maxRawScore).toBe(0.4);
+  });
+
+  it('returns low confidence for scores below 0.3', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.2, // Low confidence
+        content: 'low score result',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+    });
+
+    expect(results.confidence).toBe('low');
+    expect(results.maxRawScore).toBe(0.2);
+  });
+
+  it('filters results with minRelevance based on raw score', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.25, // Below minRelevance threshold
+        content: 'low relevance result',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'irrelevant query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+      minRelevance: 0.4, // Filter out results below this raw score
+    });
+
+    // Should return empty since max raw score (0.25) < minRelevance (0.4)
+    expect(results.results.length).toBe(0);
+    expect(results.confidence).toBe('low');
+  });
+
+  it('returns results when maxRawScore meets minRelevance', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.5, // Above minRelevance threshold
+        content: 'relevant result',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'relevant query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+      minRelevance: 0.4,
+    });
+
+    // Should return results since max raw score (0.5) >= minRelevance (0.4)
+    expect(results.results.length).toBe(1);
+    expect(results.confidence).toBe('high');
   });
 });

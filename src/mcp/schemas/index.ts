@@ -28,6 +28,11 @@ export const SearchArgsSchema = z.object({
   detail: z.enum(['minimal', 'contextual', 'full']).default('minimal'),
   limit: z.number().int().positive().default(10),
   stores: z.array(z.string()).optional(),
+  minRelevance: z
+    .number()
+    .min(0, 'minRelevance must be between 0 and 1')
+    .max(1, 'minRelevance must be between 0 and 1')
+    .optional(),
 });
 
 export type SearchArgs = z.infer<typeof SearchArgsSchema>;
