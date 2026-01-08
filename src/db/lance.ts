@@ -119,13 +119,13 @@ export class LanceStore {
         id: string;
         content: string;
         metadata: string;
-        score: number;
+        _score: number;
       }>;
 
       return results.map((r) => ({
         id: createDocumentId(r.id),
         content: r.content,
-        score: r.score,
+        score: r._score,
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         metadata: JSON.parse(r.metadata) as DocumentMetadata,
       }));

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import {
   runMCPServer
-} from "./chunk-6TKD5XE4.js";
+} from "./chunk-36IFANFI.js";
 import {
   IntelligentCrawler
-} from "./chunk-AT6G626F.js";
+} from "./chunk-ZAWIPEYX.js";
 import {
   ASTParser,
   ChunkingService,
@@ -16,7 +16,7 @@ import {
   err,
   extractRepoName,
   ok
-} from "./chunk-CGDEV2RC.js";
+} from "./chunk-XJFV7AJW.js";
 import "./chunk-6FHWC36B.js";
 
 // src/index.ts
@@ -141,6 +141,7 @@ function createCrawlCommand(getOptions) {
             spinner.text = "Indexing documents...";
           }
           await services.lance.addDocuments(store.id, docs);
+          await services.lance.createFtsIndex(store.id);
         }
         const crawlResult = {
           success: true,

@@ -296,6 +296,8 @@ export class BackgroundWorker {
         });
 
         await this.lanceStore.addDocuments(store.id, docs);
+        // Create FTS index for full-text search
+        await this.lanceStore.createFtsIndex(store.id);
       }
 
       this.jobService.updateJob(job.id, {

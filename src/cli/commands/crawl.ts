@@ -172,6 +172,8 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
               spinner.text = 'Indexing documents...';
             }
             await services.lance.addDocuments(store.id, docs);
+            // Create FTS index for full-text search
+            await services.lance.createFtsIndex(store.id);
           }
 
           const crawlResult = {

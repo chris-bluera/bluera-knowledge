@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import {
   IntelligentCrawler
-} from "../chunk-AT6G626F.js";
+} from "../chunk-ZAWIPEYX.js";
 import {
   JobService,
   createDocumentId,
   createServices,
   createStoreId
-} from "../chunk-CGDEV2RC.js";
+} from "../chunk-XJFV7AJW.js";
 import "../chunk-6FHWC36B.js";
 
 // src/workers/background-worker.ts
@@ -222,6 +222,7 @@ var BackgroundWorker = class {
           progress: 85
         });
         await this.lanceStore.addDocuments(store.id, docs);
+        await this.lanceStore.createFtsIndex(store.id);
       }
       this.jobService.updateJob(job.id, {
         message: `Crawled and indexed ${String(docs.length)} pages`,

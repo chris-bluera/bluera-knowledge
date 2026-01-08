@@ -2310,6 +2310,7 @@ var IndexService = class {
     }
     if (documents.length > 0) {
       await this.lanceStore.addDocuments(store.id, documents);
+      await this.lanceStore.createFtsIndex(store.id);
     }
     if (this.codeGraphService && sourceFiles.length > 0) {
       const graph = await this.codeGraphService.buildGraph(sourceFiles);
@@ -4078,7 +4079,7 @@ var LanceStore = class {
       return results.map((r) => ({
         id: createDocumentId(r.id),
         content: r.content,
-        score: r.score,
+        score: r._score,
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         metadata: JSON.parse(r.metadata)
       }));
@@ -4190,4 +4191,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-CGDEV2RC.js.map
+//# sourceMappingURL=chunk-XJFV7AJW.js.map

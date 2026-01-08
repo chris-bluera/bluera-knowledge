@@ -196,6 +196,8 @@ export class IndexService {
 
     if (documents.length > 0) {
       await this.lanceStore.addDocuments(store.id, documents);
+      // Create FTS index for full-text search
+      await this.lanceStore.createFtsIndex(store.id);
     }
 
     // Build and save code graph if service is available and we have source files
