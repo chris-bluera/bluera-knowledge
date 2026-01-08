@@ -2969,7 +2969,7 @@ var SearchService = class {
       rawVectorScores.set(r.id, r.score);
     });
     const maxRawScore = rawVectorResults.length > 0 ? rawVectorResults[0]?.score ?? 0 : 0;
-    const vectorResults = this.normalizeAndFilterScores(rawVectorResults, threshold);
+    const vectorResults = this.normalizeAndFilterScores(rawVectorResults);
     const ftsResults = await this.ftsSearch(query, stores, limit * 2);
     const vectorRanks = /* @__PURE__ */ new Map();
     const ftsRanks = /* @__PURE__ */ new Map();
@@ -4266,4 +4266,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-2PJVQVTN.js.map
+//# sourceMappingURL=chunk-HUEWT6U5.js.map

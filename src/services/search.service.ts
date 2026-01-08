@@ -558,7 +558,8 @@ export class SearchService {
     const maxRawScore = rawVectorResults.length > 0 ? (rawVectorResults[0]?.score ?? 0) : 0;
 
     // Normalize raw vector results directly (avoids duplicate embedding call)
-    const vectorResults = this.normalizeAndFilterScores(rawVectorResults, threshold);
+    // Don't apply threshold here - it's applied to final RRF-normalized scores at the end
+    const vectorResults = this.normalizeAndFilterScores(rawVectorResults);
 
     // Get FTS results in parallel (only one call needed now)
     const ftsResults = await this.ftsSearch(query, stores, limit * 2);
