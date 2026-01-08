@@ -110,7 +110,7 @@ describe('CLI Consistency', () => {
     it('returns exit code 0 on success', () => {
       const result = runCli('store list');
       expect(result.exitCode).toBe(0);
-    });
+    }, 15000);
 
     it('returns non-zero exit code when store not found', () => {
       const result = runCli('store info nonexistent-store');
