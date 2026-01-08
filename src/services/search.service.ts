@@ -370,6 +370,48 @@ export class SearchService {
     return queryTerms.filter((term) => lowerContent.includes(term)).length;
   }
 
+  /**
+   * Normalize scores to 0-1 range and optionally filter by threshold.
+   * This ensures threshold values match displayed scores (UX consistency).
+   *
+   * Edge case handling:
+   * - If there's only 1 result or all results have the same score, normalization
+   *   would make them all 1.0. In this case, we keep the raw scores to allow
+   *   threshold filtering to work meaningfully on absolute quality.
+   */
+  private normalizeAndFilterScores(results: SearchResult[], threshold?: number): SearchResult[] {
+    if (results.length === 0) return [];
+
+    // Sort by score descending
+    const sorted = [...results].sort((a, b) => b.score - a.score);
+
+    // Get score range for normalization
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    if (first === undefined || last === undefined) return [];
+
+    const maxScore = first.score;
+    const minScore = last.score;
+    const range = maxScore - minScore;
+
+    // Only normalize when there's meaningful score variation
+    // If all scores are the same (range = 0), keep raw scores for threshold filtering
+    const normalized =
+      range > 0
+        ? sorted.map((r) => ({
+            ...r,
+            score: Math.round(((r.score - minScore) / range) * 1000000) / 1000000,
+          }))
+        : sorted; // Keep raw scores when no variation (allows threshold to filter by quality)
+
+    // Apply threshold filter on scores
+    if (threshold !== undefined) {
+      return normalized.filter((r) => r.score >= threshold);
+    }
+
+    return normalized;
+  }
+
   private async vectorSearch(
     query: string,
     stores: readonly StoreId[],
@@ -391,7 +433,9 @@ export class SearchService {
       );
     }
 
-    return results.sort((a, b) => b.score - a.score).slice(0, limit);
+    // Normalize scores and apply threshold filter
+    const normalized = this.normalizeAndFilterScores(results, threshold);
+    return normalized.slice(0, limit);
   }
 
   private async ftsSearch(
@@ -425,9 +469,9 @@ export class SearchService {
     // Classify query intents for context-aware ranking (supports multiple intents)
     const intents = classifyQueryIntents(query);
 
-    // Get both result sets
+    // Get both result sets (don't pass threshold - apply after RRF normalization)
     const [vectorResults, ftsResults] = await Promise.all([
-      this.vectorSearch(query, stores, limit * 2, threshold),
+      this.vectorSearch(query, stores, limit * 2),
       this.ftsSearch(query, stores, limit * 2),
     ]);
 
@@ -534,34 +578,48 @@ export class SearchService {
     const sorted = rrfScores.sort((a, b) => b.score - a.score).slice(0, limit);
 
     // Normalize scores to 0-1 range for better interpretability
+    let normalizedResults: SearchResult[];
+
     if (sorted.length > 0) {
       const first = sorted[0];
       const last = sorted[sorted.length - 1];
       if (first === undefined || last === undefined) {
-        return sorted.map((r) => ({
+        normalizedResults = sorted.map((r) => ({
           ...r.result,
           score: r.score,
           rankingMetadata: r.metadata,
         }));
-      }
-      const maxScore = first.score;
-      const minScore = last.score;
-      const range = maxScore - minScore;
+      } else {
+        const maxScore = first.score;
+        const minScore = last.score;
+        const range = maxScore - minScore;
 
-      if (range > 0) {
-        return sorted.map((r) => ({
-          ...r.result,
-          score: (r.score - minScore) / range,
-          rankingMetadata: r.metadata,
-        }));
+        if (range > 0) {
+          // Round to avoid floating point precision issues in threshold comparisons
+          normalizedResults = sorted.map((r) => ({
+            ...r.result,
+            score: Math.round(((r.score - minScore) / range) * 1000000) / 1000000,
+            rankingMetadata: r.metadata,
+          }));
+        } else {
+          // All same score - keep raw scores (allows threshold to filter by quality)
+          normalizedResults = sorted.map((r) => ({
+            ...r.result,
+            score: r.score,
+            rankingMetadata: r.metadata,
+          }));
+        }
       }
+    } else {
+      normalizedResults = [];
     }
 
-    return sorted.map((r) => ({
-      ...r.result,
-      score: r.score,
-      rankingMetadata: r.metadata,
-    }));
+    // Apply threshold filter on normalized scores (UX consistency)
+    if (threshold !== undefined) {
+      return normalizedResults.filter((r) => r.score >= threshold);
+    }
+
+    return normalizedResults;
   }
 
   async searchAllStores(query: SearchQuery, storeIds: StoreId[]): Promise<SearchResponse> {

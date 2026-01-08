@@ -74,33 +74,27 @@ export class LanceStore {
     storeId: StoreId,
     vector: number[],
     limit: number,
-    threshold?: number
+    // threshold is kept for API compatibility but filtering is done after normalization
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _threshold?: number
   ): Promise<
     Array<{ id: DocumentId; content: string; score: number; metadata: DocumentMetadata }>
   > {
     const table = await this.getTable(storeId);
-    let query = table.vectorSearch(vector).limit(limit);
-
-    if (threshold !== undefined) {
-      query = query.distanceType('cosine');
-    }
+    const query = table.vectorSearch(vector).limit(limit).distanceType('cosine');
 
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const results = (await query.toArray()) as SearchHit[];
 
-    return results
-      .filter((r) => {
-        if (threshold === undefined) return true;
-        const score = 1 - r._distance;
-        return score >= threshold;
-      })
-      .map((r) => ({
-        id: createDocumentId(r.id),
-        content: r.content,
-        score: 1 - r._distance,
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        metadata: JSON.parse(r.metadata) as DocumentMetadata,
-      }));
+    // Return all results - threshold filtering is applied after score normalization
+    // in search.service.ts to match displayed scores
+    return results.map((r) => ({
+      id: createDocumentId(r.id),
+      content: r.content,
+      score: 1 - r._distance,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      metadata: JSON.parse(r.metadata) as DocumentMetadata,
+    }));
   }
 
   async createFtsIndex(storeId: StoreId): Promise<void> {

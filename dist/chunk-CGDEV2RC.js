@@ -2839,6 +2839,33 @@ var SearchService = class {
     const lowerContent = content.toLowerCase();
     return queryTerms.filter((term) => lowerContent.includes(term)).length;
   }
+  /**
+   * Normalize scores to 0-1 range and optionally filter by threshold.
+   * This ensures threshold values match displayed scores (UX consistency).
+   *
+   * Edge case handling:
+   * - If there's only 1 result or all results have the same score, normalization
+   *   would make them all 1.0. In this case, we keep the raw scores to allow
+   *   threshold filtering to work meaningfully on absolute quality.
+   */
+  normalizeAndFilterScores(results, threshold) {
+    if (results.length === 0) return [];
+    const sorted = [...results].sort((a, b) => b.score - a.score);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    if (first === void 0 || last === void 0) return [];
+    const maxScore = first.score;
+    const minScore = last.score;
+    const range = maxScore - minScore;
+    const normalized = range > 0 ? sorted.map((r) => ({
+      ...r,
+      score: Math.round((r.score - minScore) / range * 1e6) / 1e6
+    })) : sorted;
+    if (threshold !== void 0) {
+      return normalized.filter((r) => r.score >= threshold);
+    }
+    return normalized;
+  }
   async vectorSearch(query, stores, limit, threshold) {
     const queryVector = await this.embeddingEngine.embed(query);
     const results = [];
@@ -2853,7 +2880,8 @@ var SearchService = class {
         }))
       );
     }
-    return results.sort((a, b) => b.score - a.score).slice(0, limit);
+    const normalized = this.normalizeAndFilterScores(results, threshold);
+    return normalized.slice(0, limit);
   }
   async ftsSearch(query, stores, limit) {
     const results = [];
@@ -2873,7 +2901,7 @@ var SearchService = class {
   async hybridSearch(query, stores, limit, threshold) {
     const intents = classifyQueryIntents(query);
     const [vectorResults, ftsResults] = await Promise.all([
-      this.vectorSearch(query, stores, limit * 2, threshold),
+      this.vectorSearch(query, stores, limit * 2),
       this.ftsSearch(query, stores, limit * 2)
     ]);
     const vectorRanks = /* @__PURE__ */ new Map();
@@ -2927,32 +2955,41 @@ var SearchService = class {
       });
     }
     const sorted = rrfScores.sort((a, b) => b.score - a.score).slice(0, limit);
+    let normalizedResults;
     if (sorted.length > 0) {
       const first = sorted[0];
       const last = sorted[sorted.length - 1];
       if (first === void 0 || last === void 0) {
-        return sorted.map((r) => ({
+        normalizedResults = sorted.map((r) => ({
           ...r.result,
           score: r.score,
           rankingMetadata: r.metadata
         }));
+      } else {
+        const maxScore = first.score;
+        const minScore = last.score;
+        const range = maxScore - minScore;
+        if (range > 0) {
+          normalizedResults = sorted.map((r) => ({
+            ...r.result,
+            score: Math.round((r.score - minScore) / range * 1e6) / 1e6,
+            rankingMetadata: r.metadata
+          }));
+        } else {
+          normalizedResults = sorted.map((r) => ({
+            ...r.result,
+            score: r.score,
+            rankingMetadata: r.metadata
+          }));
+        }
       }
-      const maxScore = first.score;
-      const minScore = last.score;
-      const range = maxScore - minScore;
-      if (range > 0) {
-        return sorted.map((r) => ({
-          ...r.result,
-          score: (r.score - minScore) / range,
-          rankingMetadata: r.metadata
-        }));
-      }
+    } else {
+      normalizedResults = [];
     }
-    return sorted.map((r) => ({
-      ...r.result,
-      score: r.score,
-      rankingMetadata: r.metadata
-    }));
+    if (threshold !== void 0) {
+      return normalizedResults.filter((r) => r.score >= threshold);
+    }
+    return normalizedResults;
   }
   async searchAllStores(query, storeIds) {
     return this.search({
@@ -4016,18 +4053,11 @@ var LanceStore = class {
     const idList = documentIds.map((id) => `"${id}"`).join(", ");
     await table.delete(`id IN (${idList})`);
   }
-  async search(storeId, vector, limit, threshold) {
+  async search(storeId, vector, limit, _threshold) {
     const table = await this.getTable(storeId);
-    let query = table.vectorSearch(vector).limit(limit);
-    if (threshold !== void 0) {
-      query = query.distanceType("cosine");
-    }
+    const query = table.vectorSearch(vector).limit(limit).distanceType("cosine");
     const results = await query.toArray();
-    return results.filter((r) => {
-      if (threshold === void 0) return true;
-      const score = 1 - r._distance;
-      return score >= threshold;
-    }).map((r) => ({
+    return results.map((r) => ({
       id: createDocumentId(r.id),
       content: r.content,
       score: 1 - r._distance,
@@ -4160,4 +4190,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-WFNPNAAP.js.map
+//# sourceMappingURL=chunk-CGDEV2RC.js.map

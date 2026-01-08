@@ -1783,3 +1783,212 @@ describe('SearchService - Code Graph Integration', () => {
     expect(results.results[0]?.full?.relatedCode?.length).toBe(10);
   });
 });
+
+describe('SearchService - Threshold Filtering', () => {
+  let mockLanceStore: LanceStore;
+  let mockEmbeddingEngine: EmbeddingEngine;
+  let searchService: SearchService;
+  const storeId = createStoreId('test-store');
+
+  beforeEach(() => {
+    mockLanceStore = {
+      search: vi.fn(),
+      fullTextSearch: vi.fn(),
+    } as unknown as LanceStore;
+
+    mockEmbeddingEngine = {
+      embed: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
+    } as unknown as EmbeddingEngine;
+
+    searchService = new SearchService(mockLanceStore, mockEmbeddingEngine);
+  });
+
+  it('applies threshold to normalized scores, not raw scores', async () => {
+    // Setup: 3 results with different raw scores
+    // In hybrid mode with RRF, ranks matter more than raw scores
+    // doc1 appears in both vector and FTS -> highest RRF score -> normalized to 1.0
+    // doc2 appears only in vector -> middle RRF score -> normalized to ~0.5
+    // doc3 appears only in vector, lowest rank -> lowest RRF score -> normalized to 0.0
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.7,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc3'),
+        score: 0.5,
+        content: 'result 3',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    // Add doc1 and doc2 to FTS results so they both have good RRF scores
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.7,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+
+    // With threshold 0.4, doc1 (1.0) and doc2 (~0.47) should pass
+    // doc3 (0.0) should be filtered out
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+      threshold: 0.4,
+    });
+
+    // Should return 2 results: scores >= 0.4 (normalized)
+    expect(results.results.length).toBe(2);
+    expect(results.results[0]?.id).toBe(createDocumentId('doc1'));
+    expect(results.results[1]?.id).toBe(createDocumentId('doc2'));
+
+    // Verify normalized scores
+    expect(results.results[0]?.score).toBe(1.0);
+    expect(results.results[1]?.score).toBeGreaterThanOrEqual(0.4);
+
+    // Verify doc3 was filtered out (its normalized score is 0.0)
+    expect(results.results.find((r) => r.id === createDocumentId('doc3'))).toBeUndefined();
+  });
+
+  it('returns all results when threshold is 0', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.1,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+      threshold: 0,
+    });
+
+    // All results should be returned (scores >= 0)
+    expect(results.results.length).toBe(2);
+  });
+
+  it('returns no results when threshold is higher than all scores', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.8,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    // Threshold > 1.0 means no results pass
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+      threshold: 1.1,
+    });
+
+    expect(results.results.length).toBe(0);
+  });
+
+  it('applies threshold in vector mode after score calculation', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.3,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'vector',
+      limit: 10,
+      threshold: 0.5,
+    });
+
+    // Only doc1 should pass (normalized score 1.0 >= 0.5)
+    // doc2 has normalized score 0.0 which is < 0.5
+    expect(results.results.length).toBe(1);
+    expect(results.results[0]?.id).toBe(createDocumentId('doc1'));
+  });
+
+  it('maintains correct result count metadata after threshold filtering', async () => {
+    vi.mocked(mockLanceStore.search).mockResolvedValue([
+      {
+        id: createDocumentId('doc1'),
+        score: 0.9,
+        content: 'result 1',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc2'),
+        score: 0.5,
+        content: 'result 2',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+      {
+        id: createDocumentId('doc3'),
+        score: 0.1,
+        content: 'result 3',
+        metadata: { type: 'file' as const, storeId, indexedAt: new Date() },
+      },
+    ]);
+    vi.mocked(mockLanceStore.fullTextSearch).mockResolvedValue([]);
+
+    const results = await searchService.search({
+      query: 'test query',
+      stores: [storeId],
+      mode: 'hybrid',
+      limit: 10,
+      threshold: 0.5,
+    });
+
+    // Check response metadata
+    expect(results.totalResults).toBe(results.results.length);
+    expect(results.query).toBe('test query');
+  });
+});
