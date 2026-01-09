@@ -29,10 +29,15 @@ async def fetch_headless(url: str):
         if not result.success:
             raise Exception(f"Crawl failed: {result.error_message}")
 
+        # Combine internal and external links - let TypeScript filter by domain
+        all_links = []
+        if isinstance(result.links, dict):
+            all_links = result.links.get("internal", []) + result.links.get("external", [])
+
         return {
             "html": result.html or '',
             "markdown": result.markdown or result.cleaned_html or '',
-            "links": result.links.get("internal", []) if isinstance(result.links, dict) else []
+            "links": all_links
         }
 
 def is_exported(node: ast.AST) -> bool:

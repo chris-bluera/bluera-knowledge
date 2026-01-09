@@ -1,6 +1,6 @@
 {
   "name": "bluera-knowledge",
-  "version": "0.9.43",
+  "version": "0.9.44",
   "description": "CLI tool for managing knowledge stores with semantic search",
   "type": "module",
   "bin": {

@@ -81,7 +81,11 @@ describe('ClaudeClient', () => {
 
   describe('determineCrawlUrls', () => {
     it('should successfully parse valid crawl strategy response', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all docs');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all docs'
+      );
 
       // Simulate successful response
       setTimeout(() => {
@@ -103,7 +107,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should call spawn with correct arguments for determineCrawlUrls', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all docs');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all docs'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -136,7 +144,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should write prompt to stdin', async () => {
-      const promise = client.determineCrawlUrls('<html><body>Test</body></html>', 'Find tutorials');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html><body>Test</body></html>',
+        'Find tutorials'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -160,7 +172,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should reject when response has no urls array', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -178,7 +194,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should reject when response has empty urls array', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -197,7 +217,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should reject when response has no reasoning', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -215,7 +239,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should reject when urls contains non-string values', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -234,7 +262,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should reject when response is not valid JSON', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('Not valid JSON'));
@@ -245,7 +277,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should reject when response is null', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('null'));
@@ -257,7 +293,7 @@ describe('ClaudeClient', () => {
 
     it('should truncate HTML longer than 50000 characters', async () => {
       const longHtml = '<html>' + 'a'.repeat(60000) + '</html>';
-      const promise = client.determineCrawlUrls(longHtml, 'Find all');
+      const promise = client.determineCrawlUrls('https://example.com', longHtml, 'Find all');
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -281,7 +317,7 @@ describe('ClaudeClient', () => {
 
     it('should not truncate HTML shorter than 50000 characters', async () => {
       const shortHtml = '<html><body>Short content</body></html>';
-      const promise = client.determineCrawlUrls(shortHtml, 'Find all');
+      const promise = client.determineCrawlUrls('https://example.com', shortHtml, 'Find all');
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -301,6 +337,33 @@ describe('ClaudeClient', () => {
       const writtenPrompt = vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string;
       expect(writtenPrompt).toContain(shortHtml);
       expect(writtenPrompt).not.toContain('[... HTML truncated ...]');
+    });
+
+    it('should include seedUrl in prompt for relative URL resolution', async () => {
+      const promise = client.determineCrawlUrls(
+        'https://code.claude.com/docs',
+        '<html><a href="/docs/en/hooks">Hooks</a></html>',
+        'Find all docs'
+      );
+
+      setTimeout(() => {
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              urls: ['https://code.claude.com/docs/en/hooks'],
+              reasoning: 'Found hooks documentation',
+            })
+          )
+        );
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await promise;
+
+      const writtenPrompt = vi.mocked(mockProcess.stdin.write).mock.calls[0]?.[0] as string;
+      expect(writtenPrompt).toContain('Base URL: https://code.claude.com/docs');
+      expect(writtenPrompt).toContain('resolve them against the Base URL');
     });
   });
 
@@ -386,7 +449,11 @@ describe('ClaudeClient', () => {
 
   describe('Subprocess Management', () => {
     it('should handle process spawn errors', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.emit('error', new Error('spawn ENOENT'));
@@ -410,7 +477,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should collect stderr data', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stderr.emit('data', Buffer.from('Error message 1\n'));
@@ -466,14 +537,22 @@ describe('ClaudeClient', () => {
 
   describe('Timeout Handling', () => {
     it('should timeout after configured timeout period', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       // Don't emit close event - let it timeout
       await expect(promise).rejects.toThrow('timed out after 100ms');
     });
 
     it('should kill process on timeout', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       await expect(promise).rejects.toThrow('timed out');
       expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
@@ -540,7 +619,11 @@ describe('ClaudeClient', () => {
 
   describe('JSON Parsing', () => {
     it('should handle malformed JSON in response', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('{ invalid json }'));
@@ -551,7 +634,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should handle incomplete JSON in response', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('{"urls": ["https://example.com"'));
@@ -562,7 +649,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should handle JSON with extra whitespace', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -582,7 +673,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should handle JSON arrays as invalid for determineCrawlUrls', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('[]'));
@@ -593,7 +688,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should handle JSON primitives as invalid for determineCrawlUrls', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('"string response"'));
@@ -606,7 +705,11 @@ describe('ClaudeClient', () => {
 
   describe('Response Validation', () => {
     it('should validate urls is an array', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -625,7 +728,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should validate reasoning is a string', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -644,7 +751,11 @@ describe('ClaudeClient', () => {
     });
 
     it('should accept valid response with multiple URLs', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.stdout.emit(
@@ -671,7 +782,11 @@ describe('ClaudeClient', () => {
 
   describe('Error Messages', () => {
     it('should wrap errors with context for determineCrawlUrls', async () => {
-      const promise = client.determineCrawlUrls('<html>test</html>', 'Find all');
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all'
+      );
 
       setTimeout(() => {
         mockProcess.emit('close', 1);

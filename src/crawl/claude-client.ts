@@ -69,19 +69,28 @@ export class ClaudeClient {
   /**
    * Determine which URLs to crawl based on natural language instruction
    *
+   * @param seedUrl - The URL of the seed page (for resolving relative URLs)
    * @param seedHtml - HTML content of the seed page
    * @param instruction - Natural language crawl instruction (e.g., "scrape all Getting Started pages")
    * @returns List of URLs to crawl with reasoning
    */
-  async determineCrawlUrls(seedHtml: string, instruction: string): Promise<CrawlStrategy> {
+  async determineCrawlUrls(
+    seedUrl: string,
+    seedHtml: string,
+    instruction: string
+  ): Promise<CrawlStrategy> {
     const prompt = `You are analyzing a webpage to determine which pages to crawl based on the user's instruction.
+
+Base URL: ${seedUrl}
 
 Instruction: ${instruction}
 
 Webpage HTML (analyze the navigation structure, links, and content):
 ${this.truncateHtml(seedHtml, 50000)}
 
-Based on the instruction, extract and return a list of absolute URLs that should be crawled. Look for navigation menus, sidebars, headers, and link structures that match the instruction.
+Based on the instruction, extract and return a list of absolute URLs that should be crawled. When you encounter relative URLs (starting with "/" or without a protocol), resolve them against the Base URL. For example, if Base URL is "https://example.com/docs" and you see href="/docs/hooks", return "https://example.com/docs/hooks".
+
+Look for navigation menus, sidebars, headers, and link structures that match the instruction.
 
 Return only URLs that are relevant to the instruction. If the instruction mentions specific sections (e.g., "Getting Started"), find links in those sections.`;
 

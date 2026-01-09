@@ -270,19 +270,24 @@ var ClaudeClient = class _ClaudeClient {
   /**
    * Determine which URLs to crawl based on natural language instruction
    *
+   * @param seedUrl - The URL of the seed page (for resolving relative URLs)
    * @param seedHtml - HTML content of the seed page
    * @param instruction - Natural language crawl instruction (e.g., "scrape all Getting Started pages")
    * @returns List of URLs to crawl with reasoning
    */
-  async determineCrawlUrls(seedHtml, instruction) {
+  async determineCrawlUrls(seedUrl, seedHtml, instruction) {
     const prompt = `You are analyzing a webpage to determine which pages to crawl based on the user's instruction.
+
+Base URL: ${seedUrl}
 
 Instruction: ${instruction}
 
 Webpage HTML (analyze the navigation structure, links, and content):
 ${this.truncateHtml(seedHtml, 5e4)}
 
-Based on the instruction, extract and return a list of absolute URLs that should be crawled. Look for navigation menus, sidebars, headers, and link structures that match the instruction.
+Based on the instruction, extract and return a list of absolute URLs that should be crawled. When you encounter relative URLs (starting with "/" or without a protocol), resolve them against the Base URL. For example, if Base URL is "https://example.com/docs" and you see href="/docs/hooks", return "https://example.com/docs/hooks".
+
+Look for navigation menus, sidebars, headers, and link structures that match the instruction.
 
 Return only URLs that are relevant to the instruction. If the instruction mentions specific sections (e.g., "Getting Started"), find links in those sections.`;
     try {
@@ -450,6 +455,16 @@ var IntelligentCrawler = class extends EventEmitter {
       },
       "Crawl complete"
     );
+    if (this.visited.size === 1 && maxPages > 1) {
+      const warningProgress = {
+        type: "error",
+        pagesVisited: this.visited.size,
+        totalPages: maxPages,
+        message: `Warning: Only crawled 1 page despite maxPages=${String(maxPages)}. Link discovery may have failed. Try --headless for JavaScript-heavy sites.`,
+        error: new Error("Low page discovery")
+      };
+      this.emit("progress", warningProgress);
+    }
     const completeProgress = {
       type: "complete",
       pagesVisited: this.visited.size,
@@ -484,7 +499,7 @@ var IntelligentCrawler = class extends EventEmitter {
       };
       this.emit("progress", strategyStartProgress);
       const seedHtml = await this.fetchHtml(seedUrl, useHeadless);
-      strategy = await this.claudeClient.determineCrawlUrls(seedHtml, crawlInstruction);
+      strategy = await this.claudeClient.determineCrawlUrls(seedUrl, seedHtml, crawlInstruction);
       const strategyCompleteProgress = {
         type: "strategy",
         pagesVisited: 0,
@@ -765,4 +780,4 @@ var IntelligentCrawler = class extends EventEmitter {
 export {
   IntelligentCrawler
 };
-//# sourceMappingURL=chunk-MQE32YY6.js.map
+//# sourceMappingURL=chunk-54RTBE4V.js.map

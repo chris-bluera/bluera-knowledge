@@ -109,6 +109,18 @@ export class IntelligentCrawler extends EventEmitter {
       'Crawl complete'
     );
 
+    // Warn if crawl discovered far fewer pages than requested
+    if (this.visited.size === 1 && maxPages > 1) {
+      const warningProgress: CrawlProgress = {
+        type: 'error',
+        pagesVisited: this.visited.size,
+        totalPages: maxPages,
+        message: `Warning: Only crawled 1 page despite maxPages=${String(maxPages)}. Link discovery may have failed. Try --headless for JavaScript-heavy sites.`,
+        error: new Error('Low page discovery'),
+      };
+      this.emit('progress', warningProgress);
+    }
+
     const completeProgress: CrawlProgress = {
       type: 'complete',
       pagesVisited: this.visited.size,
@@ -157,8 +169,8 @@ export class IntelligentCrawler extends EventEmitter {
 
       const seedHtml = await this.fetchHtml(seedUrl, useHeadless);
 
-      // Step 2: Ask Claude which URLs to crawl
-      strategy = await this.claudeClient.determineCrawlUrls(seedHtml, crawlInstruction);
+      // Step 2: Ask Claude which URLs to crawl (pass seedUrl for relative URL resolution)
+      strategy = await this.claudeClient.determineCrawlUrls(seedUrl, seedHtml, crawlInstruction);
 
       const strategyCompleteProgress: CrawlProgress = {
         type: 'strategy',

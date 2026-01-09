@@ -971,4 +971,69 @@ describe('IntelligentCrawler', () => {
       expect(mockClaudeClient.extractContent).not.toHaveBeenCalled();
     });
   });
+
+  describe('Single-Page Crawl Warning', () => {
+    it('should emit warning when only 1 page crawled with maxPages > 1', async () => {
+      // Mock no links found - single page crawl
+      mockPythonBridge.crawl.mockResolvedValue({ pages: [{ links: [] }] });
+
+      const results = [];
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 50,
+      })) {
+        results.push(result);
+      }
+
+      expect(results).toHaveLength(1);
+      const warningEvents = progressEvents.filter(
+        (e) => e.type === 'error' && e.message?.includes('Only crawled 1 page')
+      );
+      expect(warningEvents).toHaveLength(1);
+      expect(warningEvents[0]?.message).toContain('--headless');
+      expect(warningEvents[0]?.message).toContain('maxPages=50');
+    });
+
+    it('should NOT emit warning when maxPages is 1', async () => {
+      mockPythonBridge.crawl.mockResolvedValue({ pages: [{ links: [] }] });
+
+      const results = [];
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 1,
+      })) {
+        results.push(result);
+      }
+
+      expect(results).toHaveLength(1);
+      const warningEvents = progressEvents.filter(
+        (e) => e.type === 'error' && e.message?.includes('Only crawled 1 page')
+      );
+      expect(warningEvents).toHaveLength(0);
+    });
+
+    it('should NOT emit warning when multiple pages crawled', async () => {
+      mockPythonBridge.crawl
+        .mockResolvedValueOnce({ pages: [{ links: ['https://example.com/page2'] }] })
+        .mockResolvedValueOnce({ pages: [{ links: [] }] });
+
+      vi.mocked(axios.get)
+        .mockResolvedValueOnce({ data: '<html><body>Page1</body></html>' })
+        .mockResolvedValueOnce({ data: '<html><body>Page2</body></html>' });
+
+      const results = [];
+      for await (const result of crawler.crawl('https://example.com', {
+        simple: true,
+        maxPages: 50,
+      })) {
+        results.push(result);
+      }
+
+      expect(results).toHaveLength(2);
+      const warningEvents = progressEvents.filter(
+        (e) => e.type === 'error' && e.message?.includes('Only crawled 1 page')
+      );
+      expect(warningEvents).toHaveLength(0);
+    });
+  });
 });
