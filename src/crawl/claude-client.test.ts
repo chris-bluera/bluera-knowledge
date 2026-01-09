@@ -137,6 +137,31 @@ describe('ClaudeClient', () => {
       expect(result.reasoning).toBe('Found documentation pages');
     });
 
+    it('should fall back to raw response when structured_output is not an object', async () => {
+      const promise = client.determineCrawlUrls(
+        'https://example.com',
+        '<html>test</html>',
+        'Find all docs'
+      );
+
+      // When structured_output is not an object, use the raw response
+      // (which will fail validation if it doesn't have urls/reasoning)
+      setTimeout(() => {
+        mockProcess.stdout.emit(
+          'data',
+          Buffer.from(
+            JSON.stringify({
+              type: 'result',
+              structured_output: 'not an object',
+            })
+          )
+        );
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await expect(promise).rejects.toThrow('invalid crawl strategy');
+    });
+
     it('should call spawn with correct arguments for determineCrawlUrls', async () => {
       const promise = client.determineCrawlUrls(
         'https://example.com',
