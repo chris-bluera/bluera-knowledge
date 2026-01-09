@@ -4185,7 +4185,7 @@ var LanceStore = class {
     if (this.connection !== null) {
       this.connection.close();
       this.connection = null;
-      await new Promise((resolve3) => setTimeout(resolve3, 100));
+      await new Promise((resolve3) => setTimeout(resolve3, 200));
     }
   }
   getTableName(storeId) {
@@ -4246,6 +4246,7 @@ async function destroyServices(services) {
   } catch (e) {
     logger4.error({ error: e }, "Error stopping Python bridge");
   }
+  await new Promise((resolve3) => setTimeout(resolve3, 100));
   await shutdownLogger();
 }
 
@@ -4266,4 +4267,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-HUEWT6U5.js.map
+//# sourceMappingURL=chunk-DWAIT2OD.js.map

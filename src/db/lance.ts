@@ -162,7 +162,8 @@ export class LanceStore {
       this.connection = null;
       // Allow native threads time to complete cleanup
       // LanceDB's native code has background threads that need time
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Increased from 100ms to 200ms for more reliable cleanup
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
 

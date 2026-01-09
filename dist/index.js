@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import {
   runMCPServer
-} from "./chunk-TIGPI3BE.js";
+} from "./chunk-CUHYSPRV.js";
 import {
   IntelligentCrawler
-} from "./chunk-IZWOEBFM.js";
+} from "./chunk-MQE32YY6.js";
 import {
   ASTParser,
   ChunkingService,
@@ -16,7 +16,7 @@ import {
   err,
   extractRepoName,
   ok
-} from "./chunk-HUEWT6U5.js";
+} from "./chunk-DWAIT2OD.js";
 import "./chunk-6FHWC36B.js";
 
 // src/index.ts
@@ -1018,10 +1018,33 @@ Search: "${query}"`);
                   console.log(`   ${r.summary.location}`);
                   console.log(`   ${r.summary.purpose}`);
                   if (r.context && options.detail !== "minimal") {
-                    console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(", ")}`);
-                    console.log(
-                      `   Related: ${r.context.relatedConcepts.slice(0, 3).join(", ")}`
-                    );
+                    if (r.context.keyImports.length > 0) {
+                      console.log(`   Imports: ${r.context.keyImports.slice(0, 3).join(", ")}`);
+                    }
+                    if (r.context.relatedConcepts.length > 0) {
+                      console.log(
+                        `   Related: ${r.context.relatedConcepts.slice(0, 3).join(", ")}`
+                      );
+                    }
+                    const { calledBy, calls } = r.context.usage;
+                    if (calledBy > 0 || calls > 0) {
+                      console.log(
+                        `   Usage: Called by ${String(calledBy)} | Calls ${String(calls)}`
+                      );
+                    }
+                  }
+                  if (r.full && options.detail === "full") {
+                    if (r.full.completeCode) {
+                      console.log(`   ---`);
+                      const codeLines = r.full.completeCode.split("\n");
+                      console.log(`   ${codeLines.slice(0, 10).join("\n   ")}`);
+                      if (codeLines.length > 10) {
+                        console.log(`   ... (truncated)`);
+                      }
+                    }
+                    if (r.full.documentation) {
+                      console.log(`   Doc: ${r.full.documentation.slice(0, 100)}`);
+                    }
                   }
                   console.log();
                 } else {
@@ -1039,7 +1062,7 @@ Search: "${query}"`);
         await destroyServices(services);
       }
       if (exitCode !== 0) {
-        process.exit(exitCode);
+        process.exitCode = exitCode;
       }
     }
   );

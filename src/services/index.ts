@@ -87,5 +87,8 @@ export async function destroyServices(services: ServiceContainer): Promise<void>
   } catch (e) {
     logger.error({ error: e }, 'Error stopping Python bridge');
   }
+  // Additional delay to allow native threads (LanceDB, tree-sitter, transformers)
+  // to fully complete their cleanup before process exit
+  await new Promise((resolve) => setTimeout(resolve, 100));
   await shutdownLogger();
 }
