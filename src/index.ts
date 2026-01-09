@@ -3,6 +3,8 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { Command } from 'commander';
+import { AdapterRegistry } from './analysis/adapter-registry.js';
+import { ZilAdapter } from './analysis/zil/index.js';
 import { createCrawlCommand } from './cli/commands/crawl.js';
 import { createIndexCommand } from './cli/commands/index-cmd.js';
 import { createMCPCommand } from './cli/commands/mcp.js';
@@ -18,6 +20,10 @@ import { createSetupCommand } from './cli/commands/setup.js';
 import { createStoreCommand } from './cli/commands/store.js';
 import { createSyncCommand } from './cli/commands/sync.js';
 import { createProgram, getGlobalOptions } from './cli/program.js';
+
+// Register built-in language adapters
+const registry = AdapterRegistry.getInstance();
+registry.register(new ZilAdapter());
 
 // Default paths
 const DEFAULT_DATA_DIR = join(homedir(), '.bluera', 'bluera-knowledge', 'data');

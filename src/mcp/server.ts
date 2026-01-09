@@ -1,14 +1,22 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { AdapterRegistry } from '../analysis/adapter-registry.js';
+import { ZilAdapter } from '../analysis/zil/index.js';
+import { createLogger } from '../logging/index.js';
 import { createServices } from '../services/index.js';
 import { handleExecute } from './handlers/execute.handler.js';
 import { tools } from './handlers/index.js';
 import { ExecuteArgsSchema } from './schemas/index.js';
-import { createLogger } from '../logging/index.js';
 import type { MCPServerOptions } from './types.js';
 
 const logger = createLogger('mcp-server');
+
+// Register built-in language adapters
+const registry = AdapterRegistry.getInstance();
+if (!registry.hasExtension('.zil')) {
+  registry.register(new ZilAdapter());
+}
 
 // eslint-disable-next-line @typescript-eslint/no-deprecated
 export function createMCPServer(options: MCPServerOptions): Server {

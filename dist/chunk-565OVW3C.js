@@ -1,16 +1,638 @@
 import {
+  AdapterRegistry,
   JobService,
   ProjectRootService,
   createLogger,
   createServices,
   createStoreId,
   summarizePayload
-} from "./chunk-UE4ZIJYA.js";
+} from "./chunk-TRDMYKGC.js";
 
 // src/mcp/server.ts
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+
+// src/analysis/zil/zil-lexer.ts
+var ZilLexer = class {
+  input = "";
+  pos = 0;
+  line = 1;
+  column = 1;
+  tokens = [];
+  /**
+   * Tokenize ZIL source code
+   *
+   * @param input - Source code string
+   * @returns Array of tokens
+   * @throws On unterminated strings
+   */
+  tokenize(input) {
+    this.input = input;
+    this.pos = 0;
+    this.line = 1;
+    this.column = 1;
+    this.tokens = [];
+    while (!this.isAtEnd()) {
+      this.scanToken();
+    }
+    return this.tokens;
+  }
+  isAtEnd() {
+    return this.pos >= this.input.length;
+  }
+  peek() {
+    if (this.isAtEnd()) return "\0";
+    return this.input[this.pos] ?? "\0";
+  }
+  advance() {
+    const char = this.input[this.pos] ?? "\0";
+    this.pos++;
+    if (char === "\n") {
+      this.line++;
+      this.column = 1;
+    } else {
+      this.column++;
+    }
+    return char;
+  }
+  addToken(type, value, startLine, startColumn) {
+    this.tokens.push({
+      type,
+      value,
+      line: startLine,
+      column: startColumn
+    });
+  }
+  scanToken() {
+    const startLine = this.line;
+    const startColumn = this.column;
+    const char = this.advance();
+    switch (char) {
+      case "<":
+        this.addToken("LANGLE" /* LANGLE */, "<", startLine, startColumn);
+        break;
+      case ">":
+        this.addToken("RANGLE" /* RANGLE */, ">", startLine, startColumn);
+        break;
+      case "(":
+        this.addToken("LPAREN" /* LPAREN */, "(", startLine, startColumn);
+        break;
+      case ")":
+        this.addToken("RPAREN" /* RPAREN */, ")", startLine, startColumn);
+        break;
+      case '"':
+        this.scanString(startLine, startColumn);
+        break;
+      case ";":
+        this.skipComment();
+        break;
+      case " ":
+      case "	":
+      case "\r":
+      case "\n":
+        break;
+      default:
+        if (this.isDigit(char) || char === "-" && this.isDigit(this.peek())) {
+          this.scanNumber(char, startLine, startColumn);
+        } else if (this.isAtomStart(char)) {
+          this.scanAtom(char, startLine, startColumn);
+        }
+        break;
+    }
+  }
+  scanString(startLine, startColumn) {
+    let value = "";
+    while (!this.isAtEnd() && this.peek() !== '"') {
+      const char = this.peek();
+      if (char === "\\") {
+        this.advance();
+        const escaped = this.advance();
+        switch (escaped) {
+          case '"':
+            value += '"';
+            break;
+          case "\\":
+            value += "\\";
+            break;
+          case "n":
+            value += "\n";
+            break;
+          case "t":
+            value += "	";
+            break;
+          default:
+            value += escaped;
+            break;
+        }
+      } else {
+        value += this.advance();
+      }
+    }
+    if (this.isAtEnd()) {
+      throw new Error(
+        `Unterminated string at line ${String(startLine)}, column ${String(startColumn)}`
+      );
+    }
+    this.advance();
+    this.addToken("STRING" /* STRING */, value, startLine, startColumn);
+  }
+  scanNumber(firstChar, startLine, startColumn) {
+    let value = firstChar;
+    while (this.isDigit(this.peek())) {
+      value += this.advance();
+    }
+    this.addToken("NUMBER" /* NUMBER */, value, startLine, startColumn);
+  }
+  scanAtom(firstChar, startLine, startColumn) {
+    let value = firstChar;
+    while (this.isAtomChar(this.peek())) {
+      value += this.advance();
+    }
+    this.addToken("ATOM" /* ATOM */, value, startLine, startColumn);
+  }
+  skipComment() {
+    while (!this.isAtEnd() && this.peek() !== "\n") {
+      this.advance();
+    }
+  }
+  isDigit(char) {
+    return char >= "0" && char <= "9";
+  }
+  isAtomStart(char) {
+    return char >= "A" && char <= "Z" || char >= "a" && char <= "z" || char === "_" || char === "," || // Global reference prefix
+    char === "." || // Local reference prefix
+    char === "%" || // Sometimes used in ZIL
+    char === "#";
+  }
+  isAtomChar(char) {
+    return char >= "A" && char <= "Z" || char >= "a" && char <= "z" || char >= "0" && char <= "9" || char === "_" || char === "-" || char === "?" || char === "!" || char === "," || char === "." || char === "%" || char === "#";
+  }
+};
+
+// src/analysis/zil/zil-special-forms.ts
+var ZIL_SPECIAL_FORMS = /* @__PURE__ */ new Set([
+  // Conditionals
+  "COND",
+  "AND",
+  "OR",
+  "NOT",
+  "IF",
+  "ELSE",
+  // Assignment
+  "SET",
+  "SETG",
+  "BIND",
+  "PROG",
+  // Loops
+  "REPEAT",
+  "DO",
+  "MAP",
+  "MAPF",
+  "MAPR",
+  "MAPRET",
+  "MAPLEAVE",
+  // Output
+  "TELL",
+  "PRINT",
+  "PRINTN",
+  "PRINTD",
+  "PRINTC",
+  "PRINTR",
+  "CRLF",
+  // Control flow
+  "RETURN",
+  "AGAIN",
+  "RTRUE",
+  "RFALSE",
+  "QUIT",
+  // Predicates (end with ?)
+  "EQUAL?",
+  "ZERO?",
+  "LESS?",
+  "GRTR?",
+  "FSET?",
+  "IN?",
+  "VERB?",
+  "PRSO?",
+  "PRSI?",
+  "HELD?",
+  "HERE?",
+  "ACCESSIBLE?",
+  "VISIBLE?",
+  "FIRST?",
+  "NEXT?",
+  "PROB?",
+  "RANDOM",
+  // Property/flag manipulation
+  "FSET",
+  "FCLEAR",
+  "GETP",
+  "PUTP",
+  "GETPT",
+  "PTSIZE",
+  // Object manipulation
+  "MOVE",
+  "REMOVE",
+  "LOC",
+  "FIRST",
+  "NEXT",
+  // Arithmetic
+  "ADD",
+  "SUB",
+  "MUL",
+  "DIV",
+  "MOD",
+  "BAND",
+  "BOR",
+  "BCOM",
+  "LSH",
+  // Table operations
+  "GET",
+  "PUT",
+  "GETB",
+  "PUTB",
+  "TABLE",
+  "ITABLE",
+  "LTABLE",
+  "PTABLE",
+  // Stack operations
+  "PUSH",
+  "POP",
+  "FSTACK",
+  // Input
+  "READ",
+  "INPUT",
+  "READLINE",
+  // Definition forms (handled separately for symbol extraction)
+  "ROUTINE",
+  "OBJECT",
+  "ROOM",
+  "GLOBAL",
+  "CONSTANT",
+  "SYNTAX",
+  "INSERT-FILE",
+  // Misc builtins
+  "VERSION?",
+  "ASCII",
+  "USL",
+  "APPLY",
+  "EVAL",
+  "FORM",
+  "REST",
+  "LENGTH",
+  "NTH",
+  "ZGET",
+  "ZPUT",
+  "ZWSTR",
+  "DIROUT",
+  "DIRIN",
+  "BUFOUT",
+  "HLIGHT",
+  "COLOR",
+  "FONT",
+  "SPLIT",
+  "SCREEN",
+  "WINGET",
+  "WINPUT",
+  "WINATTR",
+  "PICINF",
+  "DISPLAY",
+  "DCLEAR",
+  "SOUND",
+  "INTBL?",
+  "CATCH",
+  "THROW",
+  "LEGAL?",
+  "COPYT",
+  "VALUE",
+  "GASSIGNED?",
+  "ASSIGNED?",
+  "DEFINE",
+  "DEFMAC"
+]);
+function isSpecialForm(name) {
+  return ZIL_SPECIAL_FORMS.has(name.toUpperCase());
+}
+var ZIL_DEFINITION_FORMS = /* @__PURE__ */ new Set([
+  "ROUTINE",
+  "OBJECT",
+  "ROOM",
+  "GLOBAL",
+  "CONSTANT",
+  "SYNTAX",
+  "VERB",
+  "DEFINE",
+  "DEFMAC"
+]);
+function isDefinitionForm(name) {
+  return ZIL_DEFINITION_FORMS.has(name.toUpperCase());
+}
+
+// src/analysis/zil/zil-parser.ts
+var ZilParser = class {
+  lexer = new ZilLexer();
+  tokens = [];
+  pos = 0;
+  /**
+   * Parse ZIL source code
+   */
+  parse(input) {
+    this.tokens = this.lexer.tokenize(input);
+    this.pos = 0;
+    const forms = [];
+    const symbols = [];
+    const imports = [];
+    const calls = [];
+    while (!this.isAtEnd()) {
+      if (this.check("LANGLE" /* LANGLE */)) {
+        const form = this.parseForm();
+        if (form !== void 0) {
+          forms.push(form);
+          const symbol = this.extractSymbol(form);
+          if (symbol !== void 0) {
+            symbols.push(symbol);
+          }
+          const imp = this.extractImport(form);
+          if (imp !== void 0) {
+            imports.push(imp);
+          }
+          if (form.head.toUpperCase() === "ROUTINE") {
+            const routineName = this.getRoutineName(form);
+            if (routineName !== void 0) {
+              this.extractCalls(form, routineName, calls);
+            }
+          }
+        }
+      } else {
+        this.advance();
+      }
+    }
+    return { forms, symbols, imports, calls };
+  }
+  isAtEnd() {
+    return this.pos >= this.tokens.length;
+  }
+  peek() {
+    return this.tokens[this.pos];
+  }
+  check(type) {
+    if (this.isAtEnd()) return false;
+    return this.peek()?.type === type;
+  }
+  advance() {
+    if (!this.isAtEnd()) {
+      const token = this.tokens[this.pos];
+      this.pos++;
+      return token;
+    }
+    return void 0;
+  }
+  parseForm() {
+    if (!this.check("LANGLE" /* LANGLE */)) return void 0;
+    const startToken = this.advance();
+    const startLine = startToken?.line ?? 1;
+    let endLine = startLine;
+    let head = "";
+    if (this.check("ATOM" /* ATOM */)) {
+      head = this.advance()?.value ?? "";
+    }
+    const children = [];
+    while (!this.isAtEnd() && !this.check("RANGLE" /* RANGLE */)) {
+      const child = this.parseNode();
+      if (child !== void 0) {
+        children.push(child);
+        endLine = this.getNodeEndLine(child);
+      } else {
+        this.advance();
+      }
+    }
+    if (this.check("RANGLE" /* RANGLE */)) {
+      const closeToken = this.advance();
+      endLine = closeToken?.line ?? endLine;
+    }
+    return { head, children, startLine, endLine };
+  }
+  parseGroup() {
+    if (!this.check("LPAREN" /* LPAREN */)) return void 0;
+    const startToken = this.advance();
+    const startLine = startToken?.line ?? 1;
+    let endLine = startLine;
+    const children = [];
+    while (!this.isAtEnd() && !this.check("RPAREN" /* RPAREN */)) {
+      const child = this.parseNode();
+      if (child !== void 0) {
+        children.push(child);
+        endLine = this.getNodeEndLine(child);
+      } else {
+        this.advance();
+      }
+    }
+    if (this.check("RPAREN" /* RPAREN */)) {
+      const closeToken = this.advance();
+      endLine = closeToken?.line ?? endLine;
+    }
+    return { type: "group", children, startLine, endLine };
+  }
+  parseNode() {
+    const token = this.peek();
+    if (token === void 0) return void 0;
+    switch (token.type) {
+      case "LANGLE" /* LANGLE */:
+        return this.parseForm();
+      case "LPAREN" /* LPAREN */:
+        return this.parseGroup();
+      case "ATOM" /* ATOM */:
+        this.advance();
+        return { type: "atom", value: token.value, line: token.line };
+      case "STRING" /* STRING */:
+        this.advance();
+        return { type: "string", value: token.value, line: token.line };
+      case "NUMBER" /* NUMBER */:
+        this.advance();
+        return { type: "number", value: token.value, line: token.line };
+      default:
+        return void 0;
+    }
+  }
+  getNodeEndLine(node) {
+    if ("endLine" in node) {
+      return node.endLine;
+    }
+    return node.line;
+  }
+  extractSymbol(form) {
+    const headUpper = form.head.toUpperCase();
+    if (!isDefinitionForm(headUpper)) {
+      return void 0;
+    }
+    const nameNode = form.children.find((c) => "type" in c && c.type === "atom");
+    if (nameNode === void 0) {
+      return void 0;
+    }
+    const kindMap = {
+      ROUTINE: "routine",
+      OBJECT: "object",
+      ROOM: "room",
+      GLOBAL: "global",
+      CONSTANT: "constant",
+      SYNTAX: "syntax",
+      VERB: "verb",
+      DEFINE: "routine",
+      DEFMAC: "routine"
+    };
+    const kind = kindMap[headUpper];
+    if (kind === void 0) {
+      return void 0;
+    }
+    const result = {
+      name: nameNode.value,
+      kind,
+      startLine: form.startLine,
+      endLine: form.endLine
+    };
+    if (headUpper === "ROUTINE" || headUpper === "DEFINE" || headUpper === "DEFMAC") {
+      result.signature = this.extractRoutineSignature(form, nameNode.value);
+    }
+    return result;
+  }
+  extractRoutineSignature(form, name) {
+    const argsGroup = form.children.find((c) => "type" in c && c.type === "group");
+    if (argsGroup === void 0) {
+      return `ROUTINE ${name} ()`;
+    }
+    const args = argsGroup.children.filter((c) => "type" in c && c.type === "atom").map((c) => c.value).join(" ");
+    return `ROUTINE ${name} (${args})`;
+  }
+  extractImport(form) {
+    if (form.head.toUpperCase() !== "INSERT-FILE") {
+      return void 0;
+    }
+    const fileNode = form.children.find((c) => "type" in c && c.type === "string");
+    if (fileNode === void 0) {
+      return void 0;
+    }
+    return {
+      source: fileNode.value,
+      specifiers: [],
+      isType: false
+    };
+  }
+  getRoutineName(form) {
+    const nameNode = form.children.find((c) => "type" in c && c.type === "atom");
+    return nameNode?.value;
+  }
+  extractCalls(node, caller, calls) {
+    if ("head" in node) {
+      const headUpper = node.head.toUpperCase();
+      if (node.head !== "" && !isSpecialForm(headUpper)) {
+        calls.push({
+          caller,
+          callee: node.head,
+          line: node.startLine
+        });
+      }
+      for (const child of node.children) {
+        this.extractCalls(child, caller, calls);
+      }
+    } else if ("type" in node && node.type === "group") {
+      for (const child of node.children) {
+        this.extractCalls(child, caller, calls);
+      }
+    }
+  }
+};
+
+// src/analysis/zil/zil-adapter.ts
+var ZilAdapter = class {
+  languageId = "zil";
+  extensions = [".zil", ".mud"];
+  displayName = "ZIL (Zork Implementation Language)";
+  parser = new ZilParser();
+  /**
+   * Parse ZIL code and extract symbols as CodeNode[]
+   */
+  parse(content, _filePath) {
+    const result = this.parser.parse(content);
+    return result.symbols.map((symbol) => {
+      const node = {
+        type: this.mapSymbolKindToNodeType(symbol.kind),
+        name: symbol.name,
+        exported: true,
+        // ZIL doesn't have export concept, treat all as exported
+        startLine: symbol.startLine,
+        endLine: symbol.endLine
+      };
+      if (symbol.signature !== void 0) {
+        node.signature = symbol.signature;
+      }
+      return node;
+    });
+  }
+  /**
+   * Extract imports from INSERT-FILE directives
+   */
+  extractImports(content, _filePath) {
+    const result = this.parser.parse(content);
+    return result.imports;
+  }
+  /**
+   * Chunk ZIL code by top-level forms
+   */
+  chunk(content, _filePath) {
+    const result = this.parser.parse(content);
+    const lines = content.split("\n");
+    return result.forms.filter((form) => form.head !== "").map((form) => {
+      const chunkLines = lines.slice(form.startLine - 1, form.endLine);
+      const chunkContent = chunkLines.join("\n");
+      const symbol = result.symbols.find(
+        (s) => s.startLine === form.startLine && s.endLine === form.endLine
+      );
+      const chunk = {
+        content: chunkContent,
+        startLine: form.startLine,
+        endLine: form.endLine
+      };
+      if (symbol !== void 0) {
+        chunk.symbolName = symbol.name;
+        chunk.symbolKind = symbol.kind;
+      }
+      return chunk;
+    });
+  }
+  /**
+   * Analyze call relationships within ZIL code
+   */
+  analyzeCallRelationships(content, filePath) {
+    const result = this.parser.parse(content);
+    return result.calls.map((call) => ({
+      from: `${filePath}:${call.caller}`,
+      to: `${filePath}:${call.callee}`,
+      type: "calls",
+      confidence: 0.9
+      // High confidence for ZIL - calls are explicit
+    }));
+  }
+  /**
+   * Map ZIL symbol kinds to CodeNode types
+   */
+  mapSymbolKindToNodeType(kind) {
+    switch (kind) {
+      case "routine":
+        return "function";
+      case "object":
+      case "room":
+      case "global":
+      case "constant":
+        return "const";
+      case "syntax":
+      case "verb":
+        return "const";
+      default:
+        return "const";
+    }
+  }
+};
 
 // src/mcp/commands/job.commands.ts
 import { z as z2 } from "zod";
@@ -1293,6 +1915,10 @@ var tools = [
 
 // src/mcp/server.ts
 var logger2 = createLogger("mcp-server");
+var registry = AdapterRegistry.getInstance();
+if (!registry.hasExtension(".zil")) {
+  registry.register(new ZilAdapter());
+}
 function createMCPServer(options) {
   const server = new Server(
     {
@@ -1458,6 +2084,7 @@ if (isMCPServerEntry) {
 }
 
 export {
+  ZilAdapter,
   isFileStoreDefinition,
   isRepoStoreDefinition,
   isWebStoreDefinition,
@@ -1465,4 +2092,4 @@ export {
   createMCPServer,
   runMCPServer
 };
-//# sourceMappingURL=chunk-DP5XBPQV.js.map
+//# sourceMappingURL=chunk-565OVW3C.js.map

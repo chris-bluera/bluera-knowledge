@@ -1,3 +1,113 @@
+// src/analysis/adapter-registry.ts
+var AdapterRegistry = class _AdapterRegistry {
+  static instance;
+  /** Map from languageId to adapter */
+  adaptersByLanguageId = /* @__PURE__ */ new Map();
+  /** Map from extension to adapter */
+  adaptersByExtension = /* @__PURE__ */ new Map();
+  constructor() {
+  }
+  /**
+   * Get the singleton instance of the registry.
+   */
+  static getInstance() {
+    _AdapterRegistry.instance ??= new _AdapterRegistry();
+    return _AdapterRegistry.instance;
+  }
+  /**
+   * Reset the singleton instance (for testing).
+   */
+  static resetInstance() {
+    _AdapterRegistry.instance = void 0;
+  }
+  /**
+   * Register a language adapter.
+   *
+   * @param adapter - The adapter to register
+   * @throws If a different adapter with the same extension is already registered
+   */
+  register(adapter) {
+    if (this.adaptersByLanguageId.has(adapter.languageId)) {
+      return;
+    }
+    for (const ext of adapter.extensions) {
+      const normalizedExt = this.normalizeExtension(ext);
+      const existingAdapter = this.adaptersByExtension.get(normalizedExt);
+      if (existingAdapter !== void 0) {
+        throw new Error(
+          `Extension "${normalizedExt}" is already registered by adapter "${existingAdapter.languageId}"`
+        );
+      }
+    }
+    this.adaptersByLanguageId.set(adapter.languageId, adapter);
+    for (const ext of adapter.extensions) {
+      const normalizedExt = this.normalizeExtension(ext);
+      this.adaptersByExtension.set(normalizedExt, adapter);
+    }
+  }
+  /**
+   * Unregister a language adapter by its language ID.
+   *
+   * @param languageId - The language ID to unregister
+   * @returns true if the adapter was found and removed, false otherwise
+   */
+  unregister(languageId) {
+    const adapter = this.adaptersByLanguageId.get(languageId);
+    if (adapter === void 0) {
+      return false;
+    }
+    this.adaptersByLanguageId.delete(languageId);
+    for (const ext of adapter.extensions) {
+      const normalizedExt = this.normalizeExtension(ext);
+      this.adaptersByExtension.delete(normalizedExt);
+    }
+    return true;
+  }
+  /**
+   * Get an adapter by file extension.
+   *
+   * @param ext - File extension (with or without leading dot)
+   * @returns The adapter if found, undefined otherwise
+   */
+  getByExtension(ext) {
+    const normalizedExt = this.normalizeExtension(ext);
+    return this.adaptersByExtension.get(normalizedExt);
+  }
+  /**
+   * Get an adapter by language ID.
+   *
+   * @param languageId - The unique language identifier
+   * @returns The adapter if found, undefined otherwise
+   */
+  getByLanguageId(languageId) {
+    return this.adaptersByLanguageId.get(languageId);
+  }
+  /**
+   * Get all registered adapters.
+   *
+   * @returns Array of all registered adapters
+   */
+  getAllAdapters() {
+    return Array.from(this.adaptersByLanguageId.values());
+  }
+  /**
+   * Check if an extension is registered.
+   *
+   * @param ext - File extension (with or without leading dot)
+   * @returns true if the extension is registered
+   */
+  hasExtension(ext) {
+    const normalizedExt = this.normalizeExtension(ext);
+    return this.adaptersByExtension.has(normalizedExt);
+  }
+  /**
+   * Normalize extension to always have a leading dot.
+   */
+  normalizeExtension(ext) {
+    return ext.startsWith(".") ? ext : `.${ext}`;
+  }
+};
+
 // src/logging/logger.ts
 import { mkdirSync, existsSync } from "fs";
 import { homedir } from "os";
@@ -1472,6 +1582,11 @@ var ParserFactory = class {
     if (ext === ".go") {
       const parser = new GoASTParser();
       return parser.parse(code, filePath);
+    }
+    const registry = AdapterRegistry.getInstance();
+    const adapter = registry.getByExtension(ext);
+    if (adapter !== void 0) {
+      return adapter.parse(code, filePath);
     }
     return [];
   }
@@ -4319,6 +4434,7 @@ async function destroyServices(services) {
 }
 
 export {
+  AdapterRegistry,
   createLogger,
   summarizePayload,
   truncateForLog,
@@ -4336,4 +4452,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-UE4ZIJYA.js.map
+//# sourceMappingURL=chunk-TRDMYKGC.js.map

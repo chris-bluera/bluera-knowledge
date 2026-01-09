@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 import {
   StoreDefinitionService,
+  ZilAdapter,
   isFileStoreDefinition,
   isRepoStoreDefinition,
   isWebStoreDefinition,
   runMCPServer
-} from "./chunk-DP5XBPQV.js";
+} from "./chunk-565OVW3C.js";
 import {
   IntelligentCrawler
-} from "./chunk-6U45VP5Z.js";
+} from "./chunk-2WBITQWZ.js";
 import {
   ASTParser,
+  AdapterRegistry,
   ChunkingService,
   classifyWebContentType,
   createDocumentId,
@@ -20,7 +22,7 @@ import {
   err,
   extractRepoName,
   ok
-} from "./chunk-UE4ZIJYA.js";
+} from "./chunk-TRDMYKGC.js";
 import "./chunk-6FHWC36B.js";
 
 // src/index.ts
@@ -1770,6 +1772,8 @@ function getGlobalOptions(program2) {
 }
 
 // src/index.ts
+var registry = AdapterRegistry.getInstance();
+registry.register(new ZilAdapter());
 var DEFAULT_DATA_DIR = join4(homedir2(), ".bluera", "bluera-knowledge", "data");
 var DEFAULT_CONFIG = join4(homedir2(), ".bluera", "bluera-knowledge", "config.json");
 var DEFAULT_REPOS_DIR2 = join4(homedir2(), ".bluera", "bluera-knowledge", "repos");

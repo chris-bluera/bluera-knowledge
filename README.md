@@ -267,10 +267,35 @@ While bluera-knowledge indexes and searches code in any language, certain advanc
 | **Python** | ✅ Full Support | ✅ Functions & Methods | ✅ Full | ✅ Class Methods |
 | **Rust** | ✅ Full Support | ✅ Functions & Methods | ✅ Full | ✅ Struct/Trait Methods |
 | **Go** | ✅ Full Support | ✅ Functions & Methods | ✅ Full | ✅ Struct/Interface Methods |
+| **ZIL** | ✅ Full Support | ✅ Routines | ✅ INSERT-FILE | ✅ Objects/Rooms |
 | **Other Languages** | ⚠️ Basic Support | ❌ | ❌ | ❌ |
 
 > [!NOTE]
 > Code graph features enhance search results by showing usage context (e.g., "this function is called by 15 other functions"), but all languages benefit from vector search and full-text search capabilities.
+
+### 🔌 Custom Language Support
+
+Bluera Knowledge provides an extensible adapter system for adding full graph support to any language. The built-in ZIL adapter (for Infocom/Zork-era source code) demonstrates this capability.
+
+**What adapters provide:**
+- **Smart chunking** - Split files by language constructs (functions, classes, objects)
+- **Symbol extraction** - Parse definitions with signatures and line numbers
+- **Import tracking** - Resolve include/import relationships
+- **Call graph analysis** - Track function calls with special form filtering
+
+**Built-in adapters:**
+| Language | Extensions | Symbols | Imports |
+|----------|------------|---------|---------|
+| ZIL | `.zil`, `.mud` | ROUTINE, OBJECT, ROOM, GLOBAL, CONSTANT | INSERT-FILE |
+
+**Example - ZIL indexing:**
+```bash
+# Index a Zork source repository
+bluera-knowledge store create zork1 --type repo --source https://github.com/historicalsource/zork1
+
+# Search for routines
+bluera-knowledge search "V-LOOK routine" --stores zork1
+```
 
 ---
 

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { AdapterRegistry } from './adapter-registry.js';
 import { ASTParser, type CodeNode } from './ast-parser.js';
 import { GoASTParser } from './go-ast-parser.js';
 import { PythonASTParser } from './python-ast-parser.js';
@@ -37,6 +38,13 @@ export class ParserFactory {
     if (ext === '.go') {
       const parser = new GoASTParser();
       return parser.parse(code, filePath);
+    }
+
+    // Check for registered language adapters
+    const registry = AdapterRegistry.getInstance();
+    const adapter = registry.getByExtension(ext);
+    if (adapter !== undefined) {
+      return adapter.parse(code, filePath);
     }
 
     return [];
