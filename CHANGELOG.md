@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.9.42](https://github.com/blueraai/bluera-knowledge/compare/v0.9.32...v0.9.42) (2026-01-09)
+
+
+### Features
+
+* **search:** add contextual/full detail display and use process.exitCode ([3205859](https://github.com/blueraai/bluera-knowledge/commit/32058590f6375b8564a255901333536183aa1bd2))
+* **search:** add raw score exposure, confidence levels, and minRelevance filtering ([dc45e4d](https://github.com/blueraai/bluera-knowledge/commit/dc45e4d760c526ae5f0ad7912adea0528a61ff05))
+
+
+### Bug Fixes
+
+* **bridge:** kill Python process before nullifying to prevent zombie ([393dab3](https://github.com/blueraai/bluera-knowledge/commit/393dab3e45c75fd87c9ecfc1ca92e67b14526e79))
+* **bridge:** mock kill() emits exit event & attach rejection handlers before stop ([d73c6ca](https://github.com/blueraai/bluera-knowledge/commit/d73c6ca6d640c3d15bd82756cabcda832f9ae245))
+* **bridge:** stop() now waits for process to actually exit ([a92de41](https://github.com/blueraai/bluera-knowledge/commit/a92de41c89318fc106f996568ed88505352d5159))
+* **cli:** ensure destroyServices runs before process.exit ([22e4267](https://github.com/blueraai/bluera-knowledge/commit/22e4267b7b9f698de3985a89b9c2b10759cfd49c))
+* **code-unit:** brace counting now handles strings and comments ([1e857bb](https://github.com/blueraai/bluera-knowledge/commit/1e857bb297f357b97a6c067950e62495b3c8fc99))
+* **code-unit:** support complex return types in signature extraction ([3bd2467](https://github.com/blueraai/bluera-knowledge/commit/3bd24675a67e73cc74a0c718f4b5a9e86cd826fb))
+* increase native cleanup delays to prevent mutex crashes ([43566ed](https://github.com/blueraai/bluera-knowledge/commit/43566edc301a5093b9bc2000293c7dc0c538b0f0))
+* **job:** validate PID before process.kill to prevent process group kill ([67c540f](https://github.com/blueraai/bluera-knowledge/commit/67c540fef6f2c55c5dca2c824104a91fe19aeff1))
+* **scripts:** preserve test exit codes in piped commands ([865f491](https://github.com/blueraai/bluera-knowledge/commit/865f491858ef518fb74f3d7dfed269109cd62c72))
+* **search:** apply threshold filtering after score normalization ([1ebc78e](https://github.com/blueraai/bluera-knowledge/commit/1ebc78e0e688ffde0fdbaf049f17a35d129ef055))
+* **search:** enable FTS-only search mode ([4a0f371](https://github.com/blueraai/bluera-knowledge/commit/4a0f371f0c42f80bf87e28ae0e609ac95986964d))
+* **services:** fail fast on corrupted config/registry files ([030f63c](https://github.com/blueraai/bluera-knowledge/commit/030f63c10b0a30bddcd8e9b27b291ab0f53263f1))
+* **tests:** increase timeout for exit code test in CI ([a362dcd](https://github.com/blueraai/bluera-knowledge/commit/a362dcdae32b0c19e757270e5009b0c1c5ead4e4))
+* **tests:** increase timeout for flaky store delete test ([738fb49](https://github.com/blueraai/bluera-knowledge/commit/738fb4975653703d800dee802730dedfdf9e85ba))
+* **watch:** clear pending timeouts on unwatch to prevent timer leak ([4dcafc1](https://github.com/blueraai/bluera-knowledge/commit/4dcafc14417442f6eeed0257cf185e04ae9de12b))
+* **worker:** fail fast on PID file write error ([d92ce42](https://github.com/blueraai/bluera-knowledge/commit/d92ce42eff63cee3c97056ef019f5a52ef699edd))
+* **worker:** prevent division by zero and improve cancellation handling ([b7b40ab](https://github.com/blueraai/bluera-knowledge/commit/b7b40ab950b7ad0fbbe84af243be3138b1072a72))
+
 ## [0.9.41](https://github.com/blueraai/bluera-knowledge/compare/v0.9.32...v0.9.41) (2026-01-09)
 
 

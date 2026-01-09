@@ -1,8 +1,7 @@
 {
   "name": "bluera-knowledge",
-  "version": "0.9.41",
+  "version": "0.9.42",
   "description": "Clone repos, crawl docs, search locally. Fast, authoritative answers for AI coding agents.",
-  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "bluera-knowledge": {
       "command": "node",
