@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.11.14](https://github.com/blueraai/bluera-knowledge/compare/v0.11.6...v0.11.14) (2026-01-10)
+
+
+### Features
+
+* **scripts:** add post-release npm validation script ([e4c29a0](https://github.com/blueraai/bluera-knowledge/commit/e4c29a0c83907de4bc293a69a58412629457fb22))
+* **scripts:** add suggest, sync, serve, mcp tests to npm validation ([49d85da](https://github.com/blueraai/bluera-knowledge/commit/49d85dad1a89691060c12f152d644844baf6e6e6))
+* **scripts:** log expected vs installed version in validation script ([c77d039](https://github.com/blueraai/bluera-knowledge/commit/c77d039b27a3ccf54d50006af161ac4dcfea7b21))
+
+
+### Bug Fixes
+
+* **cli:** plugin-api commands now respect global options ([d3cca02](https://github.com/blueraai/bluera-knowledge/commit/d3cca02ffc679ffc187b76c7682f3cc177eabdea))
+* **plugin:** properly close services after command execution ([eeaf743](https://github.com/blueraai/bluera-knowledge/commit/eeaf743750be73fd9c7a9e72440b2fd0fb5a53fa))
+* **scripts:** show real-time output in validation script ([8a4bdec](https://github.com/blueraai/bluera-knowledge/commit/8a4bdec8b63c504d34ba35bfe19da795f7f7fd07))
+* **scripts:** use mktemp for temp directories in validation script ([3107861](https://github.com/blueraai/bluera-knowledge/commit/3107861bd7a966016fde2a121469dd84756f39be))
+* **search:** add defaults for env vars so CLI works standalone ([b2d2ce5](https://github.com/blueraai/bluera-knowledge/commit/b2d2ce534e8cd2ba0fc0abdac505c912a1a76035))
+
 ## [0.11.13](https://github.com/blueraai/bluera-knowledge/compare/v0.11.6...v0.11.13) (2026-01-10)
 
 
