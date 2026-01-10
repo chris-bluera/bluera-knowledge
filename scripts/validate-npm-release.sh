@@ -24,8 +24,8 @@ LOG_FILE="$RESULTS_DIR/npm-validation-$TIMESTAMP.log"
 
 # Test configuration
 TEST_STORE="npm-validation-test-$TIMESTAMP"
-TEST_FOLDER="/tmp/bluera-knowledge-validation-$TIMESTAMP"
-DATA_DIR="/tmp/bluera-knowledge-data-$TIMESTAMP"
+TEST_FOLDER="$(mktemp -d)"
+DATA_DIR="$(mktemp -d)"
 
 # Counters
 TESTS_RUN=0
@@ -34,7 +34,6 @@ TESTS_FAILED=0
 
 # Setup
 mkdir -p "$RESULTS_DIR"
-mkdir -p "$TEST_FOLDER"
 echo "Test content for validation" > "$TEST_FOLDER/test.txt"
 echo "Another test file" > "$TEST_FOLDER/test2.md"
 

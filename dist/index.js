@@ -773,8 +773,12 @@ var RepoUrlResolver = class {
 };
 
 // src/plugin/commands.ts
-async function handleAddRepo(args) {
-  const services = await createServices(void 0, void 0, process.env["PWD"]);
+async function handleAddRepo(args, options = {}) {
+  const services = await createServices(
+    options.config,
+    options.dataDir,
+    options.projectRoot ?? process.env["PWD"]
+  );
   const storeName = args.name ?? extractRepoName(args.url);
   console.log(`Cloning ${args.url}...`);
   const result = await services.store.create({
@@ -799,8 +803,12 @@ async function handleAddRepo(args) {
     console.error(`Indexing failed: ${indexResult.error.message}`);
   }
 }
-async function handleAddFolder(args) {
-  const services = await createServices(void 0, void 0, process.env["PWD"]);
+async function handleAddFolder(args, options = {}) {
+  const services = await createServices(
+    options.config,
+    options.dataDir,
+    options.projectRoot ?? process.env["PWD"]
+  );
   const { basename } = await import("path");
   const storeName = args.name ?? basename(args.path);
   console.log(`Adding folder: ${args.path}...`);
@@ -825,8 +833,12 @@ async function handleAddFolder(args) {
     console.error(`Indexing failed: ${indexResult.error.message}`);
   }
 }
-async function handleStores() {
-  const services = await createServices(void 0, void 0, process.env["PWD"]);
+async function handleStores(options = {}) {
+  const services = await createServices(
+    options.config,
+    options.dataDir,
+    options.projectRoot ?? process.env["PWD"]
+  );
   const stores = await services.store.list();
   if (stores.length === 0) {
     console.log("No stores found.");
@@ -850,10 +862,10 @@ async function handleStores() {
     console.log(`| ${name} | ${type} | ${id.substring(0, 8)}... | ${source} |`);
   }
 }
-async function handleSuggest() {
-  const projectRoot = process.env["PWD"] ?? process.cwd();
+async function handleSuggest(options = {}) {
+  const projectRoot = options.projectRoot ?? process.env["PWD"] ?? process.cwd();
   console.log("Analyzing project dependencies...\n");
-  const services = await createServices(void 0, void 0, projectRoot);
+  const services = await createServices(options.config, options.dataDir, projectRoot);
   const analyzer = new DependencyUsageAnalyzer();
   const resolver = new RepoUrlResolver();
   const spinner = ora3("Scanning source files...").start();
@@ -910,24 +922,58 @@ async function handleSuggest() {
 }
 
 // src/cli/commands/plugin-api.ts
-function createAddRepoCommand(_getOptions) {
+function createAddRepoCommand(getOptions) {
   return new Command4("add-repo").description("Clone and index a library source repository").argument("<url>", "Git repository URL").option("--name <name>", "Store name (defaults to repo name)").option("--branch <branch>", "Git branch to clone").action(async (url, options) => {
-    await handleAddRepo({ url, ...options });
+    const globalOpts = getOptions();
+    await handleAddRepo(
+      { url, ...options },
+      {
+        config: globalOpts.config,
+        dataDir: globalOpts.dataDir,
+        projectRoot: globalOpts.projectRoot,
+        format: globalOpts.format,
+        quiet: globalOpts.quiet
+      }
+    );
   });
 }
-function createAddFolderCommand(_getOptions) {
+function createAddFolderCommand(getOptions) {
   return new Command4("add-folder").description("Index a local folder of reference material").argument("<path>", "Folder path to index").option("--name <name>", "Store name (defaults to folder name)").action(async (path, options) => {
-    await handleAddFolder({ path, ...options });
+    const globalOpts = getOptions();
+    await handleAddFolder(
+      { path, ...options },
+      {
+        config: globalOpts.config,
+        dataDir: globalOpts.dataDir,
+        projectRoot: globalOpts.projectRoot,
+        format: globalOpts.format,
+        quiet: globalOpts.quiet
+      }
+    );
   });
 }
-function createStoresCommand(_getOptions) {
+function createStoresCommand(getOptions) {
   return new Command4("stores").description("List all indexed library stores").action(async () => {
-    await handleStores();
+    const globalOpts = getOptions();
+    await handleStores({
+      config: globalOpts.config,
+      dataDir: globalOpts.dataDir,
+      projectRoot: globalOpts.projectRoot,
+      format: globalOpts.format,
+      quiet: globalOpts.quiet
+    });
   });
 }
-function createSuggestCommand(_getOptions) {
+function createSuggestCommand(getOptions) {
   return new Command4("suggest").description("Suggest important dependencies to add to knowledge stores").action(async () => {
-    await handleSuggest();
+    const globalOpts = getOptions();
+    await handleSuggest({
+      config: globalOpts.config,
+      dataDir: globalOpts.dataDir,
+      projectRoot: globalOpts.projectRoot,
+      format: globalOpts.format,
+      quiet: globalOpts.quiet
+    });
   });
 }
 
