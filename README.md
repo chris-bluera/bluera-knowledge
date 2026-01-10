@@ -1661,6 +1661,21 @@ This script:
 
 Use this to catch any packaging or runtime issues after npm publish.
 
+### 🧪 Plugin Self-Test
+
+Test all plugin functionality from within Claude Code:
+
+```
+/test-plugin
+```
+
+This command runs 13 tests covering:
+- **MCP Tools**: execute (help, stores, create, info, index), search, get_full_context
+- **Slash Commands**: /stores, /search, /suggest
+- **Cleanup**: Store deletion, artifact removal, verification
+
+The test creates temporary content, exercises all features, and cleans up automatically. Use this to verify the plugin is working correctly after installation or updates.
+
 ### 🧪 Testing Locally
 
 **Option 1: Development MCP Server (Recommended)**
