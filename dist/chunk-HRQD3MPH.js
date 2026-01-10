@@ -9,7 +9,7 @@ var WatchService = class {
     this.indexService = indexService;
     this.lanceStore = lanceStore;
   }
-  async watch(store, debounceMs = 1e3, onReindex, onError) {
+  async watch(store, debounceMs, onReindex, onError) {
     if (this.watchers.has(store.id)) {
       return Promise.resolve();
     }
@@ -30,11 +30,7 @@ var WatchService = class {
             onReindex?.();
           } catch (e) {
             const error = e instanceof Error ? e : new Error(String(e));
-            if (onError) {
-              onError(error);
-            } else {
-              throw error;
-            }
+            onError(error);
           }
         })();
       }, debounceMs);
@@ -43,11 +39,7 @@ var WatchService = class {
     watcher.on("all", reindexHandler);
     watcher.on("error", (e) => {
       const error = e instanceof Error ? e : new Error(String(e));
-      if (onError) {
-        onError(error);
-      } else {
-        throw error;
-      }
+      onError(error);
     });
     this.watchers.set(store.id, watcher);
     return Promise.resolve();
@@ -74,4 +66,4 @@ var WatchService = class {
 export {
   WatchService
 };
-//# sourceMappingURL=chunk-S4LDHILW.js.map
+//# sourceMappingURL=chunk-HRQD3MPH.js.map

@@ -16,9 +16,9 @@ export class WatchService {
 
   async watch(
     store: FileStore | RepoStore,
-    debounceMs = 1000,
-    onReindex?: () => void,
-    onError?: (error: Error) => void
+    debounceMs: number,
+    onReindex: (() => void) | undefined,
+    onError: (error: Error) => void
   ): Promise<void> {
     if (this.watchers.has(store.id)) {
       return Promise.resolve(); // Already watching
@@ -43,11 +43,7 @@ export class WatchService {
             onReindex?.();
           } catch (e) {
             const error = e instanceof Error ? e : new Error(String(e));
-            if (onError) {
-              onError(error);
-            } else {
-              throw error;
-            }
+            onError(error);
           }
         })();
       }, debounceMs);
@@ -58,11 +54,7 @@ export class WatchService {
 
     watcher.on('error', (e) => {
       const error = e instanceof Error ? e : new Error(String(e));
-      if (onError) {
-        onError(error);
-      } else {
-        throw error;
-      }
+      onError(error);
     });
 
     this.watchers.set(store.id, watcher);

@@ -100,11 +100,18 @@ export function createIndexCommand(getOptions: () => GlobalOptions): Command {
       if (globalOpts.quiet !== true) {
         console.log(`Watching ${store.name} for changes...`);
       }
-      await watchService.watch(store, parseInt(options.debounce ?? '1000', 10), () => {
-        if (globalOpts.quiet !== true) {
-          console.log(`Re-indexed ${store.name}`);
+      await watchService.watch(
+        store,
+        parseInt(options.debounce ?? '1000', 10),
+        () => {
+          if (globalOpts.quiet !== true) {
+            console.log(`Re-indexed ${store.name}`);
+          }
+        },
+        (error: Error) => {
+          console.error(`Watch error: ${error.message}`);
         }
-      });
+      );
 
       // Keep process alive
       process.on('SIGINT', () => {

@@ -97,7 +97,9 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
           await destroyServices(services);
         }
         if (exitCode !== 0) {
-          process.exit(exitCode);
+          // Set exit code and let Node.js exit naturally after event loop drains
+          // Using process.exit() causes mutex crashes from native code (LanceDB, tree-sitter)
+          process.exitCode = exitCode;
         }
       }
     );
@@ -108,12 +110,14 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     .action(async (storeIdOrName: string) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
-      try {
+      let exitCode = 0;
+      storeInfo: try {
         const s = await services.store.getByIdOrName(storeIdOrName);
 
         if (s === undefined) {
           console.error(`Error: Store not found: ${storeIdOrName}`);
-          process.exit(3);
+          exitCode = 3;
+          break storeInfo;
         }
 
         if (globalOpts.format === 'json') {
@@ -132,6 +136,11 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
       } finally {
         await destroyServices(services);
       }
+      if (exitCode !== 0) {
+        // Set exit code and let Node.js exit naturally after event loop drains
+        // Using process.exit() causes mutex crashes from native code (LanceDB, tree-sitter)
+        process.exitCode = exitCode;
+      }
     });
 
   store
@@ -142,12 +151,14 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
     .action(async (storeIdOrName: string, options: { force?: boolean; yes?: boolean }) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
-      try {
+      let exitCode = 0;
+      storeDelete: try {
         const s = await services.store.getByIdOrName(storeIdOrName);
 
         if (s === undefined) {
           console.error(`Error: Store not found: ${storeIdOrName}`);
-          process.exit(3);
+          exitCode = 3;
+          break storeDelete;
         }
 
         // Require --force or -y in non-TTY mode, prompt in TTY mode
@@ -157,7 +168,8 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
             console.error(
               'Error: Use --force or -y to delete without confirmation in non-interactive mode'
             );
-            process.exit(1);
+            exitCode = 1;
+            break storeDelete;
           }
           // Interactive confirmation
           const readline = await import('node:readline');
@@ -171,7 +183,8 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
           rl.close();
           if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
             console.log('Cancelled.');
-            process.exit(0);
+            // exitCode stays 0 for user-initiated cancellation
+            break storeDelete;
           }
         }
 
@@ -181,10 +194,15 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
           console.log(`Deleted store: ${s.name}`);
         } else {
           console.error(`Error: ${result.error.message}`);
-          process.exit(1);
+          exitCode = 1;
         }
       } finally {
         await destroyServices(services);
+      }
+      if (exitCode !== 0) {
+        // Set exit code and let Node.js exit naturally after event loop drains
+        // Using process.exit() causes mutex crashes from native code (LanceDB, tree-sitter)
+        process.exitCode = exitCode;
       }
     });
 

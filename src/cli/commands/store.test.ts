@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { createStoreCommand } from './store.js';
-import { createServices } from '../../services/index.js';
+import { createServices, destroyServices } from '../../services/index.js';
 import type { GlobalOptions } from '../program.js';
 import type { FileStore, RepoStore, WebStore } from '../../types/store.js';
 import { createStoreId } from '../../types/brands.js';
@@ -10,11 +10,22 @@ vi.mock('../../services/index.js', () => ({
   destroyServices: vi.fn().mockResolvedValue(undefined),
 }));
 
+interface MockStoreService {
+  list: MockInstance;
+  getByIdOrName: MockInstance;
+  create: MockInstance;
+  delete: MockInstance;
+}
+
+interface MockServices {
+  store: MockStoreService;
+}
+
 describe('store command execution', () => {
-  let mockServices: any;
-  let consoleLogSpy: any;
-  let consoleErrorSpy: any;
-  let processExitSpy: any;
+  let mockServices: MockServices;
+  let consoleLogSpy: MockInstance;
+  let consoleErrorSpy: MockInstance;
+  let processExitSpy: MockInstance;
   let getOptions: () => GlobalOptions;
 
   beforeEach(() => {
@@ -402,10 +413,12 @@ describe('store command execution', () => {
       const actionHandler = createCommand?._actionHandler;
 
       createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files']);
-      await expect(actionHandler!(['duplicate-store'])).rejects.toThrow('process.exit: 1');
+      await actionHandler!(['duplicate-store']);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Store already exists');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(process.exitCode).toBe(1);
+      // Reset for other tests
+      process.exitCode = undefined;
     });
   });
 
@@ -536,10 +549,12 @@ describe('store command execution', () => {
       const infoCommand = command.commands.find((c) => c.name() === 'info');
       const actionHandler = infoCommand?._actionHandler;
 
-      await expect(actionHandler!(['nonexistent'])).rejects.toThrow('process.exit: 3');
+      await actionHandler!(['nonexistent']);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Store not found: nonexistent');
-      expect(processExitSpy).toHaveBeenCalledWith(3);
+      expect(process.exitCode).toBe(3);
+      // Reset for other tests
+      process.exitCode = undefined;
     });
 
     it('can lookup store by ID', async () => {
@@ -629,11 +644,13 @@ describe('store command execution', () => {
       const actionHandler = deleteCommand?._actionHandler;
 
       deleteCommand.parseOptions(['--force']);
-      await expect(actionHandler!(['nonexistent'])).rejects.toThrow('process.exit: 3');
+      await actionHandler!(['nonexistent']);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Store not found: nonexistent');
-      expect(processExitSpy).toHaveBeenCalledWith(3);
+      expect(process.exitCode).toBe(3);
       expect(mockServices.store.delete).not.toHaveBeenCalled();
+      // Reset for other tests
+      process.exitCode = undefined;
     });
 
     it('exits with code 1 when deletion fails', async () => {
@@ -659,10 +676,12 @@ describe('store command execution', () => {
       const actionHandler = deleteCommand?._actionHandler;
 
       deleteCommand.parseOptions(['--force']);
-      await expect(actionHandler!(['locked-store'])).rejects.toThrow('process.exit: 1');
+      await actionHandler!(['locked-store']);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Store is locked');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(process.exitCode).toBe(1);
+      // Reset for other tests
+      process.exitCode = undefined;
     });
 
     it('exits with code 1 when force not provided in non-TTY mode', async () => {
@@ -688,12 +707,12 @@ describe('store command execution', () => {
       const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
-      await expect(actionHandler!(['my-store'])).rejects.toThrow('process.exit: 1');
+      await actionHandler!(['my-store']);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Error: Use --force or -y to delete without confirmation in non-interactive mode'
       );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(process.exitCode).toBe(1);
       expect(mockServices.store.delete).not.toHaveBeenCalled();
 
       // Restore original value
@@ -701,6 +720,8 @@ describe('store command execution', () => {
         value: originalIsTTY,
         configurable: true,
       });
+      // Reset for other tests
+      process.exitCode = undefined;
     });
 
     it('prompts for confirmation in TTY mode when user confirms', async () => {
@@ -788,10 +809,11 @@ describe('store command execution', () => {
       const deleteCommand = command.commands.find((c) => c.name() === 'delete');
       const actionHandler = deleteCommand?._actionHandler;
 
-      await expect(actionHandler!(['my-store'])).rejects.toThrow('process.exit: 0');
+      await actionHandler!(['my-store']);
 
       expect(consoleLogSpy).toHaveBeenCalledWith('Cancelled.');
-      expect(processExitSpy).toHaveBeenCalledWith(0);
+      // exitCode stays 0 (undefined) for user-initiated cancellation - not an error
+      expect(process.exitCode).toBeUndefined();
       expect(mockServices.store.delete).not.toHaveBeenCalled();
 
       // Restore original value
@@ -1094,6 +1116,177 @@ describe('store command execution', () => {
         description: undefined,
         tags: undefined,
       });
+    });
+  });
+
+  describe('destroyServices cleanup on error paths', () => {
+    it('calls destroyServices when store info returns store not found', async () => {
+      mockServices.store.getByIdOrName.mockResolvedValue(undefined);
+
+      const command = createStoreCommand(getOptions);
+      const infoCommand = command.commands.find((c) => c.name() === 'info');
+      const actionHandler = infoCommand?._actionHandler;
+
+      await actionHandler!(['nonexistent']);
+
+      // destroyServices should be called before setting exitCode
+      expect(destroyServices).toHaveBeenCalledWith(mockServices);
+      expect(process.exitCode).toBe(3);
+      process.exitCode = undefined;
+    });
+
+    it('calls destroyServices when store delete returns store not found', async () => {
+      mockServices.store.getByIdOrName.mockResolvedValue(undefined);
+
+      const command = createStoreCommand(getOptions);
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
+      const actionHandler = deleteCommand?._actionHandler;
+
+      deleteCommand.parseOptions(['--force']);
+      await actionHandler!(['nonexistent']);
+
+      // destroyServices should be called before setting exitCode
+      expect(destroyServices).toHaveBeenCalledWith(mockServices);
+      expect(process.exitCode).toBe(3);
+      process.exitCode = undefined;
+    });
+
+    it('calls destroyServices when delete requires --force in non-TTY mode', async () => {
+      const mockStore: FileStore = {
+        id: createStoreId('store-1'),
+        name: 'my-store',
+        type: 'file',
+        path: '/path/to/files',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockServices.store.getByIdOrName.mockResolvedValue(mockStore);
+
+      // Mock non-TTY mode
+      const originalIsTTY = process.stdin.isTTY;
+      Object.defineProperty(process.stdin, 'isTTY', {
+        value: false,
+        configurable: true,
+      });
+
+      const command = createStoreCommand(getOptions);
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
+      const actionHandler = deleteCommand?._actionHandler;
+
+      await actionHandler!(['my-store']);
+
+      // destroyServices should be called before setting exitCode
+      expect(destroyServices).toHaveBeenCalledWith(mockServices);
+      expect(process.exitCode).toBe(1);
+
+      // Restore
+      Object.defineProperty(process.stdin, 'isTTY', {
+        value: originalIsTTY,
+        configurable: true,
+      });
+      process.exitCode = undefined;
+    });
+
+    it('calls destroyServices when deletion fails', async () => {
+      const mockStore: FileStore = {
+        id: createStoreId('store-1'),
+        name: 'locked-store',
+        type: 'file',
+        path: '/path/to/files',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockServices.store.getByIdOrName.mockResolvedValue(mockStore);
+      mockServices.store.delete.mockResolvedValue({
+        success: false,
+        error: {
+          message: 'Store is locked',
+        },
+      });
+
+      const command = createStoreCommand(getOptions);
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
+      const actionHandler = deleteCommand?._actionHandler;
+
+      deleteCommand.parseOptions(['--force']);
+      await actionHandler!(['locked-store']);
+
+      // destroyServices should be called before setting exitCode
+      expect(destroyServices).toHaveBeenCalledWith(mockServices);
+      expect(process.exitCode).toBe(1);
+      process.exitCode = undefined;
+    });
+
+    it('calls destroyServices when user cancels delete in TTY mode', async () => {
+      const mockStore: FileStore = {
+        id: createStoreId('store-1'),
+        name: 'my-store',
+        type: 'file',
+        path: '/path/to/files',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockServices.store.getByIdOrName.mockResolvedValue(mockStore);
+
+      // Mock TTY mode
+      const originalIsTTY = process.stdin.isTTY;
+      Object.defineProperty(process.stdin, 'isTTY', {
+        value: true,
+        configurable: true,
+      });
+
+      // Mock readline to simulate user typing 'n'
+      const mockReadline = {
+        question: vi.fn((prompt: string, callback: (answer: string) => void) => {
+          callback('n');
+        }),
+        close: vi.fn(),
+      };
+
+      vi.doMock('node:readline', () => ({
+        createInterface: vi.fn(() => mockReadline),
+      }));
+
+      const command = createStoreCommand(getOptions);
+      const deleteCommand = command.commands.find((c) => c.name() === 'delete');
+      const actionHandler = deleteCommand?._actionHandler;
+
+      await actionHandler!(['my-store']);
+
+      // destroyServices should be called even for user cancellation
+      expect(destroyServices).toHaveBeenCalledWith(mockServices);
+      // exitCode stays undefined (0) for user-initiated cancellation
+      expect(process.exitCode).toBeUndefined();
+
+      // Restore
+      Object.defineProperty(process.stdin, 'isTTY', {
+        value: originalIsTTY,
+        configurable: true,
+      });
+    });
+
+    it('calls destroyServices when create fails', async () => {
+      mockServices.store.create.mockResolvedValue({
+        success: false,
+        error: {
+          message: 'Store already exists',
+        },
+      });
+
+      const command = createStoreCommand(getOptions);
+      const createCommand = command.commands.find((c) => c.name() === 'create');
+      const actionHandler = createCommand?._actionHandler;
+
+      createCommand.parseOptions(['--type', 'file', '--source', '/path/to/files']);
+      await actionHandler!(['duplicate-store']);
+
+      // destroyServices should be called before setting exitCode
+      expect(destroyServices).toHaveBeenCalledWith(mockServices);
+      expect(process.exitCode).toBe(1);
+      process.exitCode = undefined;
     });
   });
 });

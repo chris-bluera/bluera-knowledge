@@ -75,10 +75,12 @@ describe('WatchService', () => {
   });
 
   describe('watch - Lifecycle', () => {
+    const noopErrorHandler = (): void => {};
+
     it('starts watching a file store', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       expect(watch).toHaveBeenCalledWith(
         mockFileStore.path,
@@ -93,13 +95,13 @@ describe('WatchService', () => {
     it('starts watching a repo store', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockRepoStore);
+      await watchService.watch(mockRepoStore, 1000, undefined, noopErrorHandler);
 
       expect(watch).toHaveBeenCalledWith(mockRepoStore.path, expect.any(Object));
     });
 
     it('sets up event handlers on watcher', async () => {
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       expect(watcher?.on).toHaveBeenCalledWith('all', expect.any(Function));
@@ -109,10 +111,10 @@ describe('WatchService', () => {
     it('does not start watching if already watching the same store', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
       const callCount1 = (watch as ReturnType<typeof vi.fn>).mock.calls.length;
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
       const callCount2 = (watch as ReturnType<typeof vi.fn>).mock.calls.length;
 
       expect(callCount2).toBe(callCount1);
@@ -121,17 +123,17 @@ describe('WatchService', () => {
     it('allows watching multiple different stores', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
-      await watchService.watch(mockRepoStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
+      await watchService.watch(mockRepoStore, 1000, undefined, noopErrorHandler);
 
       expect(watch).toHaveBeenCalledTimes(2);
     });
 
     it('resolves immediately when store is already being watched', async () => {
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const startTime = Date.now();
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
       const endTime = Date.now();
 
       // Should resolve immediately
@@ -140,8 +142,10 @@ describe('WatchService', () => {
   });
 
   describe('watch - Debounce Logic', () => {
+    const noopErrorHandler = (): void => {};
+
     it('debounces rapid file changes with default timeout', async () => {
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       const allHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -236,8 +240,10 @@ describe('WatchService', () => {
   });
 
   describe('watch - Reindexing', () => {
+    const noopErrorHandler = (): void => {};
+
     it('initializes lance store before reindexing', async () => {
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       const allHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -255,7 +261,7 @@ describe('WatchService', () => {
     });
 
     it('calls indexStore with correct store', async () => {
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       const allHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -272,7 +278,7 @@ describe('WatchService', () => {
     it('calls onReindex callback after successful reindex', async () => {
       const onReindex = vi.fn();
 
-      await watchService.watch(mockFileStore, 1000, onReindex);
+      await watchService.watch(mockFileStore, 1000, onReindex, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       const allHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -287,7 +293,7 @@ describe('WatchService', () => {
     });
 
     it('does not call onReindex if not provided', async () => {
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       const allHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -303,8 +309,8 @@ describe('WatchService', () => {
     });
 
     it('handles concurrent reindexing for different stores', async () => {
-      await watchService.watch(mockFileStore);
-      await watchService.watch(mockRepoStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
+      await watchService.watch(mockRepoStore, 1000, undefined, noopErrorHandler);
 
       const watcher1 = mockWatchers[0];
       const watcher2 = mockWatchers[1];
@@ -386,8 +392,11 @@ describe('WatchService', () => {
       expect(onError).toHaveBeenCalledWith(testError);
     });
 
-    it('throws if no onError provided and watcher has error', async () => {
-      await watchService.watch(mockFileStore);
+    it('requires onError callback to be provided', async () => {
+      // onError is now required - this test verifies the type signature enforces it
+      // TypeScript would catch this at compile time, but runtime behavior should still work
+      const onError = vi.fn();
+      await watchService.watch(mockFileStore, 1000, undefined, onError);
 
       const watcher = mockWatchers[0];
       const errorHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -395,8 +404,10 @@ describe('WatchService', () => {
       )?.[1] as ((error: Error) => void) | undefined;
 
       const testError = new Error('Watcher error');
+      errorHandler?.(testError);
 
-      expect(() => errorHandler?.(testError)).toThrow('Watcher error');
+      // Error should be passed to onError, not thrown
+      expect(onError).toHaveBeenCalledWith(testError);
     });
 
     it('continues watching after error during reindex', async () => {
@@ -431,8 +442,10 @@ describe('WatchService', () => {
   });
 
   describe('unwatch', () => {
+    const noopErrorHandler = (): void => {};
+
     it('stops watching a store', async () => {
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       await watchService.unwatch(mockFileStore.id);
@@ -443,11 +456,11 @@ describe('WatchService', () => {
     it('removes watcher from internal map', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
       await watchService.unwatch(mockFileStore.id);
 
       // Trying to watch again should create new watcher
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       expect(watch).toHaveBeenCalledTimes(2);
     });
@@ -458,8 +471,8 @@ describe('WatchService', () => {
     });
 
     it('does not affect other watchers', async () => {
-      await watchService.watch(mockFileStore);
-      await watchService.watch(mockRepoStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
+      await watchService.watch(mockRepoStore, 1000, undefined, noopErrorHandler);
 
       const watcher1 = mockWatchers[0];
       const watcher2 = mockWatchers[1];
@@ -471,7 +484,7 @@ describe('WatchService', () => {
     });
 
     it('clears pending timeout to prevent timer leak', async () => {
-      await watchService.watch(mockFileStore, 1000);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const watcher = mockWatchers[0];
       const allHandler = (watcher?.on as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -494,9 +507,11 @@ describe('WatchService', () => {
   });
 
   describe('unwatchAll', () => {
+    const noopErrorHandler = (): void => {};
+
     it('stops all watchers', async () => {
-      await watchService.watch(mockFileStore);
-      await watchService.watch(mockRepoStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
+      await watchService.watch(mockRepoStore, 1000, undefined, noopErrorHandler);
 
       const watcher1 = mockWatchers[0];
       const watcher2 = mockWatchers[1];
@@ -510,13 +525,13 @@ describe('WatchService', () => {
     it('clears all watchers from map', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
-      await watchService.watch(mockRepoStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
+      await watchService.watch(mockRepoStore, 1000, undefined, noopErrorHandler);
 
       await watchService.unwatchAll();
 
       // Watching again should create new watchers
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       expect(watch).toHaveBeenCalledTimes(3); // 2 initial + 1 after unwatchAll
     });
@@ -528,10 +543,12 @@ describe('WatchService', () => {
   });
 
   describe('File Watching Configuration', () => {
+    const noopErrorHandler = (): void => {};
+
     it('ignores .git directories', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const config = (watch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1];
       expect(config.ignored).toBeInstanceOf(RegExp);
@@ -542,7 +559,7 @@ describe('WatchService', () => {
     it('ignores node_modules directories', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const config = (watch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1];
       expect(config.ignored.test('.node_modules')).toBe(true);
@@ -552,7 +569,7 @@ describe('WatchService', () => {
     it('ignores dist and build directories', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const config = (watch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1];
       expect(config.ignored.test('.dist')).toBe(true);
@@ -562,7 +579,7 @@ describe('WatchService', () => {
     it('sets persistent to true', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const config = (watch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1];
       expect(config.persistent).toBe(true);
@@ -571,7 +588,7 @@ describe('WatchService', () => {
     it('sets ignoreInitial to true', async () => {
       const { watch } = await import('chokidar');
 
-      await watchService.watch(mockFileStore);
+      await watchService.watch(mockFileStore, 1000, undefined, noopErrorHandler);
 
       const config = (watch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1];
       expect(config.ignoreInitial).toBe(true);

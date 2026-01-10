@@ -77,7 +77,7 @@ export function createCrawlCommand(getOptions: () => GlobalOptions): Command {
           store = existingStore;
         }
 
-        const maxPages = cmdOptions.maxPages !== undefined ? parseInt(cmdOptions.maxPages) : 50;
+        const maxPages = cmdOptions.maxPages !== undefined ? parseInt(cmdOptions.maxPages, 10) : 50;
 
         // Use spinner in interactive mode
         const isInteractive =

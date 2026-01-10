@@ -23,7 +23,7 @@ import {
   extractRepoName,
   ok
 } from "./chunk-QEHSDQTL.js";
-import "./chunk-S4LDHILW.js";
+import "./chunk-HRQD3MPH.js";
 
 // src/index.ts
 import { homedir as homedir2 } from "os";
@@ -74,7 +74,7 @@ function createCrawlCommand(getOptions) {
       } else {
         store = existingStore;
       }
-      const maxPages = cmdOptions.maxPages !== void 0 ? parseInt(cmdOptions.maxPages) : 50;
+      const maxPages = cmdOptions.maxPages !== void 0 ? parseInt(cmdOptions.maxPages, 10) : 50;
       const isInteractive = process.stdout.isTTY && globalOpts.quiet !== true && globalOpts.format !== "json";
       let spinner;
       if (isInteractive) {
@@ -263,16 +263,23 @@ function createIndexCommand(getOptions) {
       console.error(`Error: File/repo store not found: ${storeIdOrName}`);
       process.exit(3);
     }
-    const { WatchService } = await import("./watch.service-JPF3BICM.js");
+    const { WatchService } = await import("./watch.service-OPLKIDFQ.js");
     const watchService = new WatchService(services.index, services.lance);
     if (globalOpts.quiet !== true) {
       console.log(`Watching ${store.name} for changes...`);
     }
-    await watchService.watch(store, parseInt(options.debounce ?? "1000", 10), () => {
-      if (globalOpts.quiet !== true) {
-        console.log(`Re-indexed ${store.name}`);
+    await watchService.watch(
+      store,
+      parseInt(options.debounce ?? "1000", 10),
+      () => {
+        if (globalOpts.quiet !== true) {
+          console.log(`Re-indexed ${store.name}`);
+        }
+      },
+      (error) => {
+        console.error(`Watch error: ${error.message}`);
       }
-    });
+    );
     process.on("SIGINT", () => {
       void (async () => {
         await watchService.unwatchAll();
@@ -1523,18 +1530,20 @@ Created store: ${result.data.name} (${result.data.id})
         await destroyServices(services);
       }
       if (exitCode !== 0) {
-        process.exit(exitCode);
+        process.exitCode = exitCode;
       }
     }
   );
   store.command("info <store>").description("Show store details: ID, type, path/URL, timestamps").action(async (storeIdOrName) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    try {
+    let exitCode = 0;
+    storeInfo: try {
       const s = await services.store.getByIdOrName(storeIdOrName);
       if (s === void 0) {
         console.error(`Error: Store not found: ${storeIdOrName}`);
-        process.exit(3);
+        exitCode = 3;
+        break storeInfo;
       }
       if (globalOpts.format === "json") {
         console.log(JSON.stringify(s, null, 2));
@@ -1553,15 +1562,20 @@ Store: ${s.name}`);
     } finally {
       await destroyServices(services);
     }
+    if (exitCode !== 0) {
+      process.exitCode = exitCode;
+    }
   });
   store.command("delete <store>").description("Remove store and its indexed documents from LanceDB").option("-f, --force", "Delete without confirmation prompt").option("-y, --yes", "Alias for --force").action(async (storeIdOrName, options) => {
     const globalOpts = getOptions();
     const services = await createServices(globalOpts.config, globalOpts.dataDir);
-    try {
+    let exitCode = 0;
+    storeDelete: try {
       const s = await services.store.getByIdOrName(storeIdOrName);
       if (s === void 0) {
         console.error(`Error: Store not found: ${storeIdOrName}`);
-        process.exit(3);
+        exitCode = 3;
+        break storeDelete;
       }
       const skipConfirmation = options.force === true || options.yes === true;
       if (!skipConfirmation) {
@@ -1569,7 +1583,8 @@ Store: ${s.name}`);
           console.error(
             "Error: Use --force or -y to delete without confirmation in non-interactive mode"
           );
-          process.exit(1);
+          exitCode = 1;
+          break storeDelete;
         }
         const readline = await import("readline");
         const rl = readline.createInterface({
@@ -1582,7 +1597,7 @@ Store: ${s.name}`);
         rl.close();
         if (answer.toLowerCase() !== "y" && answer.toLowerCase() !== "yes") {
           console.log("Cancelled.");
-          process.exit(0);
+          break storeDelete;
         }
       }
       const result = await services.store.delete(s.id);
@@ -1590,10 +1605,13 @@ Store: ${s.name}`);
         console.log(`Deleted store: ${s.name}`);
       } else {
         console.error(`Error: ${result.error.message}`);
-        process.exit(1);
+        exitCode = 1;
       }
     } finally {
       await destroyServices(services);
+    }
+    if (exitCode !== 0) {
+      process.exitCode = exitCode;
     }
   });
   return store;

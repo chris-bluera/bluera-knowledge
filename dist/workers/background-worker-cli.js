@@ -10,7 +10,7 @@ import {
   createStoreId,
   shutdownLogger
 } from "../chunk-QEHSDQTL.js";
-import "../chunk-S4LDHILW.js";
+import "../chunk-HRQD3MPH.js";
 
 // src/workers/background-worker.ts
 import { createHash } from "crypto";

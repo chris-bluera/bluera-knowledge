@@ -407,7 +407,12 @@ describe('createIndexCommand - Execution Tests', () => {
 
       expect(mockServices.store.getByIdOrName).toHaveBeenCalledWith('test-store');
       expect(WatchService).toHaveBeenCalledWith(mockServices.index, mockServices.lance);
-      expect(mockWatchService.watch).toHaveBeenCalledWith(mockStore, 1000, expect.any(Function));
+      expect(mockWatchService.watch).toHaveBeenCalledWith(
+        mockStore,
+        1000,
+        expect.any(Function),
+        expect.any(Function)
+      );
     });
 
     it('watches a repo store successfully', async () => {
@@ -467,7 +472,12 @@ describe('createIndexCommand - Execution Tests', () => {
       const action = watchCmd!._actionHandler;
       await action(['test']);
 
-      expect(mockWatchService.watch).toHaveBeenCalledWith(mockStore, 2500, expect.any(Function));
+      expect(mockWatchService.watch).toHaveBeenCalledWith(
+        mockStore,
+        2500,
+        expect.any(Function),
+        expect.any(Function)
+      );
     });
 
     it('outputs watching message in normal mode', async () => {
@@ -550,8 +560,8 @@ describe('createIndexCommand - Execution Tests', () => {
 
       let capturedCallback: (() => void) | undefined;
       const mockWatchService = {
-        watch: vi.fn((store, debounce, callback) => {
-          capturedCallback = callback;
+        watch: vi.fn((store, debounce, onReindex, onError) => {
+          capturedCallback = onReindex;
         }),
         unwatchAll: vi.fn(),
       };
