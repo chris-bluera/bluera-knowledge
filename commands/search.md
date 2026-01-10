@@ -1,6 +1,6 @@
 ---
 description: Search indexed library sources
-argument-hint: "[query] [--stores names] [--limit N]"
+argument-hint: "[query] [--stores names] [--limit N] [--mode vector|fts|hybrid] [--detail minimal|contextual|full] [--threshold 0-1] [--min-relevance 0-1]"
 allowed-tools: ["mcp__bluera-knowledge__search"]
 ---
 
@@ -14,12 +14,19 @@ Search indexed library sources for: **$ARGUMENTS**
    - Extract the search query (required)
    - Extract --stores parameter (optional, comma-separated store names)
    - Extract --limit parameter (optional, default 10)
+   - Extract --mode parameter (optional: vector, fts, hybrid; default hybrid)
+   - Extract --detail parameter (optional: minimal, contextual, full; default contextual)
+   - Extract --threshold parameter (optional, 0-1 range for normalized score filtering)
+   - Extract --min-relevance parameter (optional, 0-1 range for raw cosine similarity filtering)
 
 2. Call mcp__bluera-knowledge__search with:
    - query: The search query string
    - stores: Array of store names (if --stores specified)
    - limit: Number of results (if --limit specified, default 10)
-   - detail: "contextual"
+   - mode: Search mode (if --mode specified, default "hybrid")
+   - detail: Detail level (if --detail specified, default "contextual")
+   - threshold: Minimum normalized score (if --threshold specified)
+   - minRelevance: Minimum raw cosine similarity (if --min-relevance specified)
    - intent: "find-implementation"
 
 3. Format and display results with rich context:
