@@ -12,37 +12,71 @@ import type { GlobalOptions } from '../program.js';
  * These commands provide a simpler interface that matches the plugin commands.
  */
 
-export function createAddRepoCommand(_getOptions: () => GlobalOptions): Command {
+export function createAddRepoCommand(getOptions: () => GlobalOptions): Command {
   return new Command('add-repo')
     .description('Clone and index a library source repository')
     .argument('<url>', 'Git repository URL')
     .option('--name <name>', 'Store name (defaults to repo name)')
     .option('--branch <branch>', 'Git branch to clone')
     .action(async (url: string, options: { name?: string; branch?: string }) => {
-      await handleAddRepo({ url, ...options });
+      const globalOpts = getOptions();
+      await handleAddRepo(
+        { url, ...options },
+        {
+          config: globalOpts.config,
+          dataDir: globalOpts.dataDir,
+          projectRoot: globalOpts.projectRoot,
+          format: globalOpts.format,
+          quiet: globalOpts.quiet,
+        }
+      );
     });
 }
 
-export function createAddFolderCommand(_getOptions: () => GlobalOptions): Command {
+export function createAddFolderCommand(getOptions: () => GlobalOptions): Command {
   return new Command('add-folder')
     .description('Index a local folder of reference material')
     .argument('<path>', 'Folder path to index')
     .option('--name <name>', 'Store name (defaults to folder name)')
     .action(async (path: string, options: { name?: string }) => {
-      await handleAddFolder({ path, ...options });
+      const globalOpts = getOptions();
+      await handleAddFolder(
+        { path, ...options },
+        {
+          config: globalOpts.config,
+          dataDir: globalOpts.dataDir,
+          projectRoot: globalOpts.projectRoot,
+          format: globalOpts.format,
+          quiet: globalOpts.quiet,
+        }
+      );
     });
 }
 
-export function createStoresCommand(_getOptions: () => GlobalOptions): Command {
+export function createStoresCommand(getOptions: () => GlobalOptions): Command {
   return new Command('stores').description('List all indexed library stores').action(async () => {
-    await handleStores();
+    const globalOpts = getOptions();
+    await handleStores({
+      config: globalOpts.config,
+      dataDir: globalOpts.dataDir,
+      projectRoot: globalOpts.projectRoot,
+      format: globalOpts.format,
+      quiet: globalOpts.quiet,
+    });
   });
 }
 
-export function createSuggestCommand(_getOptions: () => GlobalOptions): Command {
+export function createSuggestCommand(getOptions: () => GlobalOptions): Command {
   return new Command('suggest')
     .description('Suggest important dependencies to add to knowledge stores')
     .action(async () => {
-      await handleSuggest();
+      const globalOpts = getOptions();
+      await handleSuggest({
+        config: globalOpts.config,
+        dataDir: globalOpts.dataDir,
+        projectRoot: globalOpts.projectRoot,
+        format: globalOpts.format,
+        quiet: globalOpts.quiet,
+      });
     });
 }

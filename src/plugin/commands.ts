@@ -4,6 +4,17 @@ import { DependencyUsageAnalyzer } from '../analysis/dependency-usage-analyzer.j
 import { RepoUrlResolver } from '../analysis/repo-url-resolver.js';
 import { createServices } from '../services/index.js';
 
+/**
+ * Options passed from CLI global options to plugin command handlers.
+ */
+export interface CommandOptions {
+  config?: string | undefined;
+  dataDir?: string | undefined;
+  projectRoot?: string | undefined;
+  format?: 'json' | 'table' | 'plain' | undefined;
+  quiet?: boolean | undefined;
+}
+
 export async function handleSearch(args: {
   query: string;
   stores?: string;
@@ -45,13 +56,19 @@ export async function handleSearch(args: {
   }
 }
 
-export async function handleAddRepo(args: {
-  url: string;
-  name?: string;
-  branch?: string;
-}): Promise<void> {
-  // PWD is set by Claude Code to user's project directory
-  const services = await createServices(undefined, undefined, process.env['PWD']);
+export async function handleAddRepo(
+  args: {
+    url: string;
+    name?: string;
+    branch?: string;
+  },
+  options: CommandOptions = {}
+): Promise<void> {
+  const services = await createServices(
+    options.config,
+    options.dataDir,
+    options.projectRoot ?? process.env['PWD']
+  );
   const storeName = args.name ?? extractRepoName(args.url);
 
   console.log(`Cloning ${args.url}...`);
@@ -84,9 +101,15 @@ export async function handleAddRepo(args: {
   }
 }
 
-export async function handleAddFolder(args: { path: string; name?: string }): Promise<void> {
-  // PWD is set by Claude Code to user's project directory
-  const services = await createServices(undefined, undefined, process.env['PWD']);
+export async function handleAddFolder(
+  args: { path: string; name?: string },
+  options: CommandOptions = {}
+): Promise<void> {
+  const services = await createServices(
+    options.config,
+    options.dataDir,
+    options.projectRoot ?? process.env['PWD']
+  );
   const { basename } = await import('node:path');
   const storeName = args.name ?? basename(args.path);
 
@@ -142,9 +165,12 @@ export async function handleIndex(args: { store: string }): Promise<void> {
   }
 }
 
-export async function handleStores(): Promise<void> {
-  // PWD is set by Claude Code to user's project directory
-  const services = await createServices(undefined, undefined, process.env['PWD']);
+export async function handleStores(options: CommandOptions = {}): Promise<void> {
+  const services = await createServices(
+    options.config,
+    options.dataDir,
+    options.projectRoot ?? process.env['PWD']
+  );
   const stores = await services.store.list();
 
   if (stores.length === 0) {
@@ -176,14 +202,13 @@ export async function handleStores(): Promise<void> {
   }
 }
 
-export async function handleSuggest(): Promise<void> {
-  // PWD is set by Claude Code to user's project directory
-  const projectRoot = process.env['PWD'] ?? process.cwd();
+export async function handleSuggest(options: CommandOptions = {}): Promise<void> {
+  const projectRoot = options.projectRoot ?? process.env['PWD'] ?? process.cwd();
 
   console.log('Analyzing project dependencies...\n');
 
   // Create analyzer instance
-  const services = await createServices(undefined, undefined, projectRoot);
+  const services = await createServices(options.config, options.dataDir, projectRoot);
   const analyzer = new DependencyUsageAnalyzer();
   const resolver = new RepoUrlResolver();
 

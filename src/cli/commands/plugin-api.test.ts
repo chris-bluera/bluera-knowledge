@@ -38,16 +38,25 @@ describe('Plugin API Commands - Execution Tests', () => {
   });
 
   describe('add-repo command', () => {
-    it('calls handleAddRepo with url', async () => {
+    const expectedGlobalOpts = {
+      config: undefined,
+      dataDir: '/tmp/test',
+      projectRoot: undefined,
+      format: undefined,
+      quiet: false,
+    };
+
+    it('calls handleAddRepo with url and global options', async () => {
       const { handleAddRepo } = await import('../../plugin/commands.js');
 
       const command = createAddRepoCommand(getOptions);
       const actionHandler = (command as any)._actionHandler;
       await actionHandler(['https://github.com/user/repo.git']);
 
-      expect(handleAddRepo).toHaveBeenCalledWith({
-        url: 'https://github.com/user/repo.git',
-      });
+      expect(handleAddRepo).toHaveBeenCalledWith(
+        { url: 'https://github.com/user/repo.git' },
+        expectedGlobalOpts
+      );
     });
 
     it('calls handleAddRepo with url and name option', async () => {
@@ -58,10 +67,10 @@ describe('Plugin API Commands - Execution Tests', () => {
       command.parseOptions(['--name', 'my-repo']);
       await actionHandler(['https://github.com/user/repo.git']);
 
-      expect(handleAddRepo).toHaveBeenCalledWith({
-        url: 'https://github.com/user/repo.git',
-        name: 'my-repo',
-      });
+      expect(handleAddRepo).toHaveBeenCalledWith(
+        { url: 'https://github.com/user/repo.git', name: 'my-repo' },
+        expectedGlobalOpts
+      );
     });
 
     it('calls handleAddRepo with url and branch option', async () => {
@@ -72,10 +81,10 @@ describe('Plugin API Commands - Execution Tests', () => {
       command.parseOptions(['--branch', 'develop']);
       await actionHandler(['https://github.com/user/repo.git']);
 
-      expect(handleAddRepo).toHaveBeenCalledWith({
-        url: 'https://github.com/user/repo.git',
-        branch: 'develop',
-      });
+      expect(handleAddRepo).toHaveBeenCalledWith(
+        { url: 'https://github.com/user/repo.git', branch: 'develop' },
+        expectedGlobalOpts
+      );
     });
 
     it('calls handleAddRepo with all options', async () => {
@@ -86,11 +95,10 @@ describe('Plugin API Commands - Execution Tests', () => {
       command.parseOptions(['--name', 'custom-name', '--branch', 'main']);
       await actionHandler(['https://github.com/user/repo.git']);
 
-      expect(handleAddRepo).toHaveBeenCalledWith({
-        url: 'https://github.com/user/repo.git',
-        name: 'custom-name',
-        branch: 'main',
-      });
+      expect(handleAddRepo).toHaveBeenCalledWith(
+        { url: 'https://github.com/user/repo.git', name: 'custom-name', branch: 'main' },
+        expectedGlobalOpts
+      );
     });
 
     it('handles errors from handleAddRepo', async () => {
@@ -108,16 +116,22 @@ describe('Plugin API Commands - Execution Tests', () => {
   });
 
   describe('add-folder command', () => {
-    it('calls handleAddFolder with path', async () => {
+    const expectedGlobalOpts = {
+      config: undefined,
+      dataDir: '/tmp/test',
+      projectRoot: undefined,
+      format: undefined,
+      quiet: false,
+    };
+
+    it('calls handleAddFolder with path and global options', async () => {
       const { handleAddFolder } = await import('../../plugin/commands.js');
 
       const command = createAddFolderCommand(getOptions);
       const actionHandler = (command as any)._actionHandler;
       await actionHandler(['/path/to/folder']);
 
-      expect(handleAddFolder).toHaveBeenCalledWith({
-        path: '/path/to/folder',
-      });
+      expect(handleAddFolder).toHaveBeenCalledWith({ path: '/path/to/folder' }, expectedGlobalOpts);
     });
 
     it('calls handleAddFolder with path and name option', async () => {
@@ -128,10 +142,10 @@ describe('Plugin API Commands - Execution Tests', () => {
       command.parseOptions(['--name', 'my-folder']);
       await actionHandler(['/path/to/folder']);
 
-      expect(handleAddFolder).toHaveBeenCalledWith({
-        path: '/path/to/folder',
-        name: 'my-folder',
-      });
+      expect(handleAddFolder).toHaveBeenCalledWith(
+        { path: '/path/to/folder', name: 'my-folder' },
+        expectedGlobalOpts
+      );
     });
 
     it('handles relative paths', async () => {
@@ -141,9 +155,7 @@ describe('Plugin API Commands - Execution Tests', () => {
       const actionHandler = (command as any)._actionHandler;
       await actionHandler(['./relative/path']);
 
-      expect(handleAddFolder).toHaveBeenCalledWith({
-        path: './relative/path',
-      });
+      expect(handleAddFolder).toHaveBeenCalledWith({ path: './relative/path' }, expectedGlobalOpts);
     });
 
     it('handles paths with spaces', async () => {
@@ -153,9 +165,10 @@ describe('Plugin API Commands - Execution Tests', () => {
       const actionHandler = (command as any)._actionHandler;
       await actionHandler(['/path/with spaces/folder']);
 
-      expect(handleAddFolder).toHaveBeenCalledWith({
-        path: '/path/with spaces/folder',
-      });
+      expect(handleAddFolder).toHaveBeenCalledWith(
+        { path: '/path/with spaces/folder' },
+        expectedGlobalOpts
+      );
     });
 
     it('handles errors from handleAddFolder', async () => {
@@ -171,14 +184,20 @@ describe('Plugin API Commands - Execution Tests', () => {
   });
 
   describe('stores command', () => {
-    it('calls handleStores with no arguments', async () => {
+    it('calls handleStores with global options', async () => {
       const { handleStores } = await import('../../plugin/commands.js');
 
       const command = createStoresCommand(getOptions);
       const actionHandler = (command as any)._actionHandler;
       await actionHandler([]);
 
-      expect(handleStores).toHaveBeenCalledWith();
+      expect(handleStores).toHaveBeenCalledWith({
+        config: undefined,
+        dataDir: '/tmp/test',
+        projectRoot: undefined,
+        format: undefined,
+        quiet: false,
+      });
     });
 
     it('calls handleStores exactly once', async () => {
@@ -204,14 +223,20 @@ describe('Plugin API Commands - Execution Tests', () => {
   });
 
   describe('suggest command', () => {
-    it('calls handleSuggest with no arguments', async () => {
+    it('calls handleSuggest with global options', async () => {
       const { handleSuggest } = await import('../../plugin/commands.js');
 
       const command = createSuggestCommand(getOptions);
       const actionHandler = (command as any)._actionHandler;
       await actionHandler([]);
 
-      expect(handleSuggest).toHaveBeenCalledWith();
+      expect(handleSuggest).toHaveBeenCalledWith({
+        config: undefined,
+        dataDir: '/tmp/test',
+        projectRoot: undefined,
+        format: undefined,
+        quiet: false,
+      });
     });
 
     it('calls handleSuggest exactly once', async () => {
@@ -283,28 +308,65 @@ describe('Plugin API Commands - Execution Tests', () => {
   });
 
   describe('global options handling', () => {
-    it('add-repo ignores global options', async () => {
+    it('add-repo passes global options', async () => {
       const { handleAddRepo } = await import('../../plugin/commands.js');
 
-      // Global options should not be passed to handlers
       const command = createAddRepoCommand(getOptions);
       const actionHandler = (command as any)._actionHandler;
       await actionHandler(['https://github.com/user/repo.git']);
 
-      expect(handleAddRepo).toHaveBeenCalledWith({
-        url: 'https://github.com/user/repo.git',
-      });
+      expect(handleAddRepo).toHaveBeenCalledWith(
+        { url: 'https://github.com/user/repo.git' },
+        {
+          config: undefined,
+          dataDir: '/tmp/test',
+          projectRoot: undefined,
+          format: undefined,
+          quiet: false,
+        }
+      );
     });
 
-    it('add-folder ignores global options', async () => {
+    it('add-folder passes global options', async () => {
       const { handleAddFolder } = await import('../../plugin/commands.js');
 
       const command = createAddFolderCommand(getOptions);
       const actionHandler = (command as any)._actionHandler;
       await actionHandler(['/path']);
 
-      expect(handleAddFolder).toHaveBeenCalledWith({
-        path: '/path',
+      expect(handleAddFolder).toHaveBeenCalledWith(
+        { path: '/path' },
+        {
+          config: undefined,
+          dataDir: '/tmp/test',
+          projectRoot: undefined,
+          format: undefined,
+          quiet: false,
+        }
+      );
+    });
+
+    it('stores passes dataDir from global options', async () => {
+      const { handleStores } = await import('../../plugin/commands.js');
+
+      const customGetOptions = (): GlobalOptions => ({
+        config: '/custom/config.json',
+        dataDir: '/custom/data',
+        quiet: true,
+        format: 'json',
+        projectRoot: '/my/project',
+      });
+
+      const command = createStoresCommand(customGetOptions);
+      const actionHandler = (command as any)._actionHandler;
+      await actionHandler([]);
+
+      expect(handleStores).toHaveBeenCalledWith({
+        config: '/custom/config.json',
+        dataDir: '/custom/data',
+        projectRoot: '/my/project',
+        format: 'json',
+        quiet: true,
       });
     });
   });
