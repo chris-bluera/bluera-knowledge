@@ -779,28 +779,32 @@ async function handleAddRepo(args, options = {}) {
     options.dataDir,
     options.projectRoot ?? process.env["PWD"]
   );
-  const storeName = args.name ?? extractRepoName(args.url);
-  console.log(`Cloning ${args.url}...`);
-  const result = await services.store.create({
-    name: storeName,
-    type: "repo",
-    url: args.url,
-    ...args.branch !== void 0 ? { branch: args.branch } : {}
-  });
-  if (!result.success) {
-    console.error(`Error: ${result.error.message}`);
-    process.exit(1);
-  }
-  console.log(`Created store: ${storeName} (${result.data.id})`);
-  if ("path" in result.data) {
-    console.log(`Location: ${result.data.path}`);
-  }
-  console.log("\nIndexing...");
-  const indexResult = await services.index.indexStore(result.data);
-  if (indexResult.success) {
-    console.log(`Indexed ${String(indexResult.data.documentsIndexed)} files`);
-  } else {
-    console.error(`Indexing failed: ${indexResult.error.message}`);
+  try {
+    const storeName = args.name ?? extractRepoName(args.url);
+    console.log(`Cloning ${args.url}...`);
+    const result = await services.store.create({
+      name: storeName,
+      type: "repo",
+      url: args.url,
+      ...args.branch !== void 0 ? { branch: args.branch } : {}
+    });
+    if (!result.success) {
+      console.error(`Error: ${result.error.message}`);
+      process.exit(1);
+    }
+    console.log(`Created store: ${storeName} (${result.data.id})`);
+    if ("path" in result.data) {
+      console.log(`Location: ${result.data.path}`);
+    }
+    console.log("\nIndexing...");
+    const indexResult = await services.index.indexStore(result.data);
+    if (indexResult.success) {
+      console.log(`Indexed ${String(indexResult.data.documentsIndexed)} files`);
+    } else {
+      console.error(`Indexing failed: ${indexResult.error.message}`);
+    }
+  } finally {
+    await destroyServices(services);
   }
 }
 async function handleAddFolder(args, options = {}) {
@@ -809,28 +813,32 @@ async function handleAddFolder(args, options = {}) {
     options.dataDir,
     options.projectRoot ?? process.env["PWD"]
   );
-  const { basename } = await import("path");
-  const storeName = args.name ?? basename(args.path);
-  console.log(`Adding folder: ${args.path}...`);
-  const result = await services.store.create({
-    name: storeName,
-    type: "file",
-    path: args.path
-  });
-  if (!result.success) {
-    console.error(`Error: ${result.error.message}`);
-    process.exit(1);
-  }
-  console.log(`Created store: ${storeName} (${result.data.id})`);
-  if ("path" in result.data) {
-    console.log(`Location: ${result.data.path}`);
-  }
-  console.log("\nIndexing...");
-  const indexResult = await services.index.indexStore(result.data);
-  if (indexResult.success) {
-    console.log(`Indexed ${String(indexResult.data.documentsIndexed)} files`);
-  } else {
-    console.error(`Indexing failed: ${indexResult.error.message}`);
+  try {
+    const { basename } = await import("path");
+    const storeName = args.name ?? basename(args.path);
+    console.log(`Adding folder: ${args.path}...`);
+    const result = await services.store.create({
+      name: storeName,
+      type: "file",
+      path: args.path
+    });
+    if (!result.success) {
+      console.error(`Error: ${result.error.message}`);
+      process.exit(1);
+    }
+    console.log(`Created store: ${storeName} (${result.data.id})`);
+    if ("path" in result.data) {
+      console.log(`Location: ${result.data.path}`);
+    }
+    console.log("\nIndexing...");
+    const indexResult = await services.index.indexStore(result.data);
+    if (indexResult.success) {
+      console.log(`Indexed ${String(indexResult.data.documentsIndexed)} files`);
+    } else {
+      console.error(`Indexing failed: ${indexResult.error.message}`);
+    }
+  } finally {
+    await destroyServices(services);
   }
 }
 async function handleStores(options = {}) {
@@ -839,86 +847,94 @@ async function handleStores(options = {}) {
     options.dataDir,
     options.projectRoot ?? process.env["PWD"]
   );
-  const stores = await services.store.list();
-  if (stores.length === 0) {
-    console.log("No stores found.");
-    console.log("\nCreate a store with:");
-    console.log("  /bluera-knowledge:add-repo <url> --name=<name>");
-    console.log("  /bluera-knowledge:add-folder <path> --name=<name>");
-    return;
-  }
-  console.log("| Name | Type | ID | Source |");
-  console.log("|------|------|----|--------------------|");
-  for (const store of stores) {
-    const name = store.name;
-    const type = store.type;
-    const id = store.id;
-    let source = "";
-    if ("url" in store && store.url !== void 0) {
-      source = store.url;
-    } else if ("path" in store) {
-      source = store.path;
+  try {
+    const stores = await services.store.list();
+    if (stores.length === 0) {
+      console.log("No stores found.");
+      console.log("\nCreate a store with:");
+      console.log("  /bluera-knowledge:add-repo <url> --name=<name>");
+      console.log("  /bluera-knowledge:add-folder <path> --name=<name>");
+      return;
     }
-    console.log(`| ${name} | ${type} | ${id.substring(0, 8)}... | ${source} |`);
+    console.log("| Name | Type | ID | Source |");
+    console.log("|------|------|----|--------------------|");
+    for (const store of stores) {
+      const name = store.name;
+      const type = store.type;
+      const id = store.id;
+      let source = "";
+      if ("url" in store && store.url !== void 0) {
+        source = store.url;
+      } else if ("path" in store) {
+        source = store.path;
+      }
+      console.log(`| ${name} | ${type} | ${id.substring(0, 8)}... | ${source} |`);
+    }
+  } finally {
+    await destroyServices(services);
   }
 }
 async function handleSuggest(options = {}) {
   const projectRoot = options.projectRoot ?? process.env["PWD"] ?? process.cwd();
   console.log("Analyzing project dependencies...\n");
   const services = await createServices(options.config, options.dataDir, projectRoot);
-  const analyzer = new DependencyUsageAnalyzer();
-  const resolver = new RepoUrlResolver();
-  const spinner = ora3("Scanning source files...").start();
-  const result = await analyzer.analyze(projectRoot, (current, total, message) => {
-    spinner.text = `${message} (${String(current)}/${String(total)})`;
-  });
-  spinner.stop();
-  if (!result.success) {
-    console.error(`Error: ${result.error.message}`);
-    process.exit(1);
-  }
-  const { usages, totalFilesScanned, skippedFiles } = result.data;
-  console.log(
-    `\u2714 Scanned ${String(totalFilesScanned)} files${skippedFiles > 0 ? ` (skipped ${String(skippedFiles)})` : ""}
-`
-  );
-  if (usages.length === 0) {
-    console.log("No external dependencies found in this project.");
-    console.log("\nMake sure you have a package.json or requirements.txt file.");
-    return;
-  }
-  const existingStores = await services.store.list();
-  const existingRepoNames = new Set(existingStores.map((s) => s.name));
-  const newUsages = usages.filter((u) => !existingRepoNames.has(u.packageName));
-  if (newUsages.length === 0) {
-    console.log("\u2714 All dependencies are already in knowledge stores!");
-    return;
-  }
-  const topSuggestions = newUsages.slice(0, 5);
-  console.log("Top dependencies by usage in this project:\n");
-  topSuggestions.forEach((usage, i) => {
-    console.log(`${String(i + 1)}. ${usage.packageName}`);
+  try {
+    const analyzer = new DependencyUsageAnalyzer();
+    const resolver = new RepoUrlResolver();
+    const spinner = ora3("Scanning source files...").start();
+    const result = await analyzer.analyze(projectRoot, (current, total, message) => {
+      spinner.text = `${message} (${String(current)}/${String(total)})`;
+    });
+    spinner.stop();
+    if (!result.success) {
+      console.error(`Error: ${result.error.message}`);
+      process.exit(1);
+    }
+    const { usages, totalFilesScanned, skippedFiles } = result.data;
     console.log(
-      `   ${String(usage.importCount)} imports across ${String(usage.fileCount)} files
+      `\u2714 Scanned ${String(totalFilesScanned)} files${skippedFiles > 0 ? ` (skipped ${String(skippedFiles)})` : ""}
 `
     );
-  });
-  console.log("Searching for repository URLs...\n");
-  for (const usage of topSuggestions) {
-    const repoResult = await resolver.findRepoUrl(usage.packageName, usage.language);
-    if (repoResult.url !== null) {
-      console.log(`\u2714 ${usage.packageName}: ${repoResult.url}`);
-      console.log(`  /bluera-knowledge:add-repo ${repoResult.url} --name=${usage.packageName}
-`);
-    } else {
-      console.log(`\u2717 ${usage.packageName}: Could not find repository URL`);
+    if (usages.length === 0) {
+      console.log("No external dependencies found in this project.");
+      console.log("\nMake sure you have a package.json or requirements.txt file.");
+      return;
+    }
+    const existingStores = await services.store.list();
+    const existingRepoNames = new Set(existingStores.map((s) => s.name));
+    const newUsages = usages.filter((u) => !existingRepoNames.has(u.packageName));
+    if (newUsages.length === 0) {
+      console.log("\u2714 All dependencies are already in knowledge stores!");
+      return;
+    }
+    const topSuggestions = newUsages.slice(0, 5);
+    console.log("Top dependencies by usage in this project:\n");
+    topSuggestions.forEach((usage, i) => {
+      console.log(`${String(i + 1)}. ${usage.packageName}`);
       console.log(
-        `  You can manually add it: /bluera-knowledge:add-repo <url> --name=${usage.packageName}
+        `   ${String(usage.importCount)} imports across ${String(usage.fileCount)} files
 `
       );
+    });
+    console.log("Searching for repository URLs...\n");
+    for (const usage of topSuggestions) {
+      const repoResult = await resolver.findRepoUrl(usage.packageName, usage.language);
+      if (repoResult.url !== null) {
+        console.log(`\u2714 ${usage.packageName}: ${repoResult.url}`);
+        console.log(`  /bluera-knowledge:add-repo ${repoResult.url} --name=${usage.packageName}
+`);
+      } else {
+        console.log(`\u2717 ${usage.packageName}: Could not find repository URL`);
+        console.log(
+          `  You can manually add it: /bluera-knowledge:add-repo <url> --name=${usage.packageName}
+`
+        );
+      }
     }
+    console.log("Use the commands above to add repositories to your knowledge stores.");
+  } finally {
+    await destroyServices(services);
   }
-  console.log("Use the commands above to add repositories to your knowledge stores.");
 }
 
 // src/cli/commands/plugin-api.ts

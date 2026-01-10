@@ -9,9 +9,10 @@ import {
 } from './commands.js';
 import type { ServiceContainer } from '../services/index.js';
 
-// Mock the createServices function
+// Mock the createServices and destroyServices functions
 vi.mock('../services/index.js', () => ({
   createServices: vi.fn(),
+  destroyServices: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock extractRepoName
