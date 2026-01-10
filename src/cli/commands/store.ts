@@ -1,3 +1,5 @@
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { Command } from 'commander';
 import { createServices, destroyServices } from '../../services/index.js';
 import type { StoreType } from '../../types/store.js';
@@ -188,6 +190,20 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
           }
         }
 
+        // Delete LanceDB table first (so searches don't return results for deleted store)
+        await services.lance.deleteStore(s.id);
+
+        // Delete code graph file
+        await services.codeGraph.deleteGraph(s.id);
+
+        // For repo stores cloned from URL, remove the cloned directory
+        if (s.type === 'repo' && 'url' in s && s.url !== undefined) {
+          const dataDir = services.config.resolveDataDir();
+          const repoPath = join(dataDir, 'repos', s.id);
+          await rm(repoPath, { recursive: true, force: true });
+        }
+
+        // Delete from registry last
         const result = await services.store.delete(s.id);
 
         if (result.success) {

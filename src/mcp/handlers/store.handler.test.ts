@@ -42,6 +42,9 @@ describe('store.handler', () => {
         lance: {
           deleteStore: vi.fn().mockResolvedValue(undefined),
         },
+        codeGraph: {
+          deleteGraph: vi.fn().mockResolvedValue(undefined),
+        },
       } as any,
       options: { dataDir: tempDir },
     };

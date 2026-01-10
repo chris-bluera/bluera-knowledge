@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { ASTParser } from '../analysis/ast-parser.js';
 import { CodeGraph, type GraphNode } from '../analysis/code-graph.js';
@@ -118,6 +118,16 @@ export class CodeGraphService {
 
     const serialized = graph.toJSON();
     await writeFile(graphPath, JSON.stringify(serialized, null, 2));
+  }
+
+  /**
+   * Delete the code graph file for a store.
+   * Silently succeeds if the file doesn't exist.
+   */
+  async deleteGraph(storeId: StoreId): Promise<void> {
+    const graphPath = this.getGraphPath(storeId);
+    await rm(graphPath, { force: true });
+    this.graphCache.delete(storeId);
   }
 
   /**

@@ -274,8 +274,11 @@ export const handleDeleteStore: ToolHandler<DeleteStoreArgs> = async (
     throw new Error(`Store not found: ${validated.store}`);
   }
 
-  // Delete LanceDB table
+  // Delete LanceDB table first (so searches don't return results for deleted store)
   await services.lance.deleteStore(store.id);
+
+  // Delete code graph file
+  await services.codeGraph.deleteGraph(store.id);
 
   // For repo stores cloned from URL, remove the cloned directory
   if (store.type === 'repo' && 'url' in store && store.url !== undefined) {
@@ -286,7 +289,7 @@ export const handleDeleteStore: ToolHandler<DeleteStoreArgs> = async (
     await rm(repoPath, { recursive: true, force: true });
   }
 
-  // Delete from registry
+  // Delete from registry last
   const result = await services.store.delete(store.id);
   if (!result.success) {
     throw new Error(result.error.message);
