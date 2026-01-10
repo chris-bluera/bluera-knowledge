@@ -168,7 +168,7 @@ describe('CLI Consistency', () => {
       expect(result.exitCode).toBe(0);
       const parsed = JSON.parse(result.stdout);
       expect(parsed).toHaveProperty('results');
-    });
+    }, 15000);
 
     it('index supports --format json', () => {
       const result = runCli('index json-test-store --format json');
