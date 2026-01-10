@@ -654,6 +654,20 @@ describe('PythonBridge', () => {
       expect(mockProcess.kill).toHaveBeenCalled();
     });
 
+    it('should close stderr readline interface on stop', async () => {
+      await bridge.start();
+      await bridge.stop();
+
+      expect(mockStderrReadline.close).toHaveBeenCalled();
+    });
+
+    it('should close stdout readline interface on stop', async () => {
+      await bridge.start();
+      await bridge.stop();
+
+      expect(mockReadline.close).toHaveBeenCalled();
+    });
+
     it('should set process to null on stop', async () => {
       await bridge.start();
       await bridge.stop();

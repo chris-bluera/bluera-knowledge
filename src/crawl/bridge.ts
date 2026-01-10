@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { createInterface } from 'node:readline';
+import { createInterface, type Interface as ReadlineInterface } from 'node:readline';
 import { ZodError } from 'zod';
 import {
   type CrawlResult,
@@ -31,6 +31,8 @@ export class PythonBridge {
   private process: ChildProcess | null = null;
   private readonly pending: Map<string, PendingRequest> = new Map();
   private stoppingIntentionally = false;
+  private stdoutReadline: ReadlineInterface | null = null;
+  private stderrReadline: ReadlineInterface | null = null;
 
   start(): Promise<void> {
     if (this.process) return Promise.resolve();
@@ -63,8 +65,8 @@ export class PythonBridge {
 
     // Add stderr logging
     if (this.process.stderr) {
-      const stderrRl = createInterface({ input: this.process.stderr });
-      stderrRl.on('line', (line) => {
+      this.stderrReadline = createInterface({ input: this.process.stderr });
+      this.stderrReadline.on('line', (line) => {
         logger.warn({ stderr: line }, 'Python bridge stderr output');
       });
     }
@@ -74,8 +76,8 @@ export class PythonBridge {
       this.process = null; // Clean up reference
       return Promise.reject(new Error('Python bridge process stdout is null'));
     }
-    const rl = createInterface({ input: this.process.stdout });
-    rl.on('line', (line) => {
+    this.stdoutReadline = createInterface({ input: this.process.stdout });
+    this.stdoutReadline.on('line', (line) => {
       // Filter out non-JSON lines (crawl4ai verbose output)
       if (!line.trim().startsWith('{')) {
         return;
@@ -265,6 +267,16 @@ export class PythonBridge {
     return new Promise((resolve) => {
       this.stoppingIntentionally = true;
       this.rejectAllPending(new Error('Python bridge stopped'));
+
+      // Close readline interfaces to prevent resource leaks
+      if (this.stdoutReadline) {
+        this.stdoutReadline.close();
+        this.stdoutReadline = null;
+      }
+      if (this.stderrReadline) {
+        this.stderrReadline.close();
+        this.stderrReadline = null;
+      }
 
       // Wait for process to actually exit before resolving
       const proc = this.process;
