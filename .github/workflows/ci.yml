@@ -1,9 +1,22 @@
 name: CI
 
+# CI runs on branch pushes and PRs, but NOT on tags.
+#
+# Why no tag trigger?
+# - Auto Release workflow (auto-release.yml) waits for CI to pass on main
+#   before creating a tag (uses wait-on-check-action with lint-and-typecheck,
+#   test, build checks)
+# - The tag contains the exact same code that just passed CI on main
+# - Running CI again on the tag is redundant and wastes ~3 minutes per release
+# - Release workflow (release.yml) trusts this guarantee and publishes immediately
+#
+# Quality guarantee chain:
+#   push to main → CI passes → Auto Release creates tag → Release publishes
+#
 on:
   push:
     branches: ['**']
-    tags: ['v*']
+    # Note: tags intentionally excluded - see comment above
   pull_request:
     branches: [main]
 

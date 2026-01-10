@@ -40,6 +40,11 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
+      # CRITICAL: This is the quality gate for releases.
+      # CI workflow does NOT run on tags (to avoid redundant ~3 min test runs).
+      # This step ensures all CI checks pass on main BEFORE creating a tag.
+      # The Release workflow trusts this guarantee and publishes immediately.
+      # See ci.yml header comment for the full quality guarantee chain.
       - name: Wait for CI to complete
         if: steps.check_tag.outputs.exists == 'false'
         uses: lewagon/wait-on-check-action@v1.3.4

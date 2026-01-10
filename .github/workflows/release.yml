@@ -1,5 +1,11 @@
 name: Release
 
+# Publishes to npm when a tag is pushed.
+#
+# Quality assumption: Tags are only created by Auto Release workflow AFTER
+# CI passes on main. This workflow trusts that guarantee and does not re-run
+# tests. See ci.yml and auto-release.yml for the full quality chain.
+#
 on:
   push:
     tags:
