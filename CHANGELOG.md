@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.11.19](https://github.com/blueraai/bluera-knowledge/compare/v0.11.6...v0.11.19) (2026-01-10)
+
+
+### Features
+
+* **code-unit:** add interface and type extraction support ([190dded](https://github.com/blueraai/bluera-knowledge/commit/190dded78be68985c3f94c0da6ebed03659da313))
+* **commands:** add test-plugin command for comprehensive plugin testing ([c6eb5e7](https://github.com/blueraai/bluera-knowledge/commit/c6eb5e7762376810a9ff3e79f794f05ff0c77b97))
+* **scripts:** add post-release npm validation script ([e4c29a0](https://github.com/blueraai/bluera-knowledge/commit/e4c29a0c83907de4bc293a69a58412629457fb22))
+* **scripts:** add suggest, sync, serve, mcp tests to npm validation ([49d85da](https://github.com/blueraai/bluera-knowledge/commit/49d85dad1a89691060c12f152d644844baf6e6e6))
+* **scripts:** log expected vs installed version in validation script ([c77d039](https://github.com/blueraai/bluera-knowledge/commit/c77d039b27a3ccf54d50006af161ac4dcfea7b21))
+
+
+### Bug Fixes
+
+* **bridge:** close readline interfaces on stop to prevent resource leak ([e970bf9](https://github.com/blueraai/bluera-knowledge/commit/e970bf94f74bdba24803eed8714d47ed8e874117))
+* **cli:** plugin-api commands now respect global options ([d3cca02](https://github.com/blueraai/bluera-knowledge/commit/d3cca02ffc679ffc187b76c7682f3cc177eabdea))
+* **commands:** fix test-plugin reliability issues ([2841e9a](https://github.com/blueraai/bluera-knowledge/commit/2841e9aa6438f9fd60c70ab921575088b2921810))
+* **commands:** move test-plugin to commands/ for plugin distribution ([0a3ff5f](https://github.com/blueraai/bluera-knowledge/commit/0a3ff5f91666db7efa213d5abd4c447fb07749fc))
+* **crawl:** throw errors instead of fallback/graceful degradation ([19962c2](https://github.com/blueraai/bluera-knowledge/commit/19962c2114406f2fea22e5973e242f190ab65fb7))
+* **git-clone:** add error handler for spawn failures ([4bf50e2](https://github.com/blueraai/bluera-knowledge/commit/4bf50e2348505dccdc94522cf42f1d4d3471480c))
+* improve error handling and type safety from code review ([61710aa](https://github.com/blueraai/bluera-knowledge/commit/61710aaed48c87c457628b75e3968686377a6c92))
+* **plugin:** properly close services after command execution ([eeaf743](https://github.com/blueraai/bluera-knowledge/commit/eeaf743750be73fd9c7a9e72440b2fd0fb5a53fa))
+* **scripts:** show real-time output in validation script ([8a4bdec](https://github.com/blueraai/bluera-knowledge/commit/8a4bdec8b63c504d34ba35bfe19da795f7f7fd07))
+* **scripts:** use mktemp for temp directories in validation script ([3107861](https://github.com/blueraai/bluera-knowledge/commit/3107861bd7a966016fde2a121469dd84756f39be))
+* **search:** add defaults for env vars so CLI works standalone ([b2d2ce5](https://github.com/blueraai/bluera-knowledge/commit/b2d2ce534e8cd2ba0fc0abdac505c912a1a76035))
+* **services:** throw errors instead of graceful degradation ([ca992b5](https://github.com/blueraai/bluera-knowledge/commit/ca992b5cfa4d9ebad62ee82231cfdd2d3d64012e))
+
 ## [0.11.18](https://github.com/blueraai/bluera-knowledge/compare/v0.11.6...v0.11.18) (2026-01-10)
 
 
