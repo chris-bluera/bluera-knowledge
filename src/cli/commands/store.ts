@@ -51,6 +51,7 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
       'Store type: file (local dir), repo (git), web (crawled site)'
     )
     .requiredOption('-s, --source <path>', 'Local path for file/repo stores, URL for web stores')
+    .option('-b, --branch <branch>', 'Git branch to clone (repo stores only)')
     .option('-d, --description <desc>', 'Optional description for the store')
     .option('--tags <tags>', 'Comma-separated tags for filtering')
     .action(
@@ -59,6 +60,7 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
         options: {
           type: StoreType;
           source: string;
+          branch?: string;
           description?: string;
           tags?: string;
         }
@@ -81,6 +83,7 @@ export function createStoreCommand(getOptions: () => GlobalOptions): Command {
               options.type === 'web' || (options.type === 'repo' && isUrl)
                 ? options.source
                 : undefined,
+            branch: options.type === 'repo' ? options.branch : undefined,
             description: options.description,
             tags: options.tags?.split(',').map((t) => t.trim()),
           });

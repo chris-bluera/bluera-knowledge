@@ -390,6 +390,51 @@ describe('store command execution', () => {
       });
     });
 
+    it('creates repo store with branch option', async () => {
+      const mockStore: RepoStore = {
+        id: createStoreId('new-store-6'),
+        name: 'branched-repo',
+        type: 'repo',
+        path: '/path/to/cloned/repo',
+        url: 'https://github.com/user/repo',
+        branch: 'develop',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockServices.store.create.mockResolvedValue({
+        success: true,
+        data: mockStore,
+      });
+
+      const command = createStoreCommand(getOptions);
+      const createCommand = command.commands.find((c) => c.name() === 'create');
+      const actionHandler = createCommand?._actionHandler;
+
+      createCommand.parseOptions([
+        '--type',
+        'repo',
+        '--source',
+        'https://github.com/user/repo',
+        '--branch',
+        'develop',
+      ]);
+      await actionHandler!(['branched-repo']);
+
+      expect(mockServices.store.create).toHaveBeenCalledWith({
+        name: 'branched-repo',
+        type: 'repo',
+        path: undefined,
+        url: 'https://github.com/user/repo',
+        branch: 'develop',
+        description: undefined,
+        tags: undefined,
+      });
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Created store: branched-repo')
+      );
+    });
+
     it('outputs JSON when format is json', async () => {
       const mockStore: FileStore = {
         id: createStoreId('new-store-5'),
@@ -882,6 +927,15 @@ describe('store command execution', () => {
       expect(descriptionOption?.mandatory).toBe(false);
       expect(tagsOption).toBeDefined();
       expect(tagsOption?.mandatory).toBe(false);
+    });
+
+    it('create subcommand has --branch option for repo type', () => {
+      const command = createStoreCommand(getOptions);
+      const createCommand = command.commands.find((c) => c.name() === 'create');
+      const branchOption = createCommand?.options.find((o) => o.long === '--branch');
+
+      expect(branchOption).toBeDefined();
+      expect(branchOption?.mandatory).toBe(false);
     });
 
     it('delete subcommand has force and yes options', () => {
