@@ -68,11 +68,11 @@ run_test() {
     local cmd="$*"
 
     log "Running: $cmd"
-    if eval "$cmd" >> "$LOG_FILE" 2>&1; then
+    if eval "$cmd" 2>&1 | tee -a "$LOG_FILE"; then
         pass "$name"
         return 0
     else
-        fail "$name (exit code: $?)"
+        fail "$name (exit code: ${PIPESTATUS[0]})"
         return 1
     fi
 }
@@ -86,19 +86,17 @@ run_test_contains() {
 
     log "Running: $cmd"
     local output
-    if output=$(eval "$cmd" 2>&1); then
+    # Capture output while also showing it on terminal via tee
+    if output=$(eval "$cmd" 2>&1 | tee -a "$LOG_FILE"); then
         if echo "$output" | grep -q "$expected"; then
             pass "$name"
-            echo "$output" >> "$LOG_FILE"
             return 0
         else
             fail "$name (output missing: $expected)"
-            echo "$output" >> "$LOG_FILE"
             return 1
         fi
     else
         fail "$name (command failed)"
-        echo "$output" >> "$LOG_FILE"
         return 1
     fi
 }

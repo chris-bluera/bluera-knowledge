@@ -31,4 +31,25 @@ describe('validate-npm-release.sh', () => {
     expect(scriptContent).toContain('trap');
     expect(scriptContent).toMatch(/rm -rf/);
   });
+
+  it('shows real-time output during command execution', () => {
+    // Script should use tee to show output on both terminal and log file
+    // This prevents the script from appearing "hung" during long-running commands
+    expect(scriptContent).toContain('tee -a');
+  });
+
+  it('does not redirect output only to log file in run_test functions', () => {
+    // The run_test and run_test_contains functions should not silently redirect
+    // all output to log file - they should show progress on terminal
+    const lines = scriptContent.split('\n');
+
+    // Find run_test function and check it doesn't use silent redirection
+    // Pattern: >> "$LOG_FILE" 2>&1 without tee means silent execution
+    const hasSilentRedirect = lines.some(
+      (line) =>
+        line.includes('eval "$cmd"') && line.includes('>> "$LOG_FILE"') && !line.includes('tee')
+    );
+
+    expect(hasSilentRedirect).toBe(false);
+  });
 });
