@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.11.2](https://github.com/blueraai/bluera-knowledge/compare/v0.10.0...v0.11.2) (2026-01-10)
+
+
+### Features
+
+* **analysis:** add custom language extensibility framework with ZIL adapter ([c4dc526](https://github.com/blueraai/bluera-knowledge/commit/c4dc526467c70dbc3fb28e7e5d7620a90cc3bf95))
+* **sync:** add git-committable store definitions with sync command ([5cfa925](https://github.com/blueraai/bluera-knowledge/commit/5cfa92580397f193fda75ea61197fb4c9d9d4b0a))
+
+
+### Bug Fixes
+
+* **crawl:** handle Claude CLI structured_output wrapper in intelligent crawl ([54ea74b](https://github.com/blueraai/bluera-knowledge/commit/54ea74bca6d4b7263ef11a8290416e0d66b8d37f))
+* **test:** add timeout to flaky search test ([5848b76](https://github.com/blueraai/bluera-knowledge/commit/5848b7648a547510fc2333f283ae835a6ca9efef))
+
 ## [0.11.1](https://github.com/blueraai/bluera-knowledge/compare/v0.10.0...v0.11.1) (2026-01-09)
 
 
