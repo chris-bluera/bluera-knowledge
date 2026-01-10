@@ -5,8 +5,9 @@ import {
   createLogger,
   createServices,
   createStoreId,
+  destroyServices,
   summarizePayload
-} from "./chunk-QEHSDQTL.js";
+} from "./chunk-MQGRQ2EG.js";
 
 // src/mcp/server.ts
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -2050,6 +2051,8 @@ function createMCPServer(options) {
         "Tool execution failed"
       );
       throw error;
+    } finally {
+      await destroyServices(services);
     }
   });
   return server;
@@ -2096,4 +2099,4 @@ export {
   createMCPServer,
   runMCPServer
 };
-//# sourceMappingURL=chunk-VP4VZULK.js.map
+//# sourceMappingURL=chunk-ZSKQIMD7.js.map

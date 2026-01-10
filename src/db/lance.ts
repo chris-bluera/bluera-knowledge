@@ -113,26 +113,21 @@ export class LanceStore {
   > {
     const table = await this.getTable(storeId);
 
-    try {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const results = (await table.search(query, 'fts').limit(limit).toArray()) as Array<{
-        id: string;
-        content: string;
-        metadata: string;
-        _score: number;
-      }>;
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const results = (await table.search(query, 'fts').limit(limit).toArray()) as Array<{
+      id: string;
+      content: string;
+      metadata: string;
+      _score: number;
+    }>;
 
-      return results.map((r) => ({
-        id: createDocumentId(r.id),
-        content: r.content,
-        score: r._score,
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        metadata: JSON.parse(r.metadata) as DocumentMetadata,
-      }));
-    } catch {
-      // FTS index may not exist, return empty
-      return [];
-    }
+    return results.map((r) => ({
+      id: createDocumentId(r.id),
+      content: r.content,
+      score: r._score,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      metadata: JSON.parse(r.metadata) as DocumentMetadata,
+    }));
   }
 
   async deleteStore(storeId: StoreId): Promise<void> {

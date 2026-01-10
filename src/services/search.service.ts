@@ -518,15 +518,21 @@ export class SearchService {
     const results: SearchResult[] = [];
 
     for (const storeId of stores) {
-      const hits = await this.lanceStore.fullTextSearch(storeId, query, limit);
-      results.push(
-        ...hits.map((r) => ({
-          id: r.id,
-          score: r.score,
-          content: r.content,
-          metadata: r.metadata,
-        }))
-      );
+      try {
+        const hits = await this.lanceStore.fullTextSearch(storeId, query, limit);
+        results.push(
+          ...hits.map((r) => ({
+            id: r.id,
+            score: r.score,
+            content: r.content,
+            metadata: r.metadata,
+          }))
+        );
+      } catch {
+        // FTS index may not exist for this store - continue with other stores
+        // and rely on vector search results. This is expected behavior since
+        // FTS indexing is optional and hybrid search works with vector-only.
+      }
     }
 
     return results.sort((a, b) => b.score - a.score).slice(0, limit);

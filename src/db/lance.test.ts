@@ -154,7 +154,7 @@ describe('LanceStore', () => {
   });
 
   describe('fullTextSearch error handling', () => {
-    it('returns empty array when FTS index does not exist', async () => {
+    it('throws error when FTS index does not exist', async () => {
       const newStoreId = createStoreId('no-fts-store');
       await store.initialize(newStoreId);
 
@@ -171,9 +171,8 @@ describe('LanceStore', () => {
 
       await store.addDocuments(newStoreId, [doc]);
 
-      // Don't create FTS index - should return empty array
-      const results = await store.fullTextSearch(newStoreId, 'test', 10);
-      expect(results).toEqual([]);
+      // Don't create FTS index - should throw error per CLAUDE.md "fail fast"
+      await expect(store.fullTextSearch(newStoreId, 'test', 10)).rejects.toThrow();
     });
   });
 

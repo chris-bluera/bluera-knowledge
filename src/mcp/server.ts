@@ -4,7 +4,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { AdapterRegistry } from '../analysis/adapter-registry.js';
 import { ZilAdapter } from '../analysis/zil/index.js';
 import { createLogger } from '../logging/index.js';
-import { createServices } from '../services/index.js';
+import { createServices, destroyServices } from '../services/index.js';
 import { handleExecute } from './handlers/execute.handler.js';
 import { tools } from './handlers/index.js';
 import { ExecuteArgsSchema } from './schemas/index.js';
@@ -174,6 +174,10 @@ export function createMCPServer(options: MCPServerOptions): Server {
         'Tool execution failed'
       );
       throw error;
+    } finally {
+      // Always cleanup services to prevent resource leaks
+      // (PythonBridge processes, LanceDB connections)
+      await destroyServices(services);
     }
   });
 

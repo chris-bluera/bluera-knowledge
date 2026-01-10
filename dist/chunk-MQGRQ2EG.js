@@ -3104,15 +3104,18 @@ var SearchService = class {
   async ftsSearch(query, stores, limit) {
     const results = [];
     for (const storeId of stores) {
-      const hits = await this.lanceStore.fullTextSearch(storeId, query, limit);
-      results.push(
-        ...hits.map((r) => ({
-          id: r.id,
-          score: r.score,
-          content: r.content,
-          metadata: r.metadata
-        }))
-      );
+      try {
+        const hits = await this.lanceStore.fullTextSearch(storeId, query, limit);
+        results.push(
+          ...hits.map((r) => ({
+            id: r.id,
+            score: r.score,
+            content: r.content,
+            metadata: r.metadata
+          }))
+        );
+      } catch {
+      }
     }
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
@@ -4388,18 +4391,14 @@ var LanceStore = class {
   }
   async fullTextSearch(storeId, query, limit) {
     const table = await this.getTable(storeId);
-    try {
-      const results = await table.search(query, "fts").limit(limit).toArray();
-      return results.map((r) => ({
-        id: createDocumentId(r.id),
-        content: r.content,
-        score: r._score,
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        metadata: JSON.parse(r.metadata)
-      }));
-    } catch {
-      return [];
-    }
+    const results = await table.search(query, "fts").limit(limit).toArray();
+    return results.map((r) => ({
+      id: createDocumentId(r.id),
+      content: r.content,
+      score: r._score,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      metadata: JSON.parse(r.metadata)
+    }));
   }
   async deleteStore(storeId) {
     const tableName = this.getTableName(storeId);
@@ -4519,4 +4518,4 @@ export {
   createServices,
   destroyServices
 };
-//# sourceMappingURL=chunk-QEHSDQTL.js.map
+//# sourceMappingURL=chunk-MQGRQ2EG.js.map
