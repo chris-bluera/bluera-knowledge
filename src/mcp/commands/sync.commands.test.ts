@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { z } from 'zod';
-import { rm, mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { rm, mkdtemp, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { syncCommands, handleStoresSync } from './sync.commands.js';
@@ -8,7 +7,11 @@ import { StoreService } from '../../services/store.service.js';
 import { StoreDefinitionService } from '../../services/store-definition.service.js';
 import type { HandlerContext } from '../types.js';
 import type { ServiceContainer } from '../../services/index.js';
-import type { StoreDefinitionsConfig } from '../../types/store-definition.js';
+
+// Mock spawnBackgroundWorker
+vi.mock('../../workers/spawn-worker.js', () => ({
+  spawnBackgroundWorker: vi.fn(),
+}));
 
 /**
  * Create a minimal mock service container for testing
@@ -49,6 +52,14 @@ describe('sync.commands', () => {
         dryRun: true,
       });
       expect(result2?.success).toBe(true);
+
+      // Valid with reindex option
+      const result3 = syncCmd?.argsSchema?.safeParse({
+        reindex: true,
+        prune: true,
+        dryRun: true,
+      });
+      expect(result3?.success).toBe(true);
     });
   });
 
@@ -68,7 +79,7 @@ describe('sync.commands', () => {
 
       context = {
         services: createMockServices(storeService),
-        options: { projectRoot },
+        options: { projectRoot, dataDir },
       };
     });
 
@@ -276,6 +287,63 @@ describe('sync.commands', () => {
         expect(response.skipped).toHaveLength(0);
         expect(response.failed).toHaveLength(0);
         expect(response.orphans).toHaveLength(0);
+      });
+    });
+
+    describe('reindex mode', () => {
+      it('reports wouldReindex in dry run mode', async () => {
+        const docsDir = join(projectRoot, 'docs');
+        await mkdir(docsDir, { recursive: true });
+
+        // Create store (auto-adds definition)
+        await storeService.create({
+          name: 'existing-store',
+          type: 'file',
+          path: docsDir,
+        });
+
+        const result = await handleStoresSync({ reindex: true, dryRun: true }, context);
+        const response = JSON.parse(result.content[0].text);
+
+        expect(response.dryRun).toBe(true);
+        expect(response.wouldReindex).toContain('existing-store');
+        expect(response.reindexJobs).toBeUndefined();
+      });
+
+      it('starts reindex jobs for existing stores', async () => {
+        const docsDir = join(projectRoot, 'docs');
+        await mkdir(docsDir, { recursive: true });
+
+        // Create store (auto-adds definition)
+        await storeService.create({
+          name: 'reindex-store',
+          type: 'file',
+          path: docsDir,
+        });
+
+        const result = await handleStoresSync({ reindex: true }, context);
+        const response = JSON.parse(result.content[0].text);
+
+        expect(response.reindexJobs).toHaveLength(1);
+        expect(response.reindexJobs[0].store).toBe('reindex-store');
+        expect(response.reindexJobs[0].jobId).toMatch(/^job_/);
+      });
+
+      it('does not reindex if reindex flag is not set', async () => {
+        const docsDir = join(projectRoot, 'docs');
+        await mkdir(docsDir, { recursive: true });
+
+        await storeService.create({
+          name: 'no-reindex-store',
+          type: 'file',
+          path: docsDir,
+        });
+
+        const result = await handleStoresSync({}, context);
+        const response = JSON.parse(result.content[0].text);
+
+        expect(response.reindexJobs).toBeUndefined();
+        expect(response.wouldReindex).toBeUndefined();
       });
     });
   });

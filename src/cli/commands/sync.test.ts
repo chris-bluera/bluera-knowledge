@@ -31,6 +31,13 @@ describe('createSyncCommand', () => {
     expect(pruneOpt).toBeDefined();
   });
 
+  it('has --reindex option', () => {
+    const cmd = createSyncCommand(createTestOptions);
+    const options = cmd.options;
+    const reindexOpt = options.find((o) => o.long === '--reindex');
+    expect(reindexOpt).toBeDefined();
+  });
+
   it('has correct option descriptions', () => {
     const cmd = createSyncCommand(createTestOptions);
     const options = cmd.options;
@@ -40,5 +47,8 @@ describe('createSyncCommand', () => {
 
     const pruneOpt = options.find((o) => o.long === '--prune');
     expect(pruneOpt?.description).toContain('Remove');
+
+    const reindexOpt = options.find((o) => o.long === '--reindex');
+    expect(reindexOpt?.description).toContain('Re-index');
   });
 });

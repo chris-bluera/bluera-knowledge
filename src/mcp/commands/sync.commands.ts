@@ -1,10 +1,12 @@
 import { z } from 'zod';
+import { JobService } from '../../services/job.service.js';
 import { StoreDefinitionService } from '../../services/store-definition.service.js';
 import {
   isFileStoreDefinition,
   isRepoStoreDefinition,
   isWebStoreDefinition,
 } from '../../types/store-definition.js';
+import { spawnBackgroundWorker } from '../../workers/spawn-worker.js';
 import type { CommandDefinition } from './registry.js';
 import type { StoreDefinition } from '../../types/store-definition.js';
 import type { HandlerContext, ToolResponse } from '../types.js';
@@ -15,6 +17,7 @@ import type { HandlerContext, ToolResponse } from '../types.js';
 export interface SyncStoresArgs {
   prune?: boolean;
   dryRun?: boolean;
+  reindex?: boolean;
 }
 
 /**
@@ -29,6 +32,8 @@ interface SyncResult {
   dryRun?: boolean;
   wouldCreate?: string[];
   wouldPrune?: string[];
+  reindexJobs?: Array<{ store: string; jobId: string }>;
+  wouldReindex?: string[];
 }
 
 /**
@@ -112,6 +117,33 @@ export async function handleStoresSync(
           if (deleteResult.success) {
             result.pruned.push(orphanName);
           }
+        }
+      }
+    }
+  }
+
+  // Re-index existing stores if requested
+  if (args.reindex === true && result.skipped.length > 0) {
+    if (args.dryRun === true) {
+      result.wouldReindex = [...result.skipped];
+    } else {
+      result.reindexJobs = [];
+      const dataDir = options.dataDir;
+      if (dataDir === undefined) {
+        throw new Error('dataDir is required for reindexing');
+      }
+      const jobService = new JobService(dataDir);
+
+      for (const storeName of result.skipped) {
+        const store = await services.store.getByName(storeName);
+        if (store !== undefined) {
+          const job = jobService.createJob({
+            type: 'index',
+            details: { storeId: store.id, storeName: store.name },
+            message: `Re-indexing ${storeName}...`,
+          });
+          spawnBackgroundWorker(job.id, dataDir);
+          result.reindexJobs.push({ store: storeName, jobId: job.id });
         }
       }
     }
@@ -212,6 +244,7 @@ export const syncCommands: CommandDefinition[] = [
     argsSchema: z.object({
       prune: z.boolean().optional().describe('Remove stores not in definitions'),
       dryRun: z.boolean().optional().describe('Show what would happen without making changes'),
+      reindex: z.boolean().optional().describe('Re-index existing stores after sync'),
     }),
     handler: (args: Record<string, unknown>, context: HandlerContext): Promise<ToolResponse> => {
       const syncArgs: SyncStoresArgs = {};
@@ -220,6 +253,9 @@ export const syncCommands: CommandDefinition[] = [
       }
       if (typeof args['dryRun'] === 'boolean') {
         syncArgs.dryRun = args['dryRun'];
+      }
+      if (typeof args['reindex'] === 'boolean') {
+        syncArgs.reindex = args['reindex'];
       }
       return handleStoresSync(syncArgs, context);
     },

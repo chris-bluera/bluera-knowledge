@@ -1,11 +1,13 @@
 import { Command } from 'commander';
 import { createServices, destroyServices } from '../../services/index.js';
+import { JobService } from '../../services/job.service.js';
 import { StoreDefinitionService } from '../../services/store-definition.service.js';
 import {
   isFileStoreDefinition,
   isRepoStoreDefinition,
   isWebStoreDefinition,
 } from '../../types/store-definition.js';
+import { spawnBackgroundWorker } from '../../workers/spawn-worker.js';
 import type { StoreService } from '../../services/store.service.js';
 import type { StoreDefinition } from '../../types/store-definition.js';
 import type { GlobalOptions } from '../program.js';
@@ -19,6 +21,8 @@ interface SyncResult {
   dryRun: boolean;
   wouldCreate: string[];
   wouldPrune: string[];
+  reindexJobs: Array<{ store: string; jobId: string }>;
+  wouldReindex: string[];
 }
 
 /**
@@ -102,7 +106,8 @@ export function createSyncCommand(getOptions: () => GlobalOptions): Command {
   sync
     .option('--dry-run', 'Show what would happen without making changes')
     .option('--prune', 'Remove stores not in definitions')
-    .action(async (options: { dryRun?: boolean; prune?: boolean }) => {
+    .option('--reindex', 'Re-index existing stores after sync')
+    .action(async (options: { dryRun?: boolean; prune?: boolean; reindex?: boolean }) => {
       const globalOpts = getOptions();
       const projectRoot = globalOpts.projectRoot ?? process.cwd();
 
@@ -124,6 +129,8 @@ export function createSyncCommand(getOptions: () => GlobalOptions): Command {
           dryRun: options.dryRun === true,
           wouldCreate: [],
           wouldPrune: [],
+          reindexJobs: [],
+          wouldReindex: [],
         };
 
         // Process each definition
@@ -172,6 +179,29 @@ export function createSyncCommand(getOptions: () => GlobalOptions): Command {
           }
         }
 
+        // Re-index existing stores if requested
+        if (options.reindex === true && result.skipped.length > 0) {
+          if (options.dryRun === true) {
+            result.wouldReindex = [...result.skipped];
+          } else {
+            const dataDir = globalOpts.dataDir ?? services.config.resolveDataDir();
+            const jobService = new JobService(dataDir);
+
+            for (const storeName of result.skipped) {
+              const store = await services.store.getByName(storeName);
+              if (store !== undefined) {
+                const job = jobService.createJob({
+                  type: 'index',
+                  details: { storeId: store.id, storeName: store.name },
+                  message: `Re-indexing ${storeName}...`,
+                });
+                spawnBackgroundWorker(job.id, dataDir);
+                result.reindexJobs.push({ store: storeName, jobId: job.id });
+              }
+            }
+          }
+        }
+
         // Output result
         if (globalOpts.format === 'json') {
           console.log(JSON.stringify(result, null, 2));
@@ -188,18 +218,24 @@ export function createSyncCommand(getOptions: () => GlobalOptions): Command {
 
 function printHumanReadable(result: SyncResult, quiet: boolean): void {
   if (quiet) {
-    // Just print created/pruned store names
+    // Just print created/pruned/reindexed store names
     for (const name of result.created) {
       console.log(`created: ${name}`);
     }
     for (const name of result.pruned) {
       console.log(`pruned: ${name}`);
     }
+    for (const { store, jobId } of result.reindexJobs) {
+      console.log(`reindexing: ${store} (${jobId})`);
+    }
     for (const name of result.wouldCreate) {
       console.log(`would create: ${name}`);
     }
     for (const name of result.wouldPrune) {
       console.log(`would prune: ${name}`);
+    }
+    for (const name of result.wouldReindex) {
+      console.log(`would reindex: ${name}`);
     }
     return;
   }
@@ -256,6 +292,20 @@ function printHumanReadable(result: SyncResult, quiet: boolean): void {
     console.log(`Would prune (${String(result.wouldPrune.length)}):`);
     for (const name of result.wouldPrune) {
       console.log(`  x ${name}`);
+    }
+  }
+
+  if (result.reindexJobs.length > 0) {
+    console.log(`Reindexing started (${String(result.reindexJobs.length)}):`);
+    for (const { store, jobId } of result.reindexJobs) {
+      console.log(`  ↻ ${store} (Job: ${jobId})`);
+    }
+  }
+
+  if (result.wouldReindex.length > 0) {
+    console.log(`Would reindex (${String(result.wouldReindex.length)}):`);
+    for (const name of result.wouldReindex) {
+      console.log(`  ↻ ${name}`);
     }
   }
 

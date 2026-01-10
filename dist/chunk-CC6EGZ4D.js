@@ -649,9 +649,11 @@ var SearchArgsSchema = z.object({
     "find-definition",
     "find-documentation"
   ]).optional(),
+  mode: z.enum(["vector", "fts", "hybrid"]).default("hybrid"),
   detail: z.enum(["minimal", "contextual", "full"]).default("minimal"),
   limit: z.number().int().positive().default(10),
   stores: z.array(z.string()).optional(),
+  threshold: z.number().min(0, "threshold must be between 0 and 1").max(1, "threshold must be between 0 and 1").optional(),
   minRelevance: z.number().min(0, "minRelevance must be between 0 and 1").max(1, "minRelevance must be between 0 and 1").optional()
 });
 var GetFullContextArgsSchema = z.object({
@@ -1491,6 +1493,30 @@ async function handleStoresSync(args, context) {
       }
     }
   }
+  if (args.reindex === true && result.skipped.length > 0) {
+    if (args.dryRun === true) {
+      result.wouldReindex = [...result.skipped];
+    } else {
+      result.reindexJobs = [];
+      const dataDir = options.dataDir;
+      if (dataDir === void 0) {
+        throw new Error("dataDir is required for reindexing");
+      }
+      const jobService = new JobService(dataDir);
+      for (const storeName of result.skipped) {
+        const store = await services.store.getByName(storeName);
+        if (store !== void 0) {
+          const job = jobService.createJob({
+            type: "index",
+            details: { storeId: store.id, storeName: store.name },
+            message: `Re-indexing ${storeName}...`
+          });
+          spawnBackgroundWorker(job.id, dataDir);
+          result.reindexJobs.push({ store: storeName, jobId: job.id });
+        }
+      }
+    }
+  }
   return {
     content: [
       {
@@ -1569,7 +1595,8 @@ var syncCommands = [
     description: "Sync stores from definitions config (bootstrap on fresh clone)",
     argsSchema: z7.object({
       prune: z7.boolean().optional().describe("Remove stores not in definitions"),
-      dryRun: z7.boolean().optional().describe("Show what would happen without making changes")
+      dryRun: z7.boolean().optional().describe("Show what would happen without making changes"),
+      reindex: z7.boolean().optional().describe("Re-index existing stores after sync")
     }),
     handler: (args, context) => {
       const syncArgs = {};
@@ -1578,6 +1605,9 @@ var syncCommands = [
       }
       if (typeof args["dryRun"] === "boolean") {
         syncArgs.dryRun = args["dryRun"];
+      }
+      if (typeof args["reindex"] === "boolean") {
+        syncArgs.reindex = args["reindex"];
       }
       return handleStoresSync(syncArgs, context);
     }
@@ -1700,6 +1730,7 @@ var handleSearch = async (args, context) => {
     {
       query: validated.query,
       stores: validated.stores,
+      mode: validated.mode,
       detail: validated.detail,
       limit: validated.limit,
       intent: validated.intent
@@ -1728,9 +1759,10 @@ var handleSearch = async (args, context) => {
   const searchQuery = {
     query: validated.query,
     stores: storeIds,
-    mode: "hybrid",
+    mode: validated.mode,
     limit: validated.limit,
     detail: validated.detail,
+    threshold: validated.threshold,
     minRelevance: validated.minRelevance
   };
   const results = await services.search.search(searchQuery);
@@ -1954,6 +1986,12 @@ function createMCPServer(options) {
                 ],
                 description: "Search intent for better ranking"
               },
+              mode: {
+                type: "string",
+                enum: ["vector", "fts", "hybrid"],
+                default: "hybrid",
+                description: "Search mode: vector (embeddings only), fts (full-text only), hybrid (both, default)"
+              },
               detail: {
                 type: "string",
                 enum: ["minimal", "contextual", "full"],
@@ -1969,6 +2007,10 @@ function createMCPServer(options) {
                 type: "array",
                 items: { type: "string" },
                 description: "Specific store IDs to search (optional)"
+              },
+              threshold: {
+                type: "number",
+                description: "Minimum normalized score (0-1). Filters out low-relevance results."
               },
               minRelevance: {
                 type: "number",
@@ -2089,6 +2131,7 @@ if (isMCPServerEntry) {
 
 export {
   ZilAdapter,
+  spawnBackgroundWorker,
   isFileStoreDefinition,
   isRepoStoreDefinition,
   isWebStoreDefinition,
@@ -2096,4 +2139,4 @@ export {
   createMCPServer,
   runMCPServer
 };
-//# sourceMappingURL=chunk-4ZVUY3BM.js.map
+//# sourceMappingURL=chunk-CC6EGZ4D.js.map

@@ -5,8 +5,9 @@ import {
   isFileStoreDefinition,
   isRepoStoreDefinition,
   isWebStoreDefinition,
-  runMCPServer
-} from "./chunk-4ZVUY3BM.js";
+  runMCPServer,
+  spawnBackgroundWorker
+} from "./chunk-CC6EGZ4D.js";
 import {
   IntelligentCrawler
 } from "./chunk-QCSFBMYW.js";
@@ -14,6 +15,7 @@ import {
   ASTParser,
   AdapterRegistry,
   ChunkingService,
+  JobService,
   classifyWebContentType,
   createDocumentId,
   createServices,
@@ -1501,7 +1503,7 @@ function createStoreCommand(getOptions) {
   store.command("create <name>").description("Create a new store pointing to a local path or URL").requiredOption(
     "-t, --type <type>",
     "Store type: file (local dir), repo (git), web (crawled site)"
-  ).requiredOption("-s, --source <path>", "Local path for file/repo stores, URL for web stores").option("-d, --description <desc>", "Optional description for the store").option("--tags <tags>", "Comma-separated tags for filtering").action(
+  ).requiredOption("-s, --source <path>", "Local path for file/repo stores, URL for web stores").option("-b, --branch <branch>", "Git branch to clone (repo stores only)").option("-d, --description <desc>", "Optional description for the store").option("--tags <tags>", "Comma-separated tags for filtering").action(
     async (name, options) => {
       const globalOpts = getOptions();
       const services = await createServices(globalOpts.config, globalOpts.dataDir);
@@ -1513,6 +1515,7 @@ function createStoreCommand(getOptions) {
           type: options.type,
           path: options.type === "file" || options.type === "repo" && !isUrl ? options.source : void 0,
           url: options.type === "web" || options.type === "repo" && isUrl ? options.source : void 0,
+          branch: options.type === "repo" ? options.branch : void 0,
           description: options.description,
           tags: options.tags?.split(",").map((t) => t.trim())
         });
@@ -1694,7 +1697,7 @@ function createSyncCommand(getOptions) {
   const sync = new Command9("sync").description(
     "Sync stores from definitions config (bootstrap on fresh clone)"
   );
-  sync.option("--dry-run", "Show what would happen without making changes").option("--prune", "Remove stores not in definitions").action(async (options) => {
+  sync.option("--dry-run", "Show what would happen without making changes").option("--prune", "Remove stores not in definitions").option("--reindex", "Re-index existing stores after sync").action(async (options) => {
     const globalOpts = getOptions();
     const projectRoot = globalOpts.projectRoot ?? process.cwd();
     const defService = new StoreDefinitionService(projectRoot);
@@ -1712,7 +1715,9 @@ function createSyncCommand(getOptions) {
         pruned: [],
         dryRun: options.dryRun === true,
         wouldCreate: [],
-        wouldPrune: []
+        wouldPrune: [],
+        reindexJobs: [],
+        wouldReindex: []
       };
       for (const def of config.stores) {
         if (existingNames.has(def.name)) {
@@ -1752,6 +1757,26 @@ function createSyncCommand(getOptions) {
           }
         }
       }
+      if (options.reindex === true && result.skipped.length > 0) {
+        if (options.dryRun === true) {
+          result.wouldReindex = [...result.skipped];
+        } else {
+          const dataDir = globalOpts.dataDir ?? services.config.resolveDataDir();
+          const jobService = new JobService(dataDir);
+          for (const storeName of result.skipped) {
+            const store = await services.store.getByName(storeName);
+            if (store !== void 0) {
+              const job = jobService.createJob({
+                type: "index",
+                details: { storeId: store.id, storeName: store.name },
+                message: `Re-indexing ${storeName}...`
+              });
+              spawnBackgroundWorker(job.id, dataDir);
+              result.reindexJobs.push({ store: storeName, jobId: job.id });
+            }
+          }
+        }
+      }
       if (globalOpts.format === "json") {
         console.log(JSON.stringify(result, null, 2));
       } else {
@@ -1771,11 +1796,17 @@ function printHumanReadable(result, quiet) {
     for (const name of result.pruned) {
       console.log(`pruned: ${name}`);
     }
+    for (const { store, jobId } of result.reindexJobs) {
+      console.log(`reindexing: ${store} (${jobId})`);
+    }
     for (const name of result.wouldCreate) {
       console.log(`would create: ${name}`);
     }
     for (const name of result.wouldPrune) {
       console.log(`would prune: ${name}`);
+    }
+    for (const name of result.wouldReindex) {
+      console.log(`would reindex: ${name}`);
     }
     return;
   }
@@ -1824,6 +1855,18 @@ function printHumanReadable(result, quiet) {
     console.log(`Would prune (${String(result.wouldPrune.length)}):`);
     for (const name of result.wouldPrune) {
       console.log(`  x ${name}`);
+    }
+  }
+  if (result.reindexJobs.length > 0) {
+    console.log(`Reindexing started (${String(result.reindexJobs.length)}):`);
+    for (const { store, jobId } of result.reindexJobs) {
+      console.log(`  \u21BB ${store} (Job: ${jobId})`);
+    }
+  }
+  if (result.wouldReindex.length > 0) {
+    console.log(`Would reindex (${String(result.wouldReindex.length)}):`);
+    for (const name of result.wouldReindex) {
+      console.log(`  \u21BB ${name}`);
     }
   }
   console.log("");
