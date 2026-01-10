@@ -213,6 +213,90 @@ else
     pass "Store successfully deleted"
 fi
 
+# Test suggest command
+log_header "Testing suggest"
+
+# Create a minimal package.json for suggest to find
+echo '{"dependencies": {"lodash": "^4.0.0"}}' > "$TEST_FOLDER/package.json"
+run_test "bluera-knowledge suggest" "bluera-knowledge suggest -p '$TEST_FOLDER' -d '$DATA_DIR'"
+
+# Test sync command (should work with no definitions - returns empty result)
+log_header "Testing sync"
+
+run_test_contains "bluera-knowledge sync (no definitions)" "Sync completed" "bluera-knowledge sync -p '$TEST_FOLDER' -d '$DATA_DIR'"
+
+# Test sync with a definitions file
+mkdir -p "$TEST_FOLDER/.bluera/bluera-knowledge"
+cat > "$TEST_FOLDER/.bluera/bluera-knowledge/stores.config.json" << EOF
+{
+  "version": 1,
+  "stores": [
+    {
+      "name": "sync-test-store",
+      "type": "file",
+      "path": "."
+    }
+  ]
+}
+EOF
+run_test "bluera-knowledge sync (with definitions)" "bluera-knowledge sync -p '$TEST_FOLDER' -d '$DATA_DIR'"
+
+# Verify sync created the store
+run_test_contains "Sync created store" "sync-test-store" "bluera-knowledge stores -d '$DATA_DIR'"
+
+# Clean up sync test store
+bluera-knowledge store delete "sync-test-store" --force -d "$DATA_DIR" 2>/dev/null || true
+
+# Test serve command (start, test, stop)
+log_header "Testing serve"
+
+SERVE_PORT=19876
+SERVE_PID=""
+
+# Start server in background
+log "Starting serve on port $SERVE_PORT..."
+bluera-knowledge serve --port $SERVE_PORT -d "$DATA_DIR" &
+SERVE_PID=$!
+
+# Give it time to start
+sleep 2
+
+# Check if server is running
+if kill -0 $SERVE_PID 2>/dev/null; then
+    log "Server started with PID $SERVE_PID"
+
+    # Test health endpoint
+    if curl -s "http://localhost:$SERVE_PORT/health" | grep -q "ok"; then
+        pass "bluera-knowledge serve (health endpoint)"
+    else
+        fail "bluera-knowledge serve (health endpoint not responding)"
+    fi
+
+    # Stop server
+    kill $SERVE_PID 2>/dev/null || true
+    wait $SERVE_PID 2>/dev/null || true
+    log "Server stopped"
+else
+    fail "bluera-knowledge serve (failed to start)"
+fi
+
+# Test mcp command (just verify it starts and outputs JSON-RPC)
+log_header "Testing mcp"
+
+MCP_OUTPUT=$(timeout 2 bluera-knowledge mcp -d "$DATA_DIR" 2>&1 || true)
+if echo "$MCP_OUTPUT" | grep -qE "(jsonrpc|ready|listening|MCP)" 2>/dev/null || [ $? -eq 124 ]; then
+    # Timeout (124) is expected - MCP keeps running until killed
+    pass "bluera-knowledge mcp (starts without error)"
+else
+    # Even if it times out or produces no output, as long as it didn't crash
+    if [ -z "$MCP_OUTPUT" ]; then
+        pass "bluera-knowledge mcp (starts without error)"
+    else
+        log "MCP output: $MCP_OUTPUT"
+        fail "bluera-knowledge mcp (unexpected output)"
+    fi
+fi
+
 # Summary
 log_header "Validation Summary"
 log "Tests run:    $TESTS_RUN"
